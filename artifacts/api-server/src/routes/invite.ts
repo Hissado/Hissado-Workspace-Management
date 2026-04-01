@@ -100,7 +100,7 @@ router.post("/invite", async (req, res) => {
 </html>`;
 
     const result = await client.emails.send({
-      from: `Hissado <${fromEmail}>`,
+      from: `Hissado Consulting <${fromEmail}>`,
       to: [email],
       subject: `You're invited to ${ws} — ${roleLabel} access`,
       html: htmlBody,
