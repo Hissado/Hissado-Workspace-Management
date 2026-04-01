@@ -214,7 +214,7 @@ export function Inp({
     width: "100%", padding: "10px 14px",
     border: `1.5px solid ${focused ? C.gold : C.g200}`,
     borderRadius: 10, fontSize: 13.5, fontFamily: "'DM Sans', sans-serif",
-    color: C.g700, background: focused ? "#FEFCF8" : C.w,
+    color: C.g700, backgroundColor: focused ? "#FEFCF8" : C.w,
     outline: "none", transition: "all .18s",
     boxShadow: focused ? `0 0 0 3px ${C.gold}18` : "none",
     ...style,
