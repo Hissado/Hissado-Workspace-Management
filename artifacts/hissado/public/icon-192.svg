@@ -1,0 +1,14 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F1E35"/>
+      <stop offset="100%" stop-color="#070D1A"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="56" y1="40" x2="136" y2="152" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E8C87A"/>
+      <stop offset="100%" stop-color="#A8762E"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="44" fill="url(#bg)"/>
+  <text x="96" y="138" font-family="Georgia, 'Times New Roman', serif" font-size="108" font-weight="800" text-anchor="middle" fill="url(#gold)">H</text>
+</svg>

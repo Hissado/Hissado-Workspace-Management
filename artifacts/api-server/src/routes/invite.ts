@@ -55,6 +55,12 @@ function buildEmailBody(opts: {
 
   const ctaLabel = isFr ? "Se connecter à Hissado &rarr;" : "Sign In to Hissado &rarr;";
 
+  const installTitle = isFr ? "&#128241; Installez l'application sur votre téléphone" : "&#128241; Install the app on your phone";
+  const installDesc = isFr
+    ? "Accédez à Hissado directement depuis votre écran d'accueil — comme une vraie application native. Aucune boutique d'applications requise, fonctionne sur iPhone et Android."
+    : "Access Hissado directly from your home screen — like a real native app. No app store needed, works on iPhone and Android.";
+  const installBtn = isFr ? "&#128269; Installer sur mon téléphone" : "&#128269; Install on my phone";
+
   const helpText = isFr
     ? "Pour toute question, veuillez contacter votre administrateur."
     : "If you have any questions, please contact your workspace administrator.";
@@ -167,11 +173,53 @@ function buildEmailBody(opts: {
               </table>
 
               <!-- CTA -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
                 <tr>
                   <td align="center">
                     <a href="https://project.hissadoconsulting.com" style="display:inline-block;background:linear-gradient(135deg,#C9A96E 0%,#A8762E 100%);color:#ffffff;text-decoration:none;padding:15px 36px;border-radius:11px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 16px rgba(201,169,110,0.35);">
                       ${ctaLabel}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- INSTALL SECTION -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(135deg,#070D1A 0%,#0F1E35 100%);border-radius:14px;overflow:hidden;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:24px 28px;">
+                    <p style="color:#C9A96E;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin:0 0 8px;">
+                      ${installTitle}
+                    </p>
+                    <p style="color:rgba(255,255,255,0.65);font-size:14px;line-height:1.65;margin:0 0 20px;">
+                      ${installDesc}
+                    </p>
+                    <!-- Platform icons row -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+                      <tr>
+                        <td style="padding-right:20px;">
+                          <table cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px 14px;text-align:center;">
+                                <div style="font-size:20px;line-height:1;">🍎</div>
+                                <div style="color:rgba(255,255,255,0.7);font-size:10px;font-weight:600;margin-top:4px;letter-spacing:0.05em;">iOS / iPhone</div>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td>
+                          <table cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:8px 14px;text-align:center;">
+                                <div style="font-size:20px;line-height:1;">🤖</div>
+                                <div style="color:rgba(255,255,255,0.7);font-size:10px;font-weight:600;margin-top:4px;letter-spacing:0.05em;">Android</div>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                    <a href="https://project.hissadoconsulting.com/install" style="display:inline-block;background:linear-gradient(135deg,#C9A96E 0%,#A8762E 100%);color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:0.02em;box-shadow:0 4px 14px rgba(201,169,110,0.35);">
+                      ${installBtn}
                     </a>
                   </td>
                 </tr>
