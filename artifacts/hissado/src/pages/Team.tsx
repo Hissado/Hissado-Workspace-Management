@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { C, SH, Av, Btn, Modal, Inp, Bdg, Empty } from "@/components/primitives";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { useI18n } from "@/lib/i18n";
 import type { User } from "@/lib/data";
 import { uid } from "@/lib/data";
-import { canInviteMembers } from "@/lib/access";
+import { canInviteMembers, canDeleteUser } from "@/lib/access";
 
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>;
 const MailIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>;
 const UsersIcon2 = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
 const SendIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
@@ -30,14 +32,16 @@ interface TeamProps {
   users: User[];
   currentUser: User;
   onAddUser: (u: User) => void;
+  onDeleteUser: (id: string) => void;
 }
 
-export default function Team({ users, currentUser, onAddUser }: TeamProps) {
+export default function Team({ users, currentUser, onAddUser, onDeleteUser }: TeamProps) {
   const { t, lang } = useI18n();
   const [deptFilter, setDeptFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showInvite, setShowInvite] = useState(false);
   const [showProfile, setShowProfile] = useState<User | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<User["role"]>("member");
@@ -417,8 +421,56 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
               <span style={{ fontWeight: 700, color: C.navy }}>{row.v || "—"}</span>
             </div>
           ))}
+
+          {/* Admin-only delete zone */}
+          {canDeleteUser(currentUser, showProfile) && (
+            <div style={{
+              marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.g100}`,
+            }}>
+              <button
+                data-testid={`delete-user-btn-${showProfile.id}`}
+                onClick={() => setDeleteTarget(showProfile)}
+                style={{
+                  width: "100%", padding: "10px 16px",
+                  border: `1.5px solid #FECACA`,
+                  borderRadius: 10, cursor: "pointer",
+                  fontSize: 13, fontWeight: 700,
+                  fontFamily: "'DM Sans', sans-serif",
+                  backgroundColor: "#FFF5F5", color: C.err,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  transition: "all .15s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = C.errL;
+                  (e.currentTarget as HTMLElement).style.borderColor = C.err;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "#FFF5F5";
+                  (e.currentTarget as HTMLElement).style.borderColor = "#FECACA";
+                }}
+              >
+                <TrashIcon />
+                {t.team_delete_btn}
+              </button>
+            </div>
+          )}
         </Modal>
       )}
+
+      {/* Delete User Confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={t.team_delete_title}
+        message={deleteTarget ? t.team_delete_confirm(deleteTarget.name) : ""}
+        onConfirm={() => {
+          if (deleteTarget) {
+            onDeleteUser(deleteTarget.id);
+            setDeleteTarget(null);
+            setShowProfile(null);
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

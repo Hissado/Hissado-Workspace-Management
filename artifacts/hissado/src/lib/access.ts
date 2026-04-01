@@ -117,3 +117,11 @@ export function canInviteMembers(user: User): boolean {
 export function canCreateProject(user: User): boolean {
   return user.role === "admin" || user.role === "manager";
 }
+
+/**
+ * Check if a user can delete another user account.
+ * Admins only; cannot delete themselves.
+ */
+export function canDeleteUser(actor: User, target: User): boolean {
+  return actor.role === "admin" && actor.id !== target.id;
+}

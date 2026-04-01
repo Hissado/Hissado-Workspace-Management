@@ -122,7 +122,27 @@ export const useStore = create<AppState>()(
 
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
-      deleteUser: (id) => set((s) => ({ users: s.users.filter((x) => x.id !== id) })),
+      deleteUser: (id) => set((s) => {
+        // Find all 1-on-1 conversations involving this user so we can purge their messages too
+        const removedConvIds = new Set(
+          s.conversations
+            .filter((c) => c.type === "direct" && c.parts.includes(id))
+            .map((c) => c.id)
+        );
+        return {
+          users: s.users.filter((x) => x.id !== id),
+          // Unassign any tasks this user was assigned to
+          tasks: s.tasks.map((t) => t.assignee === id ? { ...t, assignee: "" } : t),
+          // Remove user from all project member lists (don't delete the project itself)
+          projects: s.projects.map((p) => ({
+            ...p,
+            members: p.members.filter((m) => m !== id),
+          })),
+          // Delete their 1-on-1 conversations and those conversations' messages
+          conversations: s.conversations.filter((c) => !removedConvIds.has(c.id)),
+          messages: s.messages.filter((m) => !removedConvIds.has(m.cId)),
+        };
+      }),
 
       addNotification: (n) => set((s) => ({ notifications: [n, ...s.notifications] })),
       markAllNotifsRead: () => set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) })),

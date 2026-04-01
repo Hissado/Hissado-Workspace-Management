@@ -36,7 +36,7 @@ export default function App() {
     setSelectedProject, setSelectedTask, setShowTaskModal, setShowProjectModal,
     addTask, updateTask, deleteTask,
     addProject, updateProject, deleteProject,
-    addUser, updateUser,
+    addUser, updateUser, deleteUser,
     addNotification, markAllNotifsRead,
     addConversation, deleteConversation, addMessage,
     addFile, deleteFile, addFolder, deleteFolder,
@@ -305,7 +305,7 @@ export default function App() {
             <Reports tasks={myTasks} projects={myProjects} users={myTeam} />
           )}
           {page === "team" && (
-            <Team users={myTeam} currentUser={currentUser} onAddUser={addUser} />
+            <Team users={myTeam} currentUser={currentUser} onAddUser={addUser} onDeleteUser={deleteUser} />
           )}
           {page === "settings" && (
             <Settings currentUser={currentUser} onUpdateUser={(updates) => updateUser({ ...currentUser, ...updates })} />

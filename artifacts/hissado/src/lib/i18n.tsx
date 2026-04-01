@@ -209,6 +209,10 @@ const T = {
     team_dept_label: "Department",
     team_status_label: "Status",
     team_joined: "Joined",
+    team_delete_btn: "Remove User",
+    team_delete_title: "Remove User Account",
+    team_delete_confirm: (name: string) =>
+      `Are you sure you want to permanently remove ${name}? Their tasks will be unassigned, they will be removed from all projects, and their direct messages will be deleted. This cannot be undone.`,
 
     // Settings
     set_title: "Settings",
@@ -476,6 +480,10 @@ const T = {
     team_dept_label: "Service",
     team_status_label: "Statut",
     team_joined: "Rejoint le",
+    team_delete_btn: "Supprimer l'utilisateur",
+    team_delete_title: "Supprimer le compte",
+    team_delete_confirm: (name: string) =>
+      `Êtes-vous sûr de vouloir supprimer définitivement ${name} ? Ses tâches seront désassignées, il sera retiré de tous les projets et ses messages directs seront supprimés. Cette action est irréversible.`,
 
     // Settings
     set_title: "Paramètres",
