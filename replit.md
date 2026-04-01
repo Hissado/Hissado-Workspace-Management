@@ -4,6 +4,37 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+## Hissado Project Management App
+
+Full-featured project management web app at `artifacts/hissado/` (port 24018, preview at `/`).
+
+### Architecture
+- **Frontend**: React + Vite + TypeScript, NO backend
+- **State**: Zustand with localStorage persistence (`hissado-pm-v3` key)
+- **Fonts**: DM Sans + Playfair Display (Google Fonts)
+- **Theme**: Navy (#0F1A2E) + Gold (#C8A45C)
+
+### Pages
+- **Login** (`/`): Quick login with user list, email login
+- **Dashboard**: Stats, project progress bars, upcoming tasks, recent tasks table
+- **Projects**: Card grid view; click → Project Detail (list/kanban views)
+- **My Tasks**: Filterable/sortable task list
+- **Chat**: Real-time-like messaging with direct & group conversations
+- **Files**: Folder navigation + file upload
+- **Calendar**: Monthly view with task due dates
+- **Reports**: Analytics charts (status, priority, project progress, workload)
+- **Team**: Member cards + invite modal
+- **Settings**: Profile, notifications, appearance, security tabs
+
+### Key Files
+- `src/lib/data.ts` — Types, helpers (uid, fmt, fmtT), seed data, color maps
+- `src/lib/store.ts` — Zustand store with full CRUD
+- `src/components/primitives.tsx` — Shared UI (Av, Bdg, Btn, Inp, Modal, etc.)
+- `src/components/Sidebar.tsx` — Navigation sidebar with collapse
+- `src/components/Header.tsx` — Top header with search + notifications
+- `src/components/TaskModal.tsx` — Create/edit/delete tasks
+- `src/components/ProjectModal.tsx` — Create projects
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

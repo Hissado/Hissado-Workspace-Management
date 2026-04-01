@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Hissado Project"
+version = "1.0.0"
+id = "artifacts/hissado"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24018
+
+[services.development]
+run = "pnpm --filter @workspace/hissado run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hissado", "run", "build" ]
+publicDir = "artifacts/hissado/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24018"
+BASE_PATH = "/"
