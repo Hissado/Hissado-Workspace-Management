@@ -27,7 +27,7 @@ async function getCredentials(): Promise<{ apiKey: string; fromEmail: string }> 
       if (connectionSettings?.settings?.api_key) {
         return {
           apiKey: connectionSettings.settings.api_key,
-          fromEmail: connectionSettings.settings.from_email || "onboarding@resend.dev",
+          fromEmail: connectionSettings.settings.from_email || "noreply@hissadoconsulting.com",
         };
       }
     } catch {
@@ -40,7 +40,7 @@ async function getCredentials(): Promise<{ apiKey: string; fromEmail: string }> 
   if (apiKey) {
     return {
       apiKey,
-      fromEmail: process.env["RESEND_FROM_EMAIL"] || "onboarding@resend.dev",
+      fromEmail: process.env["RESEND_FROM_EMAIL"] || "noreply@hissadoconsulting.com",
     };
   }
 
