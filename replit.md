@@ -14,7 +14,16 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 - **i18n**: Full EN/FR bilingual support via `src/lib/i18n.tsx` context
 - **Access Control**: Project-based RBAC via `src/lib/access.ts` (admin, manager, member, client)
 - **Fonts**: DM Sans + Playfair Display (Google Fonts)
-- **Theme**: Navy (#0F1A2E) + Gold (#C8A45C)
+- **Theme (PREMIUM)**: Deep navy `C.navy=#070D1A`, gold `C.gold=#C9A96E`, bg `C.bg=#EFF2F8`
+
+### Premium Design System (primitives.tsx)
+- `C` color constants: `navy, gold, bg, w, g50..g700, ok, err, info`
+- `SH` shadow constants: `xs, sm, md, lg, xl, modal, gold`
+- Components: `Av, Btn (sz, icon prop), Inp (opts for select), Modal, PBar, StatusBadge, PriorityBadge, Bdg, Card, SectionHeader, Empty, FileIcon`
+- All content pages use `background: C.bg, minHeight: "100%", padding: "32px 36px 60px"`
+- Hover effects: use `onMouseEnter/Leave` inline style mutation (never useState inside .map())
+- Page headers: `fontSize:22, fontFamily:"Playfair Display",serif, letterSpacing:"-.01em"`
+- Stat cards: colored top accent bar `position:absolute, top:0, height:3`
 
 ### CRITICAL Type Facts (data.ts source of truth)
 - Task fields: `pri` (not `priority`), `assignee` (not `aId`), `pId`, `due`, `created`, `prog`, `subs`, `cmts`

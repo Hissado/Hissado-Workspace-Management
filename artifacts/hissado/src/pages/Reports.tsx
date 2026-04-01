@@ -58,18 +58,23 @@ export default function Reports({ tasks, projects, users }: ReportsProps) {
   ];
 
   return (
-    <div style={{ padding: "32px 32px 60px" }}>
+    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{t.rep_title}</h2>
-        <p style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>{t.rep_subtitle}</p>
+        <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.rep_title}</h2>
+        <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>{t.rep_subtitle}</p>
       </div>
 
       {/* Summary stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 28 }}>
         {stats.map((s, i) => (
-          <div key={i} style={{ background: C.w, borderRadius: 14, padding: "20px 24px", border: `1px solid ${C.g100}`, boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
-            <div style={{ fontSize: 32, fontWeight: 700, color: s.color, marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: C.g500 }}>{s.label}</div>
+          <div key={i} style={{
+            background: C.w, borderRadius: 14, padding: "20px 24px",
+            border: `1px solid ${C.g100}`, boxShadow: "0 2px 8px rgba(0,0,0,.05)",
+            position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: s.color, opacity: .7 }} />
+            <div style={{ fontSize: 32, fontWeight: 800, color: s.color, marginBottom: 4, fontFamily: "'Playfair Display',serif" }}>{s.value}</div>
+            <div style={{ fontSize: 12.5, color: C.g500, fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
       </div>

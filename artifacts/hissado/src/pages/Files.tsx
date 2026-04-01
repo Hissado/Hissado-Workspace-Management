@@ -69,11 +69,11 @@ export default function Files({ files, folders, users, onAddFile, onAddFolder }:
   };
 
   return (
-    <div style={{ padding: "32px 32px 60px" }}>
+    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{t.files_title}</h2>
-          <p style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>{t.files_subtitle_fn(files.length, folders.length)}</p>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.files_title}</h2>
+          <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>{t.files_subtitle_fn(files.length, folders.length)}</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <Btn onClick={() => setShowNewFolder(true)} data-testid="new-folder-btn" style={{ background: C.g100, color: C.navy, boxShadow: "none" }}>

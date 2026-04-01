@@ -52,7 +52,7 @@ export default function Calendar({ tasks, users, projects, onTaskClick }: Calend
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div style={{ padding: "32px", display: "grid", gridTemplateColumns: "1fr 280px", gap: 24, alignItems: "start" }}>
+    <div style={{ padding: "32px 36px", background: C.bg, minHeight: "100%", display: "grid", gridTemplateColumns: "1fr 280px", gap: 24, alignItems: "start" }}>
       {/* Calendar grid */}
       <div style={{ background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
         {/* Header */}

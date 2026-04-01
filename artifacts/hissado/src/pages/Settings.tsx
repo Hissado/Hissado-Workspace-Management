@@ -40,10 +40,10 @@ export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
   ];
 
   return (
-    <div style={{ padding: "32px 32px 60px" }}>
+    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{t.set_title}</h2>
-        <p style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>{t.set_subtitle}</p>
+        <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.set_title}</h2>
+        <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>{t.set_subtitle}</p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28 }}>

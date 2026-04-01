@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C, Av, Btn, PBar, StatusBadge, PriorityBadge, Empty } from "@/components/primitives";
+import { C, SH, Av, Btn, PBar, StatusBadge, PriorityBadge, Empty } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import type { Project, Task, User } from "@/lib/data";
 import { fmt } from "@/lib/data";
@@ -39,65 +39,91 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
   return (
-    <div style={{ padding: "32px 32px 60px" }}>
-      <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: C.g400, fontSize: 13, display: "flex", alignItems: "center", gap: 4, marginBottom: 20, fontFamily: "inherit" }}>
+    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+      <button
+        onClick={onBack}
+        style={{
+          background: C.w, border: `1px solid ${C.g100}`, cursor: "pointer",
+          color: C.g500, fontSize: 13, display: "flex", alignItems: "center", gap: 6,
+          marginBottom: 24, fontFamily: "'DM Sans', sans-serif", borderRadius: 9,
+          padding: "7px 14px", fontWeight: 600, boxShadow: SH.xs,
+          transition: "all .15s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g700; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.g100; e.currentTarget.style.color = C.g500; }}
+      >
         <ChevLeft /> {t.pdet_back}
       </button>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 14, height: 14, borderRadius: "50%", background: project.color }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+            background: `${project.color}15`, border: `1.5px solid ${project.color}30`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <div style={{ width: 16, height: 16, borderRadius: "50%", background: project.color, boxShadow: `0 0 10px ${project.color}80` }} />
+          </div>
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{project.name}</h2>
-            {project.desc && <p style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>{project.desc}</p>}
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 4px", letterSpacing: "-.01em" }}>{project.name}</h2>
+            {project.desc && <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>{project.desc}</p>}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ display: "flex", background: C.g100, borderRadius: 8, padding: 3, gap: 2 }}>
+          <div style={{ display: "flex", background: C.g100, borderRadius: 10, padding: 3, gap: 2 }}>
             {([["list", <ListIcon />, t.pdet_list], ["board", <BoardIcon />, t.pdet_board]] as const).map(([v, icon, label]) => (
               <button
                 key={v}
                 onClick={() => setView(v as "list" | "board")}
                 data-testid={`view-${v}`}
                 style={{
-                  padding: "5px 12px", border: "none", borderRadius: 6, cursor: "pointer",
+                  padding: "6px 14px", border: "none", borderRadius: 8, cursor: "pointer",
                   display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600,
-                  fontFamily: "inherit",
+                  fontFamily: "'DM Sans', sans-serif",
                   background: view === v ? C.w : "transparent",
                   color: view === v ? C.navy : C.g400,
-                  boxShadow: view === v ? "0 1px 3px rgba(0,0,0,.1)" : "none",
+                  boxShadow: view === v ? SH.xs : "none",
+                  transition: "all .15s",
                 }}
               >
                 {icon} {label}
               </button>
             ))}
           </div>
-          <Btn onClick={onAddTask} data-testid="add-task-btn-detail">
-            <PlusIcon /> {t.pdet_add_task}
+          <Btn onClick={onAddTask} data-testid="add-task-btn-detail" icon={<PlusIcon />}>
+            {t.pdet_add_task}
           </Btn>
         </div>
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 20 }}>
         {[
           { label: t.pdet_total_tasks, value: pTasks.length, color: "#4F7CEC" },
           { label: t.pdet_in_progress, value: ipTasks, color: C.gold },
           { label: t.pdet_completed, value: doneTasks, color: "#10B981" },
           { label: t.pdet_progress, value: `${pct}%`, color: project.color },
         ].map((s, i) => (
-          <div key={i} style={{ background: C.w, borderRadius: 12, padding: "16px 20px", border: `1px solid ${C.g100}` }}>
-            <div style={{ fontSize: 24, fontWeight: 700, color: s.color, marginBottom: 4 }}>{s.value}</div>
-            <div style={{ fontSize: 12, color: C.g400 }}>{s.label}</div>
+          <div key={i} style={{
+            background: C.w, borderRadius: 14, padding: "18px 22px",
+            border: `1px solid ${C.g100}`, boxShadow: SH.sm,
+            position: "relative", overflow: "hidden",
+          }}>
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, height: 3,
+              background: s.color, opacity: 0.7,
+            }} />
+            <div style={{ fontSize: 28, fontWeight: 800, color: s.color, marginBottom: 4, fontFamily: "'Playfair Display',serif" }}>{s.value}</div>
+            <div style={{ fontSize: 12, color: C.g400, fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Progress bar */}
-      <div style={{ background: C.w, borderRadius: 12, padding: "16px 20px", border: `1px solid ${C.g100}`, marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>{t.pdet_overall}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: project.color }}>{pct}%</span>
+      <div style={{ background: C.w, borderRadius: 14, padding: "18px 22px", border: `1px solid ${C.g100}`, marginBottom: 24, boxShadow: SH.sm }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{t.pdet_overall}</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: project.color }}>{pct}%</span>
         </div>
         <PBar value={pct} color={project.color} h={8} />
       </div>

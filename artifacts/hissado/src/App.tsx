@@ -118,7 +118,7 @@ export default function App() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: G50 }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#EFF2F8" }}>
       <Sidebar
         page={page}
         onNavigate={navigate}

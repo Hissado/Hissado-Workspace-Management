@@ -1,20 +1,21 @@
+import { useState } from "react";
 import { C, Av, Logo } from "./primitives";
 import type { Page } from "@/lib/store";
 import type { Project } from "@/lib/data";
 import { useI18n, type Lang } from "@/lib/i18n";
 
-const HomeIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
-const FolderIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>;
-const CheckIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>;
-const UsersIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
-const CalIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
-const ChartIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
-const GearIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><line x1="12" y1="1" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="6.34" y2="6.34" /><line x1="17.66" y1="17.66" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="6.34" y2="17.66" /><line x1="17.66" y1="6.34" x2="19.78" y2="4.22" /></svg>;
-const ChatIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>;
-const FileIcon2 = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>;
-const ChevRight = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>;
-const ChevLeft = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>;
-const GlobeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
+const HomeIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
+const FolderIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>;
+const CheckIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>;
+const UsersIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+const CalIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
+const ChartIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
+const GearIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
+const ChatIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+const FileIcon2 = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>;
+const ChevRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>;
+const ChevLeft = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>;
+const GlobeIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
 
 interface SidebarProps {
   page: Page;
@@ -29,18 +30,74 @@ interface SidebarProps {
   onProjectClick?: (p: Project) => void;
 }
 
+function NavItem({
+  k, icon, label, active, collapsed, onClick, badge,
+}: {
+  k: string; icon: React.ReactNode; label: string; active: boolean;
+  collapsed: boolean; onClick: () => void; badge?: number;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      data-testid={`nav-${k}`}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: "100%",
+        padding: collapsed ? "10px 0" : "9px 14px",
+        border: "none", borderRadius: 10, cursor: "pointer",
+        display: "flex", alignItems: "center",
+        gap: 11,
+        justifyContent: collapsed ? "center" : "flex-start",
+        background: active
+          ? `linear-gradient(90deg,${C.gold}22 0%,${C.gold}08 100%)`
+          : hov ? "rgba(255,255,255,.05)" : "transparent",
+        color: active ? C.goldL : hov ? "rgba(255,255,255,.75)" : "rgba(255,255,255,.42)",
+        fontSize: 13, fontWeight: active ? 600 : 400,
+        fontFamily: "'DM Sans', sans-serif",
+        transition: "all .15s cubic-bezier(.4,0,.2,1)",
+        marginBottom: 2, position: "relative",
+        letterSpacing: ".01em",
+      }}
+    >
+      {active && (
+        <div style={{
+          position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
+          width: 3, height: 18, borderRadius: "0 3px 3px 0",
+          background: `linear-gradient(180deg,${C.gold},${C.goldD})`,
+          boxShadow: `0 0 8px ${C.gold}60`,
+        }} />
+      )}
+      <span style={{ position: "relative", display: "flex", flexShrink: 0 }}>
+        {icon}
+        {badge && badge > 0 ? (
+          <span style={{
+            position: "absolute", top: -5, right: -7, width: 15, height: 15,
+            borderRadius: "50%", background: "#EF4444", color: "#fff",
+            fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
+            border: `2px solid ${C.navy}`,
+          }}>{badge > 9 ? "9+" : badge}</span>
+        ) : null}
+      </span>
+      {!collapsed && <span style={{ flex: 1, textAlign: "left" }}>{label}</span>}
+    </button>
+  );
+}
+
 export default function Sidebar({
   page, onNavigate, projects, collapsed, onToggleCollapse,
   userRole, userName, userAv, unread = 0, onProjectClick,
 }: SidebarProps) {
   const { t, lang, setLang } = useI18n();
+  const [langHov, setLangHov] = useState(false);
   const isAdmin = userRole === "admin" || userRole === "manager";
 
-  const NAV_ITEMS: { k: Page; icon: React.ReactNode; l: string }[] = [
+  const NAV_ITEMS: { k: Page; icon: React.ReactNode; l: string; badge?: number }[] = [
     { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
     { k: "projects", icon: <FolderIcon />, l: t.nav_projects },
     { k: "tasks", icon: <CheckIcon />, l: t.nav_tasks },
-    { k: "chat", icon: <ChatIcon />, l: t.nav_chat },
+    { k: "chat", icon: <ChatIcon />, l: t.nav_chat, badge: unread },
     { k: "files", icon: <FileIcon2 />, l: t.nav_files },
     { k: "calendar", icon: <CalIcon />, l: t.nav_calendar },
     { k: "reports", icon: <ChartIcon />, l: t.nav_reports },
@@ -50,77 +107,74 @@ export default function Sidebar({
   const nextLang: Lang = lang === "en" ? "fr" : "en";
 
   return (
-    <aside
-      style={{
-        width: collapsed ? 64 : 260,
-        minHeight: "100vh",
-        background: `linear-gradient(180deg,${C.navy} 0%,${C.navyL} 100%)`,
-        display: "flex", flexDirection: "column",
-        transition: "width .25s", flexShrink: 0,
-        borderRight: "1px solid rgba(255,255,255,.06)",
-      }}
-    >
+    <aside style={{
+      width: collapsed ? 64 : 256,
+      minHeight: "100vh",
+      background: `linear-gradient(180deg,${C.navy} 0%,${C.navyD} 100%)`,
+      display: "flex", flexDirection: "column",
+      transition: "width .25s cubic-bezier(.4,0,.2,1)", flexShrink: 0,
+      borderRight: "1px solid rgba(255,255,255,.04)",
+      position: "relative",
+    }}>
+      {/* Subtle grid pattern overlay */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden",
+        backgroundImage: `radial-gradient(circle, rgba(255,255,255,.025) 1px, transparent 1px)`,
+        backgroundSize: "24px 24px",
+        maskImage: "linear-gradient(180deg, transparent, rgba(0,0,0,.5) 40%, rgba(0,0,0,.5) 60%, transparent)",
+      }} />
+
       {/* Logo + collapse */}
       <div style={{
-        padding: collapsed ? "20px 12px" : "20px 20px",
-        borderBottom: "1px solid rgba(255,255,255,.06)",
+        padding: collapsed ? "18px 0" : "18px 18px",
+        borderBottom: "1px solid rgba(255,255,255,.05)",
         display: "flex", alignItems: "center",
         justifyContent: collapsed ? "center" : "space-between",
-        minHeight: 68,
+        minHeight: 68, position: "relative",
       }}>
         {!collapsed && <Logo />}
         <button
           onClick={onToggleCollapse}
           data-testid="sidebar-collapse-btn"
           style={{
-            background: "rgba(255,255,255,.06)", border: "none", borderRadius: 8,
-            width: 28, height: 28, display: "flex", alignItems: "center",
-            justifyContent: "center", cursor: "pointer", color: C.g400, flexShrink: 0,
+            background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.06)",
+            borderRadius: 8, width: 28, height: 28,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "rgba(255,255,255,.3)", flexShrink: 0,
+            transition: "all .15s",
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = `${C.gold}18`; e.currentTarget.style.color = C.goldL; e.currentTarget.style.borderColor = `${C.gold}30`; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.05)"; e.currentTarget.style.color = "rgba(255,255,255,.3)"; e.currentTarget.style.borderColor = "rgba(255,255,255,.06)"; }}
         >
           {collapsed ? <ChevRight /> : <ChevLeft />}
         </button>
       </div>
 
       {/* Nav items */}
-      <nav style={{ padding: collapsed ? "12px 8px" : "12px", flex: 1 }}>
+      <nav style={{ padding: collapsed ? "12px 8px" : "12px 10px", flex: 1, position: "relative" }}>
         {NAV_ITEMS.map((n) => {
           const active = page === n.k || (n.k === "projects" && page === "pdetail");
           return (
-            <button
+            <NavItem
               key={n.k}
+              k={n.k}
+              icon={n.icon}
+              label={n.l}
+              active={active}
+              collapsed={collapsed}
               onClick={() => onNavigate(n.k)}
-              data-testid={`nav-${n.k}`}
-              style={{
-                width: "100%", padding: collapsed ? "10px" : "10px 14px",
-                border: "none", borderRadius: 10, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 12,
-                justifyContent: collapsed ? "center" : "flex-start",
-                background: active ? "rgba(200,164,92,.12)" : "transparent",
-                color: active ? C.gold : "rgba(255,255,255,.5)",
-                fontSize: 13, fontWeight: active ? 600 : 400,
-                fontFamily: "inherit", transition: "all .15s", marginBottom: 2,
-                position: "relative",
-              }}
-            >
-              {active && (
-                <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: 20, borderRadius: 2, background: C.gold }} />
-              )}
-              <span style={{ position: "relative", display: "flex" }}>
-                {n.icon}
-                {n.k === "chat" && unread > 0 && (
-                  <span style={{ position: "absolute", top: -4, right: -6, width: 14, height: 14, borderRadius: "50%", background: "#EF4444", color: "#fff", fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</span>
-                )}
-              </span>
-              {!collapsed && <span>{n.l}</span>}
-            </button>
+              badge={n.badge}
+            />
           );
         })}
 
-        {/* Active projects list */}
+        {/* Active projects */}
         {!collapsed && projects.filter((p) => p.status === "active").length > 0 && (
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: ".12em", textTransform: "uppercase", padding: "0 14px", marginBottom: 8 }}>
+          <div style={{ marginTop: 24, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,.05)" }}>
+            <div style={{
+              fontSize: 9.5, fontWeight: 800, color: "rgba(255,255,255,.2)",
+              letterSpacing: ".16em", textTransform: "uppercase", padding: "0 14px", marginBottom: 8,
+            }}>
               {t.nav_projects_label}
             </div>
             {projects.filter((p) => p.status === "active").map((p) => (
@@ -131,11 +185,19 @@ export default function Sidebar({
                 style={{
                   width: "100%", padding: "7px 14px", border: "none", borderRadius: 8,
                   cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
-                  background: "transparent", color: "rgba(255,255,255,.45)",
-                  fontSize: 12, fontFamily: "inherit", textAlign: "left",
+                  background: "transparent",
+                  color: "rgba(255,255,255,.38)",
+                  fontSize: 12, fontFamily: "'DM Sans', sans-serif", textAlign: "left",
+                  transition: "all .12s",
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.05)"; e.currentTarget.style.color = "rgba(255,255,255,.65)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,.38)"; }}
               >
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.color, flexShrink: 0 }} />
+                <div style={{
+                  width: 7, height: 7, borderRadius: "50%",
+                  background: p.color, flexShrink: 0,
+                  boxShadow: `0 0 6px ${p.color}80`,
+                }} />
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
               </button>
             ))}
@@ -144,55 +206,53 @@ export default function Sidebar({
 
         {/* Settings */}
         {isAdmin && (
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-            <button
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,.05)" }}>
+            <NavItem
+              k="settings"
+              icon={<GearIcon />}
+              label={t.nav_settings}
+              active={page === "settings"}
+              collapsed={collapsed}
               onClick={() => onNavigate("settings")}
-              data-testid="nav-settings"
-              style={{
-                width: "100%", padding: collapsed ? "10px" : "10px 14px",
-                border: "none", borderRadius: 10, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 12,
-                justifyContent: collapsed ? "center" : "flex-start",
-                background: page === "settings" ? "rgba(200,164,92,.12)" : "transparent",
-                color: page === "settings" ? C.gold : "rgba(255,255,255,.5)",
-                fontSize: 13, fontWeight: page === "settings" ? 600 : 400,
-                fontFamily: "inherit",
-              }}
-            >
-              {page === "settings" && <div style={{ position: "absolute", left: 0, width: 3, height: 20, borderRadius: 2, background: C.gold }} />}
-              <GearIcon />
-              {!collapsed && <span>{t.nav_settings}</span>}
-            </button>
+            />
           </div>
         )}
       </nav>
 
-      {/* Language switcher + User */}
-      <div style={{ padding: collapsed ? "12px 8px" : "12px 20px", borderTop: "1px solid rgba(255,255,255,.06)" }}>
+      {/* Bottom: Language + User */}
+      <div style={{
+        padding: collapsed ? "12px 8px" : "12px 14px",
+        borderTop: "1px solid rgba(255,255,255,.05)",
+        position: "relative",
+      }}>
         {/* Language toggle */}
         <button
           onClick={() => setLang(nextLang)}
           data-testid="lang-toggle-btn"
           title={lang === "en" ? "Passer en français" : "Switch to English"}
+          onMouseEnter={() => setLangHov(true)}
+          onMouseLeave={() => setLangHov(false)}
           style={{
-            width: "100%", marginBottom: collapsed ? 0 : 12,
-            padding: collapsed ? 10 : "8px 12px",
-            border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, cursor: "pointer",
+            width: "100%",
+            marginBottom: collapsed ? 8 : 12,
+            padding: collapsed ? 10 : "7px 12px",
+            border: `1px solid ${langHov ? `${C.gold}35` : "rgba(255,255,255,.08)"}`,
+            borderRadius: 9, cursor: "pointer",
             display: "flex", alignItems: "center", gap: 8,
             justifyContent: collapsed ? "center" : "flex-start",
-            background: "rgba(255,255,255,.04)", color: "rgba(255,255,255,.5)",
-            fontSize: 12, fontWeight: 600, fontFamily: "inherit", transition: "all .15s",
+            background: langHov ? `${C.gold}12` : "rgba(255,255,255,.03)",
+            color: langHov ? C.goldL : "rgba(255,255,255,.38)",
+            fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
+            transition: "all .15s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(200,164,92,.12)"; e.currentTarget.style.color = C.gold; e.currentTarget.style.borderColor = "rgba(200,164,92,.3)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.04)"; e.currentTarget.style.color = "rgba(255,255,255,.5)"; e.currentTarget.style.borderColor = "rgba(255,255,255,.1)"; }}
         >
           <GlobeIcon />
           {!collapsed && (
             <span>
               {lang === "en" ? (
-                <><span style={{ opacity: 1, fontWeight: 700, color: C.goldL }}>EN</span><span style={{ opacity: 0.4 }}> / FR</span></>
+                <><span style={{ fontWeight: 800, color: C.goldL }}>EN</span><span style={{ opacity: 0.35 }}> / FR</span></>
               ) : (
-                <><span style={{ opacity: 0.4 }}>EN / </span><span style={{ opacity: 1, fontWeight: 700, color: C.goldL }}>FR</span></>
+                <><span style={{ opacity: 0.35 }}>EN / </span><span style={{ fontWeight: 800, color: C.goldL }}>FR</span></>
               )}
             </span>
           )}
@@ -200,17 +260,32 @@ export default function Sidebar({
 
         {/* User info */}
         {!collapsed && userName && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "9px 10px", borderRadius: 10,
+            background: "rgba(255,255,255,.03)",
+            border: "1px solid rgba(255,255,255,.06)",
+          }}>
             <Av ini={userAv || "??"} size={32} color={C.gold} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,.85)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", textTransform: "capitalize" }}>{userRole}</div>
+              <div style={{
+                fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,.85)",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>{userName}</div>
+              <div style={{
+                fontSize: 10.5, color: "rgba(255,255,255,.3)",
+                textTransform: "capitalize", marginTop: 1, letterSpacing: ".02em",
+              }}>{userRole}</div>
             </div>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981", flexShrink: 0 }} />
           </div>
         )}
         {collapsed && userAv && (
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
-            <Av ini={userAv} size={32} color={C.gold} />
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{ position: "relative" }}>
+              <Av ini={userAv} size={34} color={C.gold} />
+              <div style={{ position: "absolute", bottom: 0, right: 0, width: 8, height: 8, borderRadius: "50%", background: "#10B981", border: `2px solid ${C.navy}` }} />
+            </div>
           </div>
         )}
       </div>
