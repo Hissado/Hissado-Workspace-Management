@@ -25,14 +25,14 @@ const PlusIcon = () => (
   </svg>
 );
 
-const BADGE_OPTIONS: { v: BdgVariant; label: string }[] = [
-  { v: "danger",  label: "Red" },
-  { v: "gold",    label: "Gold" },
-  { v: "info",    label: "Blue" },
-  { v: "success", label: "Green" },
-  { v: "warning", label: "Orange" },
-  { v: "navy",    label: "Navy" },
-  { v: "default", label: "Grey" },
+const BADGE_VARIANTS: { v: BdgVariant; key: "admin_badge_red" | "admin_badge_gold" | "admin_badge_blue" | "admin_badge_green" | "admin_badge_orange" | "admin_badge_navy" | "admin_badge_grey" }[] = [
+  { v: "danger",  key: "admin_badge_red" },
+  { v: "gold",    key: "admin_badge_gold" },
+  { v: "info",    key: "admin_badge_blue" },
+  { v: "success", key: "admin_badge_green" },
+  { v: "warning", key: "admin_badge_orange" },
+  { v: "navy",    key: "admin_badge_navy" },
+  { v: "default", key: "admin_badge_grey" },
 ];
 
 const SECTION_HDR: React.CSSProperties = {
@@ -107,6 +107,10 @@ export default function AdminPanel() {
 
   // Group ALL_PERMISSIONS by group
   const groups = Array.from(new Set(ALL_PERMISSIONS.map((p) => p.group)));
+  const groupLabel = (group: string) => {
+    if (lang !== "fr") return group;
+    return ALL_PERMISSIONS.find((p) => p.group === group)?.groupFr ?? group;
+  };
 
   function togglePerm(permId: string) {
     const next = new Set(currentPerms);
@@ -265,7 +269,7 @@ export default function AdminPanel() {
               <div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.g500, marginBottom: 6 }}>{t.admin_role_color_label}</div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {BADGE_OPTIONS.map((opt) => (
+                  {BADGE_VARIANTS.map((opt) => (
                     <button
                       key={opt.v}
                       onClick={() => setNewRoleBadge(opt.v)}
@@ -276,7 +280,7 @@ export default function AdminPanel() {
                         borderRadius: 6,
                       }}
                     >
-                      <Bdg v={opt.v}>{opt.label}</Bdg>
+                      <Bdg v={opt.v}>{t[opt.key]}</Bdg>
                     </button>
                   ))}
                 </div>
@@ -397,7 +401,7 @@ export default function AdminPanel() {
                   fontSize: 11, fontWeight: 800, color: C.g500,
                   letterSpacing: ".1em", textTransform: "uppercase",
                 }}>
-                  {group}
+                  {groupLabel(group)}
                 </div>
                 {items.map((perm, i) => (
                   <div

@@ -32,21 +32,21 @@ export type RoleDef = {
   badgeVariant: BdgVariant;
 };
 
-export const ALL_PERMISSIONS: { id: Permission; group: string; label: string; labelFr: string }[] = [
-  { id: "view_dashboard",  group: "Dashboard", label: "View Dashboard",              labelFr: "Tableau de bord" },
-  { id: "view_projects",   group: "Projects",  label: "View Projects",               labelFr: "Voir les projets" },
-  { id: "create_projects", group: "Projects",  label: "Create & Manage Projects",    labelFr: "Créer et gérer les projets" },
-  { id: "view_tasks",      group: "Tasks",     label: "View Tasks",                  labelFr: "Voir les tâches" },
-  { id: "create_tasks",    group: "Tasks",     label: "Create & Edit Tasks",         labelFr: "Créer et modifier les tâches" },
-  { id: "view_files",      group: "Files",     label: "View Files",                  labelFr: "Voir les fichiers" },
-  { id: "upload_files",    group: "Files",     label: "Upload Files",                labelFr: "Téléverser des fichiers" },
-  { id: "view_chat",       group: "Messages",  label: "View Messages",               labelFr: "Voir les messages" },
-  { id: "send_messages",   group: "Messages",  label: "Send Messages",               labelFr: "Envoyer des messages" },
-  { id: "view_calendar",   group: "Calendar",  label: "View Calendar",               labelFr: "Voir le calendrier" },
-  { id: "view_reports",    group: "Reports",   label: "View Reports",                labelFr: "Voir les rapports" },
-  { id: "view_team",       group: "Team",      label: "View Team Directory",         labelFr: "Annuaire d'équipe" },
-  { id: "invite_members",  group: "Team",      label: "Invite Members",              labelFr: "Inviter des membres" },
-  { id: "view_settings",   group: "Settings",  label: "View Settings",               labelFr: "Paramètres" },
+export const ALL_PERMISSIONS: { id: Permission; group: string; groupFr: string; label: string; labelFr: string }[] = [
+  { id: "view_dashboard",  group: "Dashboard", groupFr: "Tableau de bord", label: "View Dashboard",              labelFr: "Accès au tableau de bord" },
+  { id: "view_projects",   group: "Projects",  groupFr: "Projets",         label: "View Projects",               labelFr: "Voir les projets" },
+  { id: "create_projects", group: "Projects",  groupFr: "Projets",         label: "Create & Manage Projects",    labelFr: "Créer et gérer les projets" },
+  { id: "view_tasks",      group: "Tasks",     groupFr: "Tâches",          label: "View Tasks",                  labelFr: "Voir les tâches" },
+  { id: "create_tasks",    group: "Tasks",     groupFr: "Tâches",          label: "Create & Edit Tasks",         labelFr: "Créer et modifier les tâches" },
+  { id: "view_files",      group: "Files",     groupFr: "Fichiers",        label: "View Files",                  labelFr: "Voir les fichiers" },
+  { id: "upload_files",    group: "Files",     groupFr: "Fichiers",        label: "Upload Files",                labelFr: "Téléverser des fichiers" },
+  { id: "view_chat",       group: "Messages",  groupFr: "Messagerie",      label: "View Messages",               labelFr: "Voir les messages" },
+  { id: "send_messages",   group: "Messages",  groupFr: "Messagerie",      label: "Send Messages",               labelFr: "Envoyer des messages" },
+  { id: "view_calendar",   group: "Calendar",  groupFr: "Calendrier",      label: "View Calendar",               labelFr: "Voir le calendrier" },
+  { id: "view_reports",    group: "Reports",   groupFr: "Rapports",        label: "View Reports",                labelFr: "Voir les rapports" },
+  { id: "view_team",       group: "Team",      groupFr: "Équipe",          label: "View Team Directory",         labelFr: "Annuaire d'équipe" },
+  { id: "invite_members",  group: "Team",      groupFr: "Équipe",          label: "Invite Members",              labelFr: "Inviter des membres" },
+  { id: "view_settings",   group: "Settings",  groupFr: "Paramètres",      label: "View Settings",               labelFr: "Accès aux paramètres" },
 ];
 
 const _ALL_PERMS = ALL_PERMISSIONS.map((p) => p.id) as Permission[];

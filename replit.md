@@ -32,7 +32,7 @@ The application is built as a pnpm workspace monorepo using TypeScript.
 ### Frontend
 - **Framework**: React with Vite
 - **State Management**: Zustand, with state persisted to `localStorage` under the key `hissado-pm-v3`.
-- **Internationalization**: Full English/French support managed via `src/lib/i18n.tsx` context.
+- **Internationalization**: Complete English/French (EN/FR) support managed via `src/lib/i18n.tsx` context. All UI strings, labels, error messages, success messages, validation text, admin panel (badge colors in French: Rouge/Or/Bleu/Vert/Orange/Marine/Gris, permission group names in French), Team page invite flow, profile modal, status labels ("Actif"/"Inactif"), Files delete dialogs, and API email invitation templates are fully bilingual. `ALL_PERMISSIONS` items have `groupFr` field for French group headers. The invite API route (`/api/invite`) accepts a `lang` parameter and generates bilingual email templates.
 - **Access Control**: Project-based Role-Based Access Control (RBAC) implemented in `src/lib/access.ts`, supporting roles: admin, manager, member, client.
 - **Styling**: Utilizes DM Sans and Playfair Display fonts. A premium theme with `C.navy=#070D1A`, `C.gold=#C9A96E`, and `C.bg=#EFF2F8` is applied.
 - **Design System**: A custom design system in `primitives.tsx` defines color (`C`) and shadow (`SH`) constants, and reusable components like `Av`, `Btn`, `Inp`, `Modal`, `PBar`, `StatusBadge`, `PriorityBadge`, `Bdg`, `Card`, `SectionHeader`, `Empty`, and `FileIcon`.

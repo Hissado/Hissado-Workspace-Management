@@ -4,33 +4,72 @@ import { logger } from "../lib/logger.js";
 
 const router = Router();
 
-router.post("/invite", async (req, res) => {
-  const { name, email, role, tempPassword, invitedBy, workspaceName } = req.body as {
-    name: string;
-    email: string;
-    role: string;
-    tempPassword: string;
-    invitedBy: string;
-    workspaceName?: string;
-  };
+function buildEmailBody(opts: {
+  name: string;
+  email: string;
+  roleLabel: string;
+  tempPassword: string;
+  invitedBy: string;
+  ws: string;
+  lang: string;
+}): { subject: string; html: string } {
+  const { name, email, roleLabel, tempPassword, invitedBy, ws, lang } = opts;
+  const isFr = lang === "fr";
 
-  if (!name || !email || !role || !tempPassword) {
-    return res.status(400).json({ error: "Missing required fields: name, email, role, tempPassword" });
-  }
+  const subject = isFr
+    ? `Vous avez été invité(e) à rejoindre ${ws} — accès ${roleLabel}`
+    : `You're invited to ${ws} — ${roleLabel} access`;
 
-  try {
-    const { client, fromEmail } = await getUncachableResendClient();
+  const tagline = isFr
+    ? "Là où les grands projets prennent vie."
+    : "Where great projects come to life.";
 
-    const ws = workspaceName || "Hissado Project";
-    const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+  const greeting = isFr
+    ? `Bonjour <strong style="color:#070D1A;">${name}</strong>,`
+    : `Hi <strong style="color:#070D1A;">${name}</strong>,`;
 
-    const htmlBody = `
+  const inviteBody = isFr
+    ? `<strong style="color:#070D1A;">${invitedBy}</strong> vous a invité(e) à rejoindre l'espace de travail <strong style="color:#070D1A;">${ws}</strong> en tant que <span style="display:inline-block;padding:2px 11px;border-radius:20px;background:rgba(201,169,110,0.12);color:#C9A96E;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border:1px solid rgba(201,169,110,0.3);vertical-align:middle;">${roleLabel}</span>.`
+    : `<strong style="color:#070D1A;">${invitedBy}</strong> has invited you to join the <strong style="color:#070D1A;">${ws}</strong> workspace as a <span style="display:inline-block;padding:2px 11px;border-radius:20px;background:rgba(201,169,110,0.12);color:#C9A96E;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border:1px solid rgba(201,169,110,0.3);vertical-align:middle;">${roleLabel}</span>.`;
+
+  const credentialsIntro = isFr
+    ? "Voici vos identifiants de connexion :"
+    : "Here are your login credentials to get started:";
+
+  const credentialsHeader = isFr
+    ? "&#128274; Vos identifiants d'accès"
+    : "&#128274; Your Access Credentials";
+
+  const emailLabel = isFr ? "Adresse e-mail" : "Email Address";
+  const passwordLabel = isFr ? "Mot de passe temporaire" : "Temporary Password";
+  const passwordHint = isFr
+    ? "Utilisez ce mot de passe uniquement pour votre première connexion"
+    : "Use this to sign in for the first time only";
+
+  const roleLabel2 = isFr ? "Votre rôle" : "Your Role";
+
+  const securityTitle = isFr ? "&#9888;&#65039; Avis de sécurité :" : "&#9888;&#65039; Security Notice:";
+  const securityBody = isFr
+    ? "Vous devrez définir un nouveau mot de passe dès votre première connexion. Veuillez conserver ces identifiants de façon confidentielle."
+    : "You will be required to set a new password immediately upon first login. Please keep these credentials private and do not share them.";
+
+  const ctaLabel = isFr ? "Se connecter à Hissado &rarr;" : "Sign In to Hissado &rarr;";
+
+  const helpText = isFr
+    ? "Pour toute question, veuillez contacter votre administrateur."
+    : "If you have any questions, please contact your workspace administrator.";
+
+  const footerText = isFr
+    ? `Cette invitation a été envoyée par <strong>${invitedBy}</strong>. Si vous ne l'attendiez pas, vous pouvez l'ignorer.`
+    : `This invitation was sent by <strong>${invitedBy}</strong>. If you did not expect this email, you can safely ignore it.`;
+
+  const html = `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${isFr ? "fr" : "en"}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You've been invited to ${ws}</title>
+  <title>${subject}</title>
 </head>
 <body style="margin:0;padding:0;background:#EFF2F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EFF2F8;padding:40px 16px;">
@@ -41,8 +80,6 @@ router.post("/invite", async (req, res) => {
           <!-- HEADER / LOGO -->
           <tr>
             <td style="background:linear-gradient(160deg,#070D1A 0%,#0F1E35 100%);border-radius:16px 16px 0 0;padding:36px 40px 28px;text-align:center;">
-
-              <!-- Logo row -->
               <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 16px;">
                 <tr>
                   <td valign="middle" style="padding-right:12px;">
@@ -60,54 +97,42 @@ router.post("/invite", async (req, res) => {
                   </td>
                 </tr>
               </table>
-
-              <p style="color:rgba(255,255,255,0.45);font-size:13px;margin:0;letter-spacing:0.02em;">Where great projects come to life.</p>
+              <p style="color:rgba(255,255,255,0.45);font-size:13px;margin:0;letter-spacing:0.02em;">${tagline}</p>
             </td>
           </tr>
 
           <!-- BODY -->
           <tr>
             <td style="background:#ffffff;padding:40px 40px 32px;">
-
               <h1 style="color:#070D1A;font-size:22px;font-weight:700;margin:0 0 20px;line-height:1.3;">
-                You've been invited to ${ws}
+                ${subject}
               </h1>
-
               <p style="color:#4A5268;font-size:15px;line-height:1.7;margin:0 0 8px;">
-                Hi <strong style="color:#070D1A;">${name}</strong>,
+                ${greeting}
               </p>
               <p style="color:#4A5268;font-size:15px;line-height:1.7;margin:0 0 28px;">
-                <strong style="color:#070D1A;">${invitedBy}</strong> has invited you to join the
-                <strong style="color:#070D1A;">${ws}</strong> workspace as a
-                <span style="display:inline-block;padding:2px 11px;border-radius:20px;background:rgba(201,169,110,0.12);color:#C9A96E;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border:1px solid rgba(201,169,110,0.3);vertical-align:middle;">${roleLabel}</span>.
+                ${inviteBody}
               </p>
-
               <p style="color:#4A5268;font-size:14px;margin:0 0 16px;font-weight:500;">
-                Here are your login credentials to get started:
+                ${credentialsIntro}
               </p>
 
               <!-- CREDENTIALS CARD -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1.5px solid #E0E4EF;border-radius:14px;overflow:hidden;margin-bottom:28px;">
-
-                <!-- Card header -->
                 <tr>
                   <td colspan="2" style="background:#070D1A;padding:12px 20px;">
-                    <span style="color:#C9A96E;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">&#128274; Your Access Credentials</span>
+                    <span style="color:#C9A96E;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">${credentialsHeader}</span>
                   </td>
                 </tr>
-
-                <!-- Email row -->
                 <tr>
                   <td style="padding:16px 20px 12px;border-bottom:1px solid #F0F2F8;background:#FAFBFD;">
-                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Email Address</div>
+                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">${emailLabel}</div>
                     <div style="font-size:14px;font-weight:600;color:#070D1A;font-family:'Courier New',Courier,monospace;word-break:break-all;">${email}</div>
                   </td>
                 </tr>
-
-                <!-- Password row -->
                 <tr>
                   <td style="padding:16px 20px 12px;border-bottom:1px solid #F0F2F8;background:#FAFBFD;">
-                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Temporary Password</div>
+                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">${passwordLabel}</div>
                     <table cellpadding="0" cellspacing="0" border="0" style="border-left:3px solid #C9A96E;background:linear-gradient(90deg,rgba(201,169,110,0.06) 0%,rgba(201,169,110,0.02) 100%);border-radius:0 8px 8px 0;padding:10px 16px;margin-top:2px;">
                       <tr>
                         <td>
@@ -116,17 +141,15 @@ router.post("/invite", async (req, res) => {
                       </tr>
                       <tr>
                         <td>
-                          <span style="font-size:10px;color:#9BA3B5;display:block;margin-top:4px;">Use this to sign in for the first time only</span>
+                          <span style="font-size:10px;color:#9BA3B5;display:block;margin-top:4px;">${passwordHint}</span>
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
-
-                <!-- Role row -->
                 <tr>
                   <td style="padding:16px 20px;background:#FAFBFD;">
-                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Your Role</div>
+                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">${roleLabel2}</div>
                     <span style="display:inline-block;padding:5px 16px;border-radius:20px;background:rgba(201,169,110,0.1);color:#A8762E;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border:1.5px solid rgba(201,169,110,0.25);">${roleLabel}</span>
                   </td>
                 </tr>
@@ -137,7 +160,7 @@ router.post("/invite", async (req, res) => {
                 <tr>
                   <td style="padding:14px 18px;">
                     <p style="color:#92400E;font-size:13px;margin:0;line-height:1.6;">
-                      <strong>&#9888;&#65039; Security Notice:</strong> You will be required to set a new password immediately upon first login. Please keep these credentials private and do not share them.
+                      <strong>${securityTitle}</strong> ${securityBody}
                     </p>
                   </td>
                 </tr>
@@ -148,16 +171,15 @@ router.post("/invite", async (req, res) => {
                 <tr>
                   <td align="center">
                     <a href="https://project.hissadoconsulting.com" style="display:inline-block;background:linear-gradient(135deg,#C9A96E 0%,#A8762E 100%);color:#ffffff;text-decoration:none;padding:15px 36px;border-radius:11px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 16px rgba(201,169,110,0.35);">
-                      Sign In to Hissado &rarr;
+                      ${ctaLabel}
                     </a>
                   </td>
                 </tr>
               </table>
 
               <p style="color:#9BA3B5;font-size:13px;line-height:1.6;margin:0;text-align:center;">
-                If you have any questions, please contact your workspace administrator.
+                ${helpText}
               </p>
-
             </td>
           </tr>
 
@@ -166,7 +188,7 @@ router.post("/invite", async (req, res) => {
             <td style="background:#F8F9FC;border-top:1px solid #E8EAF0;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
               <p style="color:#9BA3B5;font-size:11px;margin:0;line-height:1.7;">
                 &copy; ${new Date().getFullYear()} Hissado Project Management &mdash; hissadoconsulting.com<br>
-                This invitation was sent by <strong>${invitedBy}</strong>. If you did not expect this email, you can safely ignore it.
+                ${footerText}
               </p>
             </td>
           </tr>
@@ -178,14 +200,49 @@ router.post("/invite", async (req, res) => {
 </body>
 </html>`;
 
+  return { subject, html };
+}
+
+router.post("/invite", async (req, res) => {
+  const { name, email, role, tempPassword, invitedBy, workspaceName, lang } = req.body as {
+    name: string;
+    email: string;
+    role: string;
+    tempPassword: string;
+    invitedBy: string;
+    workspaceName?: string;
+    lang?: string;
+  };
+
+  if (!name || !email || !role || !tempPassword) {
+    return res.status(400).json({ error: "Missing required fields: name, email, role, tempPassword" });
+  }
+
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+
+    const ws = workspaceName || "Hissado Project";
+    const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+    const emailLang = lang === "fr" ? "fr" : "en";
+
+    const { subject, html } = buildEmailBody({
+      name,
+      email,
+      roleLabel,
+      tempPassword,
+      invitedBy,
+      ws,
+      lang: emailLang,
+    });
+
     const result = await client.emails.send({
       from: `Hissado Consulting <${fromEmail}>`,
       to: [email],
-      subject: `You're invited to ${ws} — ${roleLabel} access`,
-      html: htmlBody,
+      subject,
+      html,
     });
 
-    logger.info({ id: result.data?.id, to: email }, "Invitation email sent");
+    logger.info({ id: result.data?.id, to: email, lang: emailLang }, "Invitation email sent");
     return res.json({ success: true, emailId: result.data?.id });
   } catch (err: any) {
     logger.error({ err }, "Failed to send invitation email");

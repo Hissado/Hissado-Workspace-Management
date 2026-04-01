@@ -275,6 +275,13 @@ const T = {
     admin_no_delete_system: "System roles cannot be deleted.",
     admin_delete: "Delete",
     admin_cancel: "Cancel",
+    admin_badge_red: "Red",
+    admin_badge_gold: "Gold",
+    admin_badge_blue: "Blue",
+    admin_badge_green: "Green",
+    admin_badge_orange: "Orange",
+    admin_badge_navy: "Navy",
+    admin_badge_grey: "Grey",
 
     // Notifications panel
     notif_title: "Notifications",
@@ -284,6 +291,34 @@ const T = {
     // Access denied
     access_denied: "Access Restricted",
     access_denied_desc: "You don't have access to this section. Contact your project manager.",
+
+    // Team invite flow (extended)
+    team_active_total: (n: number, total: number) => `${n} active · ${total} total`,
+    team_invite_info: "A secure temporary password will be generated and emailed to the new member. They will be required to set a new password on first login.",
+    team_invite_sending: "Sending invitation…",
+    team_invite_error_required: "Name and email are required.",
+    team_invite_error_exists: "A user with this email already exists.",
+    team_invite_error_email_fn: (msg: string) => `Note: Email delivery failed (${msg}). Share credentials manually.`,
+    team_invite_sent_title: "Invitation Sent!",
+    team_invite_sent_added_fn: (name: string, email: string) => `${name} (${email}) has been added to the workspace.`,
+    team_invite_sent_email_sent: " A welcome email with login credentials has been sent.",
+    team_invite_temp_creds: "Temporary Credentials",
+    team_invite_email_col: "Email",
+    team_invite_temp_pw_col: "Temp Password",
+    team_invite_another: "Invite Another",
+    team_invite_done: "Done",
+    team_pending_login: "Pending first login",
+    team_invited_by: "Invited by",
+    team_status_active_label: "Active",
+    team_status_inactive_label: "Inactive",
+
+    // Files delete dialogs
+    files_delete_folder_title: "Delete Folder",
+    files_delete_folder_msg_fn: (name: string) => `Are you sure you want to delete "${name}"? All files inside will be permanently removed.`,
+    files_delete_folder_btn: "Delete Folder",
+    files_delete_file_title: "Delete File",
+    files_delete_file_msg_fn: (name: string) => `Are you sure you want to permanently delete "${name}"?`,
+    files_delete_file_btn: "Delete File",
 
     // Common
     search_tasks: "Search tasks...",
@@ -568,6 +603,13 @@ const T = {
     admin_no_delete_system: "Les rôles système ne peuvent pas être supprimés.",
     admin_delete: "Supprimer",
     admin_cancel: "Annuler",
+    admin_badge_red: "Rouge",
+    admin_badge_gold: "Or",
+    admin_badge_blue: "Bleu",
+    admin_badge_green: "Vert",
+    admin_badge_orange: "Orange",
+    admin_badge_navy: "Marine",
+    admin_badge_grey: "Gris",
 
     // Notifications panel
     notif_title: "Notifications",
@@ -577,6 +619,34 @@ const T = {
     // Access denied
     access_denied: "Accès restreint",
     access_denied_desc: "Vous n'avez pas accès à cette section. Contactez votre responsable de projet.",
+
+    // Team invite flow (extended)
+    team_active_total: (n: number, total: number) => `${n} actif · ${total} au total`,
+    team_invite_info: "Un mot de passe temporaire sécurisé sera généré et envoyé par e-mail au nouveau membre. Il devra définir un nouveau mot de passe lors de sa première connexion.",
+    team_invite_sending: "Envoi en cours…",
+    team_invite_error_required: "Le nom et l'adresse e-mail sont obligatoires.",
+    team_invite_error_exists: "Un utilisateur avec cette adresse e-mail existe déjà.",
+    team_invite_error_email_fn: (msg: string) => `Note : L'envoi de l'e-mail a échoué (${msg}). Transmettez les identifiants manuellement.`,
+    team_invite_sent_title: "Invitation envoyée !",
+    team_invite_sent_added_fn: (name: string, email: string) => `${name} (${email}) a été ajouté à l'espace de travail.`,
+    team_invite_sent_email_sent: " Un e-mail de bienvenue avec les identifiants de connexion a été envoyé.",
+    team_invite_temp_creds: "Identifiants temporaires",
+    team_invite_email_col: "E-mail",
+    team_invite_temp_pw_col: "Mot de passe temporaire",
+    team_invite_another: "Inviter un autre membre",
+    team_invite_done: "Terminé",
+    team_pending_login: "Première connexion requise",
+    team_invited_by: "Invité par",
+    team_status_active_label: "Actif",
+    team_status_inactive_label: "Inactif",
+
+    // Files delete dialogs
+    files_delete_folder_title: "Supprimer le dossier",
+    files_delete_folder_msg_fn: (name: string) => `Êtes-vous sûr de vouloir supprimer « ${name} » ? Tous les fichiers à l'intérieur seront définitivement supprimés.`,
+    files_delete_folder_btn: "Supprimer le dossier",
+    files_delete_file_title: "Supprimer le fichier",
+    files_delete_file_msg_fn: (name: string) => `Êtes-vous sûr de vouloir supprimer définitivement « ${name} » ?`,
+    files_delete_file_btn: "Supprimer le fichier",
 
     // Common
     search_tasks: "Rechercher des tâches...",

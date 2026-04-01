@@ -86,11 +86,11 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
 
   const sendInvite = async () => {
     if (!inviteName.trim() || !inviteEmail.trim()) {
-      setInviteError("Name and email are required.");
+      setInviteError(t.team_invite_error_required);
       return;
     }
     if (users.some((u) => u.email.toLowerCase() === inviteEmail.toLowerCase())) {
-      setInviteError("A user with this email already exists.");
+      setInviteError(t.team_invite_error_exists);
       return;
     }
 
@@ -123,6 +123,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
           tempPassword,
           invitedBy: currentUser.name,
           workspaceName: "Hissado Project",
+          lang,
         }),
       });
 
@@ -137,7 +138,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
       // Still add user even if email fails — show warning
       onAddUser(newUser);
       setInviteSuccess({ name: newUser.name, email: newUser.email, tempPw: tempPassword });
-      setInviteError(`Note: Email delivery failed (${err.message}). Share credentials manually.`);
+      setInviteError(t.team_invite_error_email_fn(err.message));
     } finally {
       setInviteLoading(false);
     }
@@ -166,7 +167,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
         <div>
           <h2 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.team_title}</h2>
           <p style={{ fontSize: 13, color: C.g400, margin: 0, fontWeight: 500 }}>
-            <span style={{ color: C.g700, fontWeight: 700 }}>{activeCount}</span> active · <span style={{ color: C.g700, fontWeight: 700 }}>{users.length}</span> total
+            {t.team_active_total(activeCount, users.length)}
           </p>
         </div>
         {canInviteMembers(currentUser) && (
@@ -203,7 +204,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
         background: C.w, borderRadius: 13, padding: isMobile ? "10px 14px" : "12px 16px",
         border: `1px solid ${C.g100}`, boxShadow: SH.xs, alignItems: "center",
       }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: C.g400, letterSpacing: ".05em", textTransform: "uppercase" }}>Filter</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: C.g400, letterSpacing: ".05em", textTransform: "uppercase" }}>{lang === "fr" ? "Filtres" : "Filter"}</span>
         <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={{ ...selectStyle, flex: isMobile ? 1 : "unset" }}>
           <option value="all">{t.team_all_depts}</option>
           {deptsInUse.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -217,7 +218,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
             onClick={() => { setDeptFilter("all"); setRoleFilter("all"); }}
             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: C.gold, fontWeight: 600, fontFamily: "inherit", padding: "0 6px" }}
           >
-            Clear
+            {lang === "fr" ? "Effacer" : "Clear"}
           </button>
         )}
       </div>
@@ -265,7 +266,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
                     padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700,
                     background: "#FFF7ED", color: "#B45309", border: "1px solid #FDE68A",
                   }}>
-                    <KeyIcon /> Pending setup
+                    <KeyIcon /> {t.team_pending_login}
                   </span>
                 )}
               </div>
@@ -296,11 +297,11 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
               <CheckCircleIcon />
             </div>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 8px" }}>
-              Invitation Sent!
+              {t.team_invite_sent_title}
             </h3>
             <p style={{ fontSize: 13.5, color: C.g500, margin: "0 0 20px", lineHeight: 1.6 }}>
-              <strong>{inviteSuccess.name}</strong> ({inviteSuccess.email}) has been added to the workspace.
-              {!inviteError && " A welcome email with login credentials has been sent."}
+              {t.team_invite_sent_added_fn(inviteSuccess.name, inviteSuccess.email)}
+              {!inviteError && t.team_invite_sent_email_sent}
             </p>
 
             {/* Temp password display */}
@@ -309,14 +310,14 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
               borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
             }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.g400, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>
-                Temporary Credentials
+                {t.team_invite_temp_creds}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: C.g500 }}>Email</span>
+                <span style={{ fontSize: 12, color: C.g500 }}>{t.team_invite_email_col}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: C.navy, fontFamily: "monospace" }}>{inviteSuccess.email}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, color: C.g500 }}>Temp Password</span>
+                <span style={{ fontSize: 12, color: C.g500 }}>{t.team_invite_temp_pw_col}</span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: C.gold, fontFamily: "monospace", letterSpacing: ".04em" }}>{inviteSuccess.tempPw}</span>
               </div>
             </div>
@@ -333,7 +334,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
 
             <div style={{ display: "flex", gap: 10 }}>
               <Btn onClick={() => { resetInviteForm(); }} sz="sm" style={{ flex: 1, justifyContent: "center" }} icon={<PlusIcon />}>
-                Invite Another
+                {t.team_invite_another}
               </Btn>
               <button
                 onClick={() => { setShowInvite(false); resetInviteForm(); }}
@@ -343,14 +344,14 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
                   fontFamily: "inherit", background: C.w, color: C.g600,
                 }}
               >
-                Done
+                {t.team_invite_done}
               </button>
             </div>
           </div>
         ) : (
           <>
             <Inp label={t.team_full_name} value={inviteName} onChange={setInviteName} ph={t.team_full_name_ph} />
-            <Inp label="Email" value={inviteEmail} onChange={setInviteEmail} ph={t.team_email_ph} type="email" />
+            <Inp label={t.team_email_label} value={inviteEmail} onChange={setInviteEmail} ph={t.team_email_ph} type="email" />
             <Inp
               label={t.team_role}
               value={inviteRole}
@@ -372,7 +373,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
             }}>
               <div style={{ color: C.gold, flexShrink: 0, marginTop: 1 }}><KeyIcon /></div>
               <p style={{ fontSize: 12.5, color: C.g600, margin: 0, lineHeight: 1.5 }}>
-                A secure temporary password will be generated and emailed to the new member. They will be required to set a new password on first login.
+                {t.team_invite_info}
               </p>
             </div>
 
@@ -393,7 +394,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
               style={{ width: "100%", justifyContent: "center", opacity: inviteLoading ? .7 : 1 }}
               icon={<SendIcon />}
             >
-              {inviteLoading ? "Sending invitation…" : t.team_send_invite}
+              {inviteLoading ? t.team_invite_sending : t.team_send_invite}
             </Btn>
           </>
         )}
@@ -420,7 +421,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
                   padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700,
                   background: "#FFF7ED", color: "#B45309", border: "1px solid #FDE68A",
                 }}>
-                  Pending first login
+                  {t.team_pending_login}
                 </span>
               )}
             </div>
@@ -429,8 +430,8 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
             { l: t.team_email_label, v: showProfile.email },
             { l: t.team_dept_label, v: showProfile.dept },
             { l: t.team_role, v: roleLabel(showProfile.role) },
-            { l: t.team_status_label, v: showProfile.status },
-            ...(showProfile.invitedBy ? [{ l: "Invited by", v: showProfile.invitedBy }] : []),
+            { l: t.team_status_label, v: showProfile.status === "active" ? t.team_status_active_label : t.team_status_inactive_label },
+            ...(showProfile.invitedBy ? [{ l: t.team_invited_by, v: showProfile.invitedBy }] : []),
           ].map((row) => (
             <div key={row.l} style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",

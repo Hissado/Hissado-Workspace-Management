@@ -219,9 +219,10 @@ export default function Files({ files, folders, users, onAddFile, onAddFolder, o
       {/* Confirm delete folder */}
       <ConfirmDialog
         open={!!confirmDeleteFolder}
-        title="Delete Folder"
-        message={`Are you sure you want to delete "${confirmDeleteFolder?.name}"? All files inside this folder will also be permanently removed.`}
-        confirmLabel="Delete Folder"
+        title={t.files_delete_folder_title}
+        message={confirmDeleteFolder ? t.files_delete_folder_msg_fn(confirmDeleteFolder.name) : ""}
+        confirmLabel={t.files_delete_folder_btn}
+        cancelLabel={t.cancel}
         onConfirm={handleDeleteFolder}
         onCancel={() => setConfirmDeleteFolder(null)}
       />
@@ -229,9 +230,10 @@ export default function Files({ files, folders, users, onAddFile, onAddFolder, o
       {/* Confirm delete file */}
       <ConfirmDialog
         open={!!confirmDeleteFile}
-        title="Delete File"
-        message={`Are you sure you want to permanently delete "${confirmDeleteFile?.name}"?`}
-        confirmLabel="Delete File"
+        title={t.files_delete_file_title}
+        message={confirmDeleteFile ? t.files_delete_file_msg_fn(confirmDeleteFile.name) : ""}
+        confirmLabel={t.files_delete_file_btn}
+        cancelLabel={t.cancel}
         onConfirm={() => { if (confirmDeleteFile) onDeleteFile?.(confirmDeleteFile.id); setConfirmDeleteFile(null); }}
         onCancel={() => setConfirmDeleteFile(null)}
       />
