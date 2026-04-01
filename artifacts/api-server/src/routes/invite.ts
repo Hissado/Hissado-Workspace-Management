@@ -21,81 +21,160 @@ router.post("/invite", async (req, res) => {
   try {
     const { client, fromEmail } = await getUncachableResendClient();
 
-    const ws = workspaceName || "Hissado";
+    const ws = workspaceName || "Hissado Project";
     const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
 
     const htmlBody = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; margin: 0; padding: 40px 16px; }
-    .card { background: #ffffff; border-radius: 16px; max-width: 560px; margin: 0 auto; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
-    .header { background: linear-gradient(135deg, #070D1A 0%, #0F1E35 100%); padding: 40px 40px 32px; text-align: center; }
-    .logo { display: inline-flex; align-items: center; gap: 10px; }
-    .logo-icon { width: 44px; height: 44px; background: #C9A96E; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #070D1A; }
-    .logo-text { font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: 0.05em; }
-    .logo-sub { font-size: 11px; color: #C9A96E; letter-spacing: 0.15em; text-transform: uppercase; display: block; margin-top: 2px; }
-    .tagline { color: #9BA3B5; font-size: 13px; margin-top: 16px; }
-    .body { padding: 40px; }
-    h1 { color: #070D1A; font-size: 22px; font-weight: 700; margin: 0 0 12px; }
-    p { color: #4A5268; font-size: 15px; line-height: 1.6; margin: 0 0 16px; }
-    .credentials { background: #F8F9FC; border: 1px solid #E0E4EF; border-radius: 12px; padding: 24px; margin: 24px 0; }
-    .cred-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #E0E4EF; }
-    .cred-row:last-child { border-bottom: none; }
-    .cred-label { font-size: 13px; color: #6B7A99; font-weight: 500; }
-    .cred-value { font-size: 13px; color: #070D1A; font-weight: 700; font-family: monospace; }
-    .role-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; background: #C9A96E22; color: #C9A96E; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border: 1px solid #C9A96E40; }
-    .btn { display: inline-block; background: linear-gradient(135deg, #C9A96E, #B8934A); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 15px; margin: 8px 0 24px; }
-    .warning { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px; padding: 14px 18px; font-size: 13px; color: #92400E; margin-bottom: 24px; }
-    .footer { background: #F8F9FC; border-top: 1px solid #E0E4EF; padding: 24px 40px; text-align: center; color: #9BA3B5; font-size: 12px; }
-  </style>
+  <title>You've been invited to ${ws}</title>
 </head>
-<body>
-  <div class="card">
-    <div class="header">
-      <div class="logo">
-        <div class="logo-icon">H</div>
-        <div>
-          <div class="logo-text">HISSADO</div>
-          <span class="logo-sub">Project</span>
-        </div>
-      </div>
-      <p class="tagline">Where great projects come to life.</p>
-    </div>
-    <div class="body">
-      <h1>You've been invited to ${ws}</h1>
-      <p>Hi <strong>${name}</strong>,</p>
-      <p><strong>${invitedBy}</strong> has invited you to join the <strong>${ws}</strong> workspace as a <span class="role-badge">${roleLabel}</span>.</p>
-      <p>Here are your login credentials to get started:</p>
-      <div class="credentials">
-        <div class="cred-row">
-          <span class="cred-label">Email</span>
-          <span class="cred-value">${email}</span>
-        </div>
-        <div class="cred-row">
-          <span class="cred-label">Temporary Password</span>
-          <span class="cred-value">${tempPassword}</span>
-        </div>
-        <div class="cred-row">
-          <span class="cred-label">Your Role</span>
-          <span class="cred-value">${roleLabel}</span>
-        </div>
-      </div>
-      <div class="warning">
-        ⚠️ <strong>Security Notice:</strong> You will be required to change your password immediately upon first login. Please keep your credentials private.
-      </div>
-      <p style="text-align:center">
-        <a class="btn" href="https://hissado.replit.app">Sign In to Hissado →</a>
-      </p>
-      <p>If you have any questions, contact your workspace administrator.</p>
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} Hissado Project Management. This invitation was sent by ${invitedBy}.<br>If you didn't expect this email, you can safely ignore it.</p>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background:#EFF2F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EFF2F8;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;">
+
+          <!-- HEADER / LOGO -->
+          <tr>
+            <td style="background:linear-gradient(160deg,#070D1A 0%,#0F1E35 100%);border-radius:16px 16px 0 0;padding:36px 40px 28px;text-align:center;">
+
+              <!-- Logo row -->
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 16px;">
+                <tr>
+                  <td valign="middle" style="padding-right:12px;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="width:46px;height:46px;background:linear-gradient(145deg,#C9A96E,#A8762E);border-radius:11px;text-align:center;vertical-align:middle;box-shadow:0 4px 16px rgba(201,169,110,0.35);">
+                          <span style="color:#ffffff;font-size:24px;font-weight:800;line-height:46px;display:block;letter-spacing:-0.02em;font-family:Georgia,'Times New Roman',serif;">H</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td valign="middle">
+                    <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:0.1em;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.2;">HISSADO</div>
+                    <div style="font-size:10px;font-weight:600;color:#C9A96E;letter-spacing:0.22em;text-transform:uppercase;margin-top:3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">PROJECT</div>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="color:rgba(255,255,255,0.45);font-size:13px;margin:0;letter-spacing:0.02em;">Where great projects come to life.</p>
+            </td>
+          </tr>
+
+          <!-- BODY -->
+          <tr>
+            <td style="background:#ffffff;padding:40px 40px 32px;">
+
+              <h1 style="color:#070D1A;font-size:22px;font-weight:700;margin:0 0 20px;line-height:1.3;">
+                You've been invited to ${ws}
+              </h1>
+
+              <p style="color:#4A5268;font-size:15px;line-height:1.7;margin:0 0 8px;">
+                Hi <strong style="color:#070D1A;">${name}</strong>,
+              </p>
+              <p style="color:#4A5268;font-size:15px;line-height:1.7;margin:0 0 28px;">
+                <strong style="color:#070D1A;">${invitedBy}</strong> has invited you to join the
+                <strong style="color:#070D1A;">${ws}</strong> workspace as a
+                <span style="display:inline-block;padding:2px 11px;border-radius:20px;background:rgba(201,169,110,0.12);color:#C9A96E;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border:1px solid rgba(201,169,110,0.3);vertical-align:middle;">${roleLabel}</span>.
+              </p>
+
+              <p style="color:#4A5268;font-size:14px;margin:0 0 16px;font-weight:500;">
+                Here are your login credentials to get started:
+              </p>
+
+              <!-- CREDENTIALS CARD -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1.5px solid #E0E4EF;border-radius:14px;overflow:hidden;margin-bottom:28px;">
+
+                <!-- Card header -->
+                <tr>
+                  <td colspan="2" style="background:#070D1A;padding:12px 20px;">
+                    <span style="color:#C9A96E;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">&#128274; Your Access Credentials</span>
+                  </td>
+                </tr>
+
+                <!-- Email row -->
+                <tr>
+                  <td style="padding:16px 20px 12px;border-bottom:1px solid #F0F2F8;background:#FAFBFD;">
+                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Email Address</div>
+                    <div style="font-size:14px;font-weight:600;color:#070D1A;font-family:'Courier New',Courier,monospace;word-break:break-all;">${email}</div>
+                  </td>
+                </tr>
+
+                <!-- Password row -->
+                <tr>
+                  <td style="padding:16px 20px 12px;border-bottom:1px solid #F0F2F8;background:#FAFBFD;">
+                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Temporary Password</div>
+                    <table cellpadding="0" cellspacing="0" border="0" style="border-left:3px solid #C9A96E;background:linear-gradient(90deg,rgba(201,169,110,0.06) 0%,rgba(201,169,110,0.02) 100%);border-radius:0 8px 8px 0;padding:10px 16px;margin-top:2px;">
+                      <tr>
+                        <td>
+                          <span style="font-size:18px;font-weight:800;color:#070D1A;font-family:'Courier New',Courier,monospace;letter-spacing:0.08em;">${tempPassword}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span style="font-size:10px;color:#9BA3B5;display:block;margin-top:4px;">Use this to sign in for the first time only</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Role row -->
+                <tr>
+                  <td style="padding:16px 20px;background:#FAFBFD;">
+                    <div style="font-size:10px;font-weight:700;color:#9BA3B5;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Your Role</div>
+                    <span style="display:inline-block;padding:5px 16px;border-radius:20px;background:rgba(201,169,110,0.1);color:#A8762E;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border:1.5px solid rgba(201,169,110,0.25);">${roleLabel}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Security notice -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:14px 18px;">
+                    <p style="color:#92400E;font-size:13px;margin:0;line-height:1.6;">
+                      <strong>&#9888;&#65039; Security Notice:</strong> You will be required to set a new password immediately upon first login. Please keep these credentials private and do not share them.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://project.hissadoconsulting.com" style="display:inline-block;background:linear-gradient(135deg,#C9A96E 0%,#A8762E 100%);color:#ffffff;text-decoration:none;padding:15px 36px;border-radius:11px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 16px rgba(201,169,110,0.35);">
+                      Sign In to Hissado &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="color:#9BA3B5;font-size:13px;line-height:1.6;margin:0;text-align:center;">
+                If you have any questions, please contact your workspace administrator.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="background:#F8F9FC;border-top:1px solid #E8EAF0;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
+              <p style="color:#9BA3B5;font-size:11px;margin:0;line-height:1.7;">
+                &copy; ${new Date().getFullYear()} Hissado Project Management &mdash; hissadoconsulting.com<br>
+                This invitation was sent by <strong>${invitedBy}</strong>. If you did not expect this email, you can safely ignore it.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 

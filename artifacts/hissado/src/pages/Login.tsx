@@ -74,18 +74,19 @@ export default function Login({ users, onLogin }: LoginProps) {
         <div style={{ position: "absolute", top: "30%", right: "10%", width: 160, height: 160, borderRadius: "50%", background: `${C.gold}03`, filter: "blur(40px)", pointerEvents: "none" }} />
 
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: "auto" }}>
           <div style={{
-            width: 40, height: 40,
+            width: 46, height: 46,
             background: `linear-gradient(145deg,${C.gold} 0%,${C.goldD} 100%)`,
-            borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: `0 4px 16px ${C.gold}40, inset 0 1px 0 rgba(255,255,255,.2)`,
+            borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: `0 6px 20px ${C.gold}45, inset 0 1px 0 rgba(255,255,255,.3), inset 0 -1px 0 rgba(0,0,0,.15)`,
+            flexShrink: 0,
           }}>
-            <span style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 22, lineHeight: 1 }}>H</span>
+            <span style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 24, lineHeight: 1, letterSpacing: "-.01em" }}>H</span>
           </div>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: ".12em", fontFamily: "'DM Sans',sans-serif" }}>HISSADO</div>
-            <div style={{ fontSize: 9, fontWeight: 500, color: `${C.goldL}80`, letterSpacing: ".25em", textTransform: "uppercase", marginTop: 1 }}>PROJECT</div>
+          <div style={{ lineHeight: 1 }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", letterSpacing: ".13em", fontFamily: "'DM Sans',sans-serif" }}>HISSADO</div>
+            <div style={{ fontSize: 9.5, fontWeight: 600, color: `${C.gold}CC`, letterSpacing: ".22em", textTransform: "uppercase", marginTop: 4, fontFamily: "'DM Sans',sans-serif" }}>PROJECT</div>
           </div>
         </div>
 

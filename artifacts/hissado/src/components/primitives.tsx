@@ -420,19 +420,19 @@ export function Tabs({ tabs, active, onChange }: {
 // ── Logo ──
 export function Logo() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
       <div style={{
-        width: 28, height: 28,
+        width: 34, height: 34,
         background: `linear-gradient(145deg,${C.gold} 0%,${C.goldD} 100%)`,
-        borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: `0 2px 8px ${C.gold}50, inset 0 1px 0 rgba(255,255,255,.25)`,
+        borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: `0 3px 12px ${C.gold}55, inset 0 1px 0 rgba(255,255,255,.3), inset 0 -1px 0 rgba(0,0,0,.15)`,
         flexShrink: 0,
       }}>
-        <span style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 16, lineHeight: 1 }}>H</span>
+        <span style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 18, lineHeight: 1, letterSpacing: "-.01em" }}>H</span>
       </div>
       <div style={{ lineHeight: 1 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: ".1em", fontFamily: "'DM Sans',sans-serif" }}>HISSADO</div>
-        <div style={{ fontSize: 8, fontWeight: 500, color: `${C.goldL}99`, letterSpacing: ".22em", textTransform: "uppercase", marginTop: 2 }}>PROJECT</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", letterSpacing: ".12em", fontFamily: "'DM Sans',sans-serif" }}>HISSADO</div>
+        <div style={{ fontSize: 8.5, fontWeight: 600, color: `${C.gold}BB`, letterSpacing: ".2em", textTransform: "uppercase", marginTop: 3, fontFamily: "'DM Sans',sans-serif" }}>PROJECT</div>
       </div>
     </div>
   );
