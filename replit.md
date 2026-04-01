@@ -11,29 +11,51 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 ### Architecture
 - **Frontend**: React + Vite + TypeScript, NO backend
 - **State**: Zustand with localStorage persistence (`hissado-pm-v3` key)
+- **i18n**: Full EN/FR bilingual support via `src/lib/i18n.tsx` context
+- **Access Control**: Project-based RBAC via `src/lib/access.ts` (admin, manager, member, client)
 - **Fonts**: DM Sans + Playfair Display (Google Fonts)
 - **Theme**: Navy (#0F1A2E) + Gold (#C8A45C)
 
+### CRITICAL Type Facts (data.ts source of truth)
+- Task fields: `pri` (not `priority`), `assignee` (not `aId`), `pId`, `due`, `created`, `prog`, `subs`, `cmts`
+- Task priority values: `"Urgent" | "High" | "Medium" | "Low"`
+- Task status values: `"To Do" | "In Progress" | "In Review" | "Done"`
+- Project status: `"active" | "on-hold" | "completed"` (NOT "hold" or "done")
+- Project field: `created` (not `createdAt`)
+- User role: `"admin" | "manager" | "member" | "client"` (no "viewer")
+- User has NO `title` or `joined` fields; has: id, name, email, role, av, status, dept
+- FileItem: `id` = file ID, `fId` = folder reference (not `folderId`)
+- Folder: id, name, pId
+- Messages in store: flat `Message[]`, grouped to `Record<string, Message[]>` by cId in App.tsx useMemo
+- `fmt(d: Date)` — takes Date object ONLY; wrap strings: `fmt(new Date(tk.due))`
+- `fmtT(d: string | Date)` — takes either string or Date
+- `PBar` prop: `value` (not `pct`)
+- `Bdg`: takes `children` (ReactNode) + `v` variant (not `color`+`label`)
+- `PriorityBadge`: takes `pri` prop (not `priority`)
+
 ### Pages
-- **Login** (`/`): Quick login with user list, email login
+- **Login** (`/`): Quick login with user list, email login, language toggle
 - **Dashboard**: Stats, project progress bars, upcoming tasks, recent tasks table
 - **Projects**: Card grid view; click → Project Detail (list/kanban views)
-- **My Tasks**: Filterable/sortable task list
-- **Chat**: Real-time-like messaging with direct & group conversations
-- **Files**: Folder navigation + file upload
+- **My Tasks**: Filterable (status + priority) / sortable task list
+- **Chat**: Messaging with direct & group conversations; messages grouped by cId
+- **Files**: Folder navigation + file upload (FileItem.fId = folder ref)
 - **Calendar**: Monthly view with task due dates
 - **Reports**: Analytics charts (status, priority, project progress, workload)
-- **Team**: Member cards + invite modal
+- **Team**: Member cards + invite modal (no viewer role, no title/joined fields)
 - **Settings**: Profile, notifications, appearance, security tabs
 
 ### Key Files
 - `src/lib/data.ts` — Types, helpers (uid, fmt, fmtT), seed data, color maps
-- `src/lib/store.ts` — Zustand store with full CRUD
-- `src/components/primitives.tsx` — Shared UI (Av, Bdg, Btn, Inp, Modal, etc.)
-- `src/components/Sidebar.tsx` — Navigation sidebar with collapse
+- `src/lib/store.ts` — Zustand store with full CRUD; messages: Message[]
+- `src/lib/i18n.tsx` — Full EN/FR translation dictionary + STATUS_LABELS/PRIORITY_LABELS exports
+- `src/lib/access.ts` — Access control utilities (accessibleProjects, accessibleTasks, etc.)
+- `src/App.tsx` — Routing, access control filtering, messages grouping, modal orchestration
+- `src/components/primitives.tsx` — Shared UI (Av, Bdg, Btn, Inp, Modal, PBar, StatusBadge, PriorityBadge, etc.)
+- `src/components/Sidebar.tsx` — Navigation sidebar with collapse + language switcher
 - `src/components/Header.tsx` — Top header with search + notifications
-- `src/components/TaskModal.tsx` — Create/edit/delete tasks
-- `src/components/ProjectModal.tsx` — Create projects
+- `src/components/TaskModal.tsx` — Create/edit/delete tasks (uses `pri` and `assignee` fields)
+- `src/components/ProjectModal.tsx` — Create projects (status: active/on-hold/completed)
 
 ## Stack
 

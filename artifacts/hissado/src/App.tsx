@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useStore } from "@/lib/store";
 import type { Page } from "@/lib/store";
-import type { Task, Project } from "@/lib/data";
-import { C } from "@/components/primitives";
+import type { Task, Project, Message } from "@/lib/data";
+import { useI18n } from "@/lib/i18n";
+import {
+  accessibleProjects, accessibleTasks, accessibleConversations,
+  accessibleTeamMembers, accessibleFiles, accessibleFolders,
+  canCreateProject,
+} from "@/lib/access";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import TaskModal from "@/components/TaskModal";
@@ -19,20 +24,16 @@ import Reports from "@/pages/Reports";
 import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
 
-const PAGE_TITLES: Record<Page, string> = {
-  dashboard: "Dashboard",
-  projects: "Projects",
-  pdetail: "Project Detail",
-  tasks: "My Tasks",
-  chat: "Messages",
-  files: "Files & Documents",
-  calendar: "Calendar",
-  reports: "Reports",
-  team: "Team",
-  settings: "Settings",
-};
+const NAVY = "#0F1A2E";
+const G50 = "#F8F9FC";
+const G100 = "#F0F2F7";
+const G400 = "#9BA3B5";
+const G700 = "#343B4F";
+const GOLD = "#C8A45C";
+const WHITE = "#FFF";
 
 export default function App() {
+  const { t } = useI18n();
   const {
     currentUser, page, collapsed, searchQuery,
     selectedProject, selectedTask, showTaskModal, showProjectModal,
@@ -50,9 +51,40 @@ export default function App() {
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [taskDefaultProject, setTaskDefaultProject] = useState<string | undefined>();
 
+  // Group flat messages array by conversation ID
+  const messagesMap = useMemo(() => {
+    const map: Record<string, Message[]> = {};
+    messages.forEach((m) => {
+      if (!map[m.cId]) map[m.cId] = [];
+      map[m.cId].push(m);
+    });
+    return map;
+  }, [messages]);
+
   if (!currentUser) {
     return <Login users={users} onLogin={(u) => setCurrentUser(u)} />;
   }
+
+  // ── Access-controlled data slices ──
+  const myProjects = accessibleProjects(currentUser, projects);
+  const myTasks = accessibleTasks(currentUser, tasks, projects);
+  const myConversations = accessibleConversations(currentUser, conversations, projects);
+  const myTeam = accessibleTeamMembers(currentUser, users, projects);
+  const myFiles = accessibleFiles(currentUser, files, projects);
+  const myFolders = accessibleFolders(currentUser, folders, projects);
+
+  const PAGE_TITLES: Record<Page, string> = {
+    dashboard: t.nav_dashboard,
+    projects: t.nav_projects,
+    pdetail: selectedProject?.name || t.nav_projects,
+    tasks: t.nav_tasks,
+    chat: t.nav_chat,
+    files: t.nav_files,
+    calendar: t.nav_calendar,
+    reports: t.nav_reports,
+    team: t.nav_team,
+    settings: t.nav_settings,
+  };
 
   const navigate = (p: Page) => {
     setPage(p);
@@ -64,8 +96,8 @@ export default function App() {
     setPage("pdetail");
   };
 
-  const openTask = (t: Task) => {
-    setSelectedTask(t);
+  const openTask = (task: Task) => {
+    setSelectedTask(task);
     setShowTaskModal(true);
   };
 
@@ -75,23 +107,22 @@ export default function App() {
     setShowTaskModal(true);
   };
 
-  const saveTask = (t: Task) => {
-    const existing = tasks.find((x) => x.id === t.id);
-    if (existing) updateTask(t);
-    else addTask(t);
+  const saveTask = (task: Task) => {
+    const existing = tasks.find((x) => x.id === task.id);
+    if (existing) updateTask(task);
+    else addTask(task);
     setShowTaskModal(false);
     setSelectedTask(null);
   };
 
-  const subtitle = page === "pdetail" && selectedProject ? selectedProject.name : null;
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: C.g50 }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: G50 }}>
       <Sidebar
         page={page}
         onNavigate={navigate}
-        projects={projects}
+        projects={myProjects}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed(!collapsed)}
         userRole={currentUser.role}
@@ -104,7 +135,6 @@ export default function App() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         <Header
           title={PAGE_TITLES[page]}
-          subtitle={subtitle}
           notifications={notifications}
           onNotifClick={() => setShowNotifPanel((v) => !v)}
           searchQuery={searchQuery}
@@ -116,20 +146,20 @@ export default function App() {
         {showNotifPanel && (
           <>
             <div style={{ position: "fixed", inset: 0, zIndex: 498 }} onClick={() => setShowNotifPanel(false)} />
-            <div style={{ position: "fixed", top: 74, right: 20, width: 340, background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`, boxShadow: "0 8px 30px rgba(0,0,0,.12)", zIndex: 499, overflow: "hidden" }}>
-              <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.g100}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>Notifications</h3>
-                <button onClick={markAllNotifsRead} style={{ fontSize: 11, color: C.gold, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>Mark all read</button>
+            <div style={{ position: "fixed", top: 74, right: 20, width: 340, background: WHITE, borderRadius: 16, border: `1px solid ${G100}`, boxShadow: "0 8px 30px rgba(0,0,0,.12)", zIndex: 499, overflow: "hidden" }}>
+              <div style={{ padding: "14px 16px", borderBottom: `1px solid ${G100}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{t.notif_title}</h3>
+                <button onClick={markAllNotifsRead} style={{ fontSize: 11, color: GOLD, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>{t.notif_mark_read}</button>
               </div>
               <div style={{ maxHeight: 380, overflow: "auto" }}>
                 {notifications.length === 0 ? (
-                  <div style={{ padding: 32, textAlign: "center", color: C.g400, fontSize: 13 }}>No notifications</div>
+                  <div style={{ padding: 32, textAlign: "center", color: G400, fontSize: 13 }}>{t.notif_empty}</div>
                 ) : notifications.map((n) => (
-                  <div key={n.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${C.g50}`, background: n.read ? "transparent" : `${C.gold}06`, display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    {!n.read && <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.gold, marginTop: 5, flexShrink: 0 }} />}
+                  <div key={n.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${G50}`, background: n.read ? "transparent" : `${GOLD}06`, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    {!n.read && <div style={{ width: 6, height: 6, borderRadius: "50%", background: GOLD, marginTop: 5, flexShrink: 0 }} />}
                     <div style={{ flex: 1, marginLeft: n.read ? 16 : 0 }}>
-                      <div style={{ fontSize: 13, color: C.g700 }}>{n.text}</div>
-                      <div style={{ fontSize: 11, color: C.g400, marginTop: 3 }}>{n.date || ""}</div>
+                      <div style={{ fontSize: 13, color: G700 }}>{n.text}</div>
+                      <div style={{ fontSize: 11, color: G400, marginTop: 3 }}>{n.date || ""}</div>
                     </div>
                   </div>
                 ))}
@@ -140,31 +170,62 @@ export default function App() {
 
         <main style={{ flex: 1, overflow: "auto" }}>
           {page === "dashboard" && (
-            <Dashboard projects={projects} tasks={tasks} users={users} onTaskClick={openTask} />
+            <Dashboard projects={myProjects} tasks={myTasks} users={myTeam} onTaskClick={openTask} />
           )}
           {page === "projects" && (
-            <Projects projects={projects} tasks={tasks} users={users} onAdd={() => setShowProjectModal(true)} onProjectClick={openProjectDetail} />
+            <Projects
+              projects={myProjects}
+              tasks={myTasks}
+              users={myTeam}
+              onAdd={() => setShowProjectModal(true)}
+              onProjectClick={openProjectDetail}
+              canCreate={canCreateProject(currentUser)}
+            />
           )}
-          {page === "pdetail" && selectedProject && (
-            <ProjectDetail project={selectedProject} tasks={tasks} users={users} onTaskClick={openTask} onAddTask={() => openAddTask(selectedProject.id)} onBack={() => setPage("projects")} />
+          {page === "pdetail" && selectedProject && myProjects.find((p) => p.id === selectedProject.id) && (
+            <ProjectDetail
+              project={selectedProject}
+              tasks={myTasks}
+              users={myTeam}
+              onTaskClick={openTask}
+              onAddTask={() => openAddTask(selectedProject.id)}
+              onBack={() => setPage("projects")}
+            />
+          )}
+          {page === "pdetail" && selectedProject && !myProjects.find((p) => p.id === selectedProject.id) && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+              <div style={{ textAlign: "center", padding: 40 }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: NAVY, marginBottom: 8 }}>{t.access_denied}</h2>
+                <p style={{ fontSize: 14, color: G400 }}>{t.access_denied_desc}</p>
+              </div>
+            </div>
           )}
           {page === "tasks" && (
-            <MyTasks tasks={tasks} projects={projects} users={users} onTaskClick={openTask} onAddTask={() => openAddTask()} />
+            <MyTasks tasks={myTasks} projects={myProjects} users={myTeam} onTaskClick={openTask} onAddTask={() => openAddTask()} />
           )}
           {page === "chat" && (
-            <Chat conversations={conversations} messages={messages} users={users} currentUser={currentUser} onSendMessage={addMessage} onCreateConvo={addConversation} onAddNotification={addNotification} />
+            <Chat
+              conversations={myConversations}
+              messages={messagesMap}
+              users={myTeam}
+              currentUser={currentUser}
+              onSendMessage={(_, msg) => addMessage(msg)}
+              onCreateConvo={addConversation}
+              onAddNotification={addNotification}
+            />
           )}
           {page === "files" && (
-            <Files files={files} folders={folders} users={users} onAddFile={addFile} onAddFolder={addFolder} />
+            <Files files={myFiles} folders={myFolders} users={myTeam} onAddFile={addFile} onAddFolder={addFolder} />
           )}
           {page === "calendar" && (
-            <Calendar tasks={tasks} users={users} projects={projects} onTaskClick={openTask} />
+            <Calendar tasks={myTasks} users={myTeam} projects={myProjects} onTaskClick={openTask} />
           )}
           {page === "reports" && (
-            <Reports tasks={tasks} projects={projects} users={users} />
+            <Reports tasks={myTasks} projects={myProjects} users={myTeam} />
           )}
           {page === "team" && (
-            <Team users={users} currentUser={currentUser} onAddUser={addUser} />
+            <Team users={myTeam} currentUser={currentUser} onAddUser={addUser} />
           )}
           {page === "settings" && (
             <Settings currentUser={currentUser} onUpdateUser={(updates) => updateUser({ ...currentUser, ...updates })} />
@@ -176,8 +237,8 @@ export default function App() {
         open={showTaskModal}
         onClose={() => { setShowTaskModal(false); setSelectedTask(null); }}
         task={selectedTask}
-        projects={projects}
-        users={users}
+        projects={myProjects}
+        users={myTeam}
         currentUser={currentUser}
         onSave={saveTask}
         onDelete={(id) => { deleteTask(id); setShowTaskModal(false); setSelectedTask(null); }}

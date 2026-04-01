@@ -1,6 +1,7 @@
 import { C, Av, Logo } from "./primitives";
 import type { Page } from "@/lib/store";
 import type { Project } from "@/lib/data";
+import { useI18n, type Lang } from "@/lib/i18n";
 
 const HomeIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
 const FolderIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>;
@@ -13,17 +14,7 @@ const ChatIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="non
 const FileIcon2 = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>;
 const ChevRight = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>;
 const ChevLeft = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>;
-
-const NAV_ITEMS: { k: Page; icon: React.ReactNode; l: string }[] = [
-  { k: "dashboard", icon: <HomeIcon />, l: "Dashboard" },
-  { k: "projects", icon: <FolderIcon />, l: "Projects" },
-  { k: "tasks", icon: <CheckIcon />, l: "My Tasks" },
-  { k: "chat", icon: <ChatIcon />, l: "Messages" },
-  { k: "files", icon: <FileIcon2 />, l: "Files" },
-  { k: "calendar", icon: <CalIcon />, l: "Calendar" },
-  { k: "reports", icon: <ChartIcon />, l: "Reports" },
-  { k: "team", icon: <UsersIcon />, l: "Team" },
-];
+const GlobeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
 
 interface SidebarProps {
   page: Page;
@@ -42,7 +33,21 @@ export default function Sidebar({
   page, onNavigate, projects, collapsed, onToggleCollapse,
   userRole, userName, userAv, unread = 0, onProjectClick,
 }: SidebarProps) {
+  const { t, lang, setLang } = useI18n();
   const isAdmin = userRole === "admin" || userRole === "manager";
+
+  const NAV_ITEMS: { k: Page; icon: React.ReactNode; l: string }[] = [
+    { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
+    { k: "projects", icon: <FolderIcon />, l: t.nav_projects },
+    { k: "tasks", icon: <CheckIcon />, l: t.nav_tasks },
+    { k: "chat", icon: <ChatIcon />, l: t.nav_chat },
+    { k: "files", icon: <FileIcon2 />, l: t.nav_files },
+    { k: "calendar", icon: <CalIcon />, l: t.nav_calendar },
+    { k: "reports", icon: <ChartIcon />, l: t.nav_reports },
+    { k: "team", icon: <UsersIcon />, l: t.nav_team },
+  ];
+
+  const nextLang: Lang = lang === "en" ? "fr" : "en";
 
   return (
     <aside
@@ -104,7 +109,7 @@ export default function Sidebar({
               <span style={{ position: "relative", display: "flex" }}>
                 {n.icon}
                 {n.k === "chat" && unread > 0 && (
-                  <span style={{ position: "absolute", top: -4, right: -6, width: 14, height: 14, borderRadius: "50%", background: C.err, color: "#fff", fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</span>
+                  <span style={{ position: "absolute", top: -4, right: -6, width: 14, height: 14, borderRadius: "50%", background: "#EF4444", color: "#fff", fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</span>
                 )}
               </span>
               {!collapsed && <span>{n.l}</span>}
@@ -114,9 +119,9 @@ export default function Sidebar({
 
         {/* Active projects list */}
         {!collapsed && projects.filter((p) => p.status === "active").length > 0 && (
-          <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: ".12em", textTransform: "uppercase", padding: "0 14px", marginBottom: 10 }}>
-              Projects
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.25)", letterSpacing: ".12em", textTransform: "uppercase", padding: "0 14px", marginBottom: 8 }}>
+              {t.nav_projects_label}
             </div>
             {projects.filter((p) => p.status === "active").map((p) => (
               <button
@@ -124,7 +129,7 @@ export default function Sidebar({
                 onClick={() => { if (onProjectClick) onProjectClick(p); onNavigate("pdetail"); }}
                 data-testid={`sidebar-project-${p.id}`}
                 style={{
-                  width: "100%", padding: "8px 14px", border: "none", borderRadius: 8,
+                  width: "100%", padding: "7px 14px", border: "none", borderRadius: 8,
                   cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
                   background: "transparent", color: "rgba(255,255,255,.45)",
                   fontSize: 12, fontFamily: "inherit", textAlign: "left",
@@ -139,7 +144,7 @@ export default function Sidebar({
 
         {/* Settings */}
         {isAdmin && (
-          <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,.06)" }}>
             <button
               onClick={() => onNavigate("settings")}
               data-testid="nav-settings"
@@ -154,23 +159,61 @@ export default function Sidebar({
                 fontFamily: "inherit",
               }}
             >
+              {page === "settings" && <div style={{ position: "absolute", left: 0, width: 3, height: 20, borderRadius: 2, background: C.gold }} />}
               <GearIcon />
-              {!collapsed && <span>Settings</span>}
+              {!collapsed && <span>{t.nav_settings}</span>}
             </button>
           </div>
         )}
       </nav>
 
-      {/* User */}
-      {!collapsed && userName && (
-        <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", gap: 10 }}>
-          <Av ini={userAv || "??"} size={32} color={C.gold} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,.85)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", textTransform: "capitalize" }}>{userRole}</div>
+      {/* Language switcher + User */}
+      <div style={{ padding: collapsed ? "12px 8px" : "12px 20px", borderTop: "1px solid rgba(255,255,255,.06)" }}>
+        {/* Language toggle */}
+        <button
+          onClick={() => setLang(nextLang)}
+          data-testid="lang-toggle-btn"
+          title={lang === "en" ? "Passer en français" : "Switch to English"}
+          style={{
+            width: "100%", marginBottom: collapsed ? 0 : 12,
+            padding: collapsed ? 10 : "8px 12px",
+            border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 8,
+            justifyContent: collapsed ? "center" : "flex-start",
+            background: "rgba(255,255,255,.04)", color: "rgba(255,255,255,.5)",
+            fontSize: 12, fontWeight: 600, fontFamily: "inherit", transition: "all .15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(200,164,92,.12)"; e.currentTarget.style.color = C.gold; e.currentTarget.style.borderColor = "rgba(200,164,92,.3)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.04)"; e.currentTarget.style.color = "rgba(255,255,255,.5)"; e.currentTarget.style.borderColor = "rgba(255,255,255,.1)"; }}
+        >
+          <GlobeIcon />
+          {!collapsed && (
+            <span>
+              {lang === "en" ? (
+                <><span style={{ opacity: 1, fontWeight: 700, color: C.goldL }}>EN</span><span style={{ opacity: 0.4 }}> / FR</span></>
+              ) : (
+                <><span style={{ opacity: 0.4 }}>EN / </span><span style={{ opacity: 1, fontWeight: 700, color: C.goldL }}>FR</span></>
+              )}
+            </span>
+          )}
+        </button>
+
+        {/* User info */}
+        {!collapsed && userName && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Av ini={userAv || "??"} size={32} color={C.gold} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,.85)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", textTransform: "capitalize" }}>{userRole}</div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        {collapsed && userAv && (
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+            <Av ini={userAv} size={32} color={C.gold} />
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

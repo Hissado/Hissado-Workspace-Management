@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { C, Av, Btn, Inp, Modal } from "./primitives";
+import { useI18n } from "@/lib/i18n";
 import type { Project, User } from "@/lib/data";
-import { uid } from "@/lib/data";
+import { uid, fmt } from "@/lib/data";
 
 const COLORS = ["#C8A45C", "#3B82F6", "#22C55E", "#8B5CF6", "#EC4899", "#F97316", "#EF4444", "#14B8A6", "#F59E0B", "#6366F1"];
 
@@ -14,78 +15,88 @@ interface ProjectModalProps {
 }
 
 export default function ProjectModal({ open, onClose, users, currentUser, onSave }: ProjectModalProps) {
+  const { t } = useI18n();
+
+  const STATUS_OPTS = [
+    { k: "active", l: t.pmod_status_active },
+    { k: "on-hold", l: t.pmod_status_hold },
+    { k: "completed", l: t.pmod_status_done },
+  ];
+
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [color, setColor] = useState(COLORS[0]);
-  const [status, setStatus] = useState<"active" | "on-hold" | "completed">("active");
-  const [selMembers, setSelMembers] = useState<string[]>([currentUser.id]);
+  const [status, setStatus] = useState<Project["status"]>("active");
+  const [members, setMembers] = useState<string[]>([currentUser.id]);
+
+  const create = () => {
+    if (!name.trim()) return;
+    const p: Project = {
+      id: uid(), name: name.trim(), desc, color, status,
+      members,
+      owner: currentUser.id,
+      created: fmt(new Date()),
+    };
+    onSave(p);
+    setName(""); setDesc(""); setColor(COLORS[0]); setStatus("active"); setMembers([currentUser.id]);
+  };
 
   const toggleMember = (id: string) => {
     if (id === currentUser.id) return;
-    setSelMembers((prev) => prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]);
-  };
-
-  const save = () => {
-    if (!name.trim()) return;
-    onSave({
-      id: uid(),
-      name: name.trim(),
-      desc,
-      color,
-      owner: currentUser.id,
-      members: selMembers,
-      status,
-      created: new Date().toISOString().slice(0, 10),
-    });
-    setName(""); setDesc(""); setColor(COLORS[0]); setStatus("active"); setSelMembers([currentUser.id]);
-    onClose();
+    setMembers((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="New Project" w={500}>
-      <Inp label="Project Name" value={name} onChange={setName} ph="e.g., Website Redesign" />
-      <Inp label="Description" value={desc} onChange={setDesc} ph="Brief project description..." ta />
-      <Inp label="Status" value={status} onChange={(v) => setStatus(v as typeof status)} opts={[{ v: "active", l: "Active" }, { v: "on-hold", l: "On Hold" }, { v: "completed", l: "Completed" }]} />
+    <Modal open={open} onClose={onClose} title={t.pmod_title}>
+      <Inp label={t.pmod_name} value={name} onChange={setName} ph={t.pmod_name_ph} />
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.pmod_desc}</label>
+        <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t.pmod_desc_ph} rows={2}
+          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+      </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.g500, marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Color</label>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {COLORS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: `3px solid ${color === c ? C.navy : "transparent"}`, cursor: "pointer", outline: color === c ? `2px solid ${c}` : "none", outlineOffset: 2 }}
-            />
-          ))}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.pmod_status}</label>
+          <select value={status} onChange={(e) => setStatus(e.target.value as Project["status"])} data-testid="project-status-select"
+            style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}>
+            {STATUS_OPTS.map((s) => <option key={s.k} value={s.k}>{s.l}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 8 }}>{t.pmod_color}</label>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {COLORS.map((c) => (
+              <button key={c} onClick={() => setColor(c)}
+                style={{ width: 26, height: 26, borderRadius: "50%", background: c, border: `3px solid ${color === c ? C.navy : "transparent"}`, cursor: "pointer", transition: "border-color .15s" }} />
+            ))}
+          </div>
         </div>
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.g500, marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Team Members</label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 200, overflow: "auto" }}>
-          {users.filter((u) => u.status === "active").map((u) => {
-            const sel = selMembers.includes(u.id);
+        <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 8 }}>{t.pmod_members}</label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 180, overflow: "auto" }}>
+          {users.map((u) => {
             const isOwner = u.id === currentUser.id;
+            const checked = members.includes(u.id);
             return (
-              <div
-                key={u.id}
-                onClick={() => toggleMember(u.id)}
-                data-testid={`project-member-${u.id}`}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, cursor: isOwner ? "default" : "pointer", background: sel ? `${C.gold}10` : "transparent", border: sel ? `1px solid ${C.gold}30` : "1px solid transparent", transition: "all .1s" }}
-              >
-                <Av ini={u.av} size={28} />
-                <div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 600, color: C.navy }}>{u.name}</div><div style={{ fontSize: 11, color: C.g400 }}>{u.dept}</div></div>
-                {isOwner && <span style={{ fontSize: 10, fontWeight: 600, color: C.gold }}>Owner</span>}
-                {!isOwner && sel && <div style={{ width: 18, height: 18, borderRadius: "50%", background: C.gold, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg></div>}
-              </div>
+              <label key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, cursor: isOwner ? "default" : "pointer", padding: "6px 8px", borderRadius: 8, background: checked ? `${C.gold}10` : "transparent" }}>
+                <input type="checkbox" checked={checked} disabled={isOwner} onChange={() => toggleMember(u.id)} />
+                <Av ini={u.av} size={26} />
+                <div>
+                  <div style={{ fontSize: 13, color: C.navy, fontWeight: 500 }}>{u.name}</div>
+                  {isOwner && <div style={{ fontSize: 10, color: C.gold }}>{t.pmod_owner}</div>}
+                </div>
+              </label>
             );
           })}
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${C.g100}` }}>
-        <Btn v="secondary" onClick={onClose}>Cancel</Btn>
-        <Btn onClick={save} disabled={!name.trim()} data-testid="project-save-btn">Create Project</Btn>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={onClose} style={{ flex: 1, padding: "10px", background: C.g100, color: C.g600, border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>{t.pmod_cancel}</button>
+        <Btn onClick={create} data-testid="create-project-btn" style={{ flex: 2, justifyContent: "center" }}>{t.pmod_create}</Btn>
       </div>
     </Modal>
   );

@@ -1,4 +1,5 @@
 import { C, PBar } from "@/components/primitives";
+import { useI18n, STATUS_LABELS, PRIORITY_LABELS } from "@/lib/i18n";
 import type { Task, Project, User } from "@/lib/data";
 
 interface ReportsProps {
@@ -9,128 +10,108 @@ interface ReportsProps {
 
 function Card({ children, title }: { children: React.ReactNode; title: string }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: `1px solid ${C.g100}`, padding: "20px 24px" }}>
-      <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy, marginBottom: 16 }}>{title}</h3>
+    <div style={{ background: C.w, borderRadius: 16, padding: 24, border: `1px solid ${C.g100}`, boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, color: C.navy, marginBottom: 20 }}>{title}</h3>
       {children}
     </div>
   );
 }
 
-function SimpleBar({ label, value, max, color = C.gold }: { label: string; value: number; max: number; color?: string }) {
+function Bar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-        <span style={{ fontSize: 12, color: C.g600 }}>{label}</span>
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontSize: 13, color: C.g600 }}>{label}</span>
         <span style={{ fontSize: 12, fontWeight: 600, color: C.navy }}>{value}</span>
       </div>
-      <PBar value={max > 0 ? (value / max) * 100 : 0} color={color} />
+      <PBar value={pct} color={color} h={6} />
     </div>
   );
 }
 
 export default function Reports({ tasks, projects, users }: ReportsProps) {
-  const statuses = ["To Do", "In Progress", "In Review", "Done"] as const;
-  const statusCounts = statuses.map((s) => ({ s, v: tasks.filter((t) => t.status === s).length }));
-  const maxStatus = Math.max(...statusCounts.map((s) => s.v), 1);
+  const { t, lang } = useI18n();
 
-  const prioLabels = ["Urgent", "High", "Medium", "Low"];
-  const prioCounts = prioLabels.map((p) => ({ p, v: tasks.filter((t) => t.pri === p).length }));
-  const maxPrio = Math.max(...prioCounts.map((p) => p.v), 1);
+  const doneTasks = tasks.filter((x) => x.status === "Done").length;
+  const overdueTasks = tasks.filter((x) => x.due && new Date(x.due) < new Date() && x.status !== "Done").length;
+  const activeProjects = projects.filter((p) => p.status === "active").length;
+  const completionRate = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
 
-  const projStats = projects.map((p) => {
-    const pt = tasks.filter((t) => t.pId === p.id);
-    const done = pt.filter((t) => t.status === "Done").length;
-    return { ...p, total: pt.length, done, prog: pt.length ? Math.round((done / pt.length) * 100) : 0 };
-  }).sort((a, b) => b.prog - a.prog);
+  const STATUSES = ["To Do", "In Progress", "In Review", "Done"] as const;
+  const STATUS_COLORS_CHART: Record<string, string> = { "To Do": C.g300, "In Progress": C.gold, "In Review": "#8B5CF6", "Done": "#10B981" };
 
-  const memberStats = users.filter((u) => u.status === "active").map((u) => {
-    const assigned = tasks.filter((t) => t.assignee === u.id);
-    const done = assigned.filter((t) => t.status === "Done").length;
-    return { ...u, assigned: assigned.length, done };
-  }).sort((a, b) => b.assigned - a.assigned);
-  const maxMemberAssigned = Math.max(...memberStats.map((m) => m.assigned), 1);
+  const PRIORITIES = ["Urgent", "High", "Medium", "Low"] as const;
+  const PRIORITY_COLORS_CHART: Record<string, string> = { Urgent: "#EF4444", High: C.gold, Medium: "#3B82F6", Low: "#10B981" };
 
-  const statusColors: Record<string, string> = { "To Do": C.g400, "In Progress": C.info, "In Review": C.warn, Done: C.ok };
-  const prioColors: Record<string, string> = { Urgent: "#DC2626", High: "#EA580C", Medium: C.warn, Low: C.ok };
+  const statusCounts = Object.fromEntries(STATUSES.map((s) => [s, tasks.filter((x) => x.status === s).length]));
+  const priorityCounts = Object.fromEntries(PRIORITIES.map((p) => [p, tasks.filter((x) => x.pri === p).length]));
 
-  // Completion rate over time (last 6 months)
-  const now = new Date();
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-    return { label: d.toLocaleDateString("en", { month: "short" }), year: d.getFullYear(), month: d.getMonth() };
-  });
+  const workloadCounts = Object.fromEntries(users.map((u) => [u.id, tasks.filter((x) => x.assignee === u.id && x.status !== "Done").length]));
+  const maxWorkload = Math.max(...Object.values(workloadCounts), 1);
+
+  const stats = [
+    { label: t.rep_total_tasks, value: tasks.length, color: "#4F7CEC" },
+    { label: t.rep_completion, value: `${completionRate}%`, color: "#10B981" },
+    { label: t.rep_overdue, value: overdueTasks, color: "#EF4444" },
+    { label: t.rep_active_projects, value: activeProjects, color: C.gold },
+  ];
 
   return (
-    <div className="fade-in" style={{ padding: 28 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>Reports & Analytics</h2>
-        <p style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>Project and team performance overview</p>
+    <div style={{ padding: "32px 32px 60px" }}>
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{t.rep_title}</h2>
+        <p style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>{t.rep_subtitle}</p>
       </div>
 
-      {/* Summary cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
-        {[
-          { l: "Total Tasks", v: tasks.length, c: C.navy },
-          { l: "Completion Rate", v: `${tasks.length ? Math.round((tasks.filter(t => t.status === "Done").length / tasks.length) * 100) : 0}%`, c: C.ok },
-          { l: "Overdue", v: tasks.filter(t => t.due < new Date().toISOString().slice(0, 10) && t.status !== "Done").length, c: C.err },
-          { l: "Active Projects", v: projects.filter(p => p.status === "active").length, c: C.info },
-        ].map((s) => (
-          <div key={s.l} style={{ background: "#fff", borderRadius: 14, border: `1px solid ${C.g100}`, padding: "20px 24px" }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.g400, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>{s.l}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: s.c, fontFamily: "'Playfair Display',serif" }}>{s.v}</div>
+      {/* Summary stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20, marginBottom: 28 }}>
+        {stats.map((s, i) => (
+          <div key={i} style={{ background: C.w, borderRadius: 14, padding: "20px 24px", border: `1px solid ${C.g100}`, boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
+            <div style={{ fontSize: 32, fontWeight: 700, color: s.color, marginBottom: 4 }}>{s.value}</div>
+            <div style={{ fontSize: 13, color: C.g500 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-        {/* By status */}
-        <Card title="Tasks by Status">
-          {statusCounts.map(({ s, v }) => (
-            <SimpleBar key={s} label={s} value={v} max={maxStatus} color={statusColors[s]} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
+        <Card title={t.rep_by_status}>
+          {STATUSES.map((s) => (
+            <Bar key={s} label={STATUS_LABELS[s][lang]} value={statusCounts[s]} max={tasks.length} color={STATUS_COLORS_CHART[s]} />
           ))}
         </Card>
 
-        {/* By priority */}
-        <Card title="Tasks by Priority">
-          {prioCounts.map(({ p, v }) => (
-            <SimpleBar key={p} label={p} value={v} max={maxPrio} color={prioColors[p]} />
+        <Card title={t.rep_by_priority}>
+          {PRIORITIES.map((p) => (
+            <Bar key={p} label={PRIORITY_LABELS[p][lang]} value={priorityCounts[p]} max={tasks.length} color={PRIORITY_COLORS_CHART[p]} />
           ))}
         </Card>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        {/* Project progress */}
-        <Card title="Project Progress">
-          {projStats.map((p) => (
-            <div key={p.id} style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ fontSize: 12, color: C.g600, display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.color }} />
-                  {p.name}
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: C.navy }}>{p.prog}%</span>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+        <Card title={t.rep_project_progress}>
+          {projects.map((p) => {
+            const pTasks = tasks.filter((x) => x.pId === p.id);
+            const done = pTasks.filter((x) => x.status === "Done").length;
+            const pct = pTasks.length > 0 ? Math.round((done / pTasks.length) * 100) : 0;
+            return (
+              <div key={p.id} style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.color }} />
+                    <span style={{ fontSize: 13, color: C.g600, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: C.navy }}>{pct}%</span>
+                </div>
+                <PBar value={pct} color={p.color} h={6} />
               </div>
-              <PBar value={p.prog} color={p.color} />
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
-                <span style={{ fontSize: 10, color: C.g400 }}>{p.done}/{p.total} tasks</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </Card>
 
-        {/* Team workload */}
-        <Card title="Team Workload">
-          {memberStats.slice(0, 8).map((m) => (
-            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg,${C.gold},${C.goldD})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{m.av}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: C.g600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name}</span>
-                  <span style={{ fontSize: 11, color: C.g400, flexShrink: 0 }}>{m.done}/{m.assigned}</span>
-                </div>
-                <PBar value={maxMemberAssigned > 0 ? (m.assigned / maxMemberAssigned) * 100 : 0} h={4} />
-              </div>
-            </div>
+        <Card title={t.rep_team_workload}>
+          {users.map((u) => (
+            <Bar key={u.id} label={u.name} value={workloadCounts[u.id] || 0} max={maxWorkload} color={C.gold} />
           ))}
         </Card>
       </div>

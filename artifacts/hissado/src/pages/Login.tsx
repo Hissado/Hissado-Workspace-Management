@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { C, Av, Btn, Inp } from "@/components/primitives";
+import { useI18n, type Lang } from "@/lib/i18n";
 import type { User } from "@/lib/data";
+
+const GlobeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
 
 interface LoginProps {
   users: User[];
@@ -8,6 +11,7 @@ interface LoginProps {
 }
 
 export default function Login({ users, onLogin }: LoginProps) {
+  const { t, lang, setLang } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,7 +19,7 @@ export default function Login({ users, onLogin }: LoginProps) {
   const handleLogin = () => {
     const u = users.find((u) => u.email === email);
     if (u) { onLogin(u); setError(""); }
-    else setError("Invalid credentials. Try: issa@hissado.com");
+    else setError(t.login_error);
   };
 
   return (
@@ -28,6 +32,22 @@ export default function Login({ users, onLogin }: LoginProps) {
         <div style={{ position: "absolute", top: "10%", left: "15%", width: 300, height: 300, borderRadius: "50%", background: `${C.gold}06`, filter: "blur(80px)" }} />
         <div style={{ position: "absolute", bottom: "20%", right: "10%", width: 400, height: 400, borderRadius: "50%", background: `${C.gold}04`, filter: "blur(100px)" }} />
       </div>
+
+      {/* Language toggle */}
+      <button
+        onClick={() => setLang(lang === "en" ? "fr" : "en")}
+        data-testid="login-lang-btn"
+        style={{
+          position: "fixed", top: 20, right: 20,
+          background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.2)",
+          borderRadius: 8, padding: "6px 12px", cursor: "pointer",
+          color: "rgba(255,255,255,.7)", fontSize: 12, fontWeight: 700,
+          fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, zIndex: 10,
+        }}
+      >
+        <GlobeIcon />
+        {lang === "en" ? "FR" : "EN"}
+      </button>
 
       <div
         className="scale-in"
@@ -46,7 +66,7 @@ export default function Login({ users, onLogin }: LoginProps) {
             <span style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 32, lineHeight: 1 }}>H</span>
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", letterSpacing: ".06em" }}>HISSADO PROJECT</h1>
-          <p style={{ fontSize: 13, color: C.g400, marginTop: 6 }}>Sign in to your workspace</p>
+          <p style={{ fontSize: 13, color: C.g400, marginTop: 6 }}>{t.login_title}</p>
         </div>
 
         {error && (
@@ -55,21 +75,21 @@ export default function Login({ users, onLogin }: LoginProps) {
           </div>
         )}
 
-        <Inp label="Email" value={email} onChange={setEmail} ph="your@email.com" type="email" />
-        <Inp label="Password" value={password} onChange={setPassword} ph="••••••••" type="password" />
+        <Inp label={t.login_email} value={email} onChange={setEmail} ph="your@email.com" type="email" />
+        <Inp label={t.login_password} value={password} onChange={setPassword} ph="••••••••" type="password" />
 
         <Btn
           onClick={handleLogin}
           data-testid="login-submit-btn"
           style={{ width: "100%", padding: "12px", justifyContent: "center", fontSize: 14, borderRadius: 10 }}
         >
-          Sign In
+          {t.login_submit}
         </Btn>
 
         {/* Quick login */}
         <div style={{ marginTop: 24, padding: 16, background: C.g50, borderRadius: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: C.g400, marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Quick Login</div>
-          {users.filter((u) => u.status === "active").slice(0, 4).map((u) => (
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.g400, marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>{t.login_quick}</div>
+          {users.filter((u) => u.status === "active").slice(0, 5).map((u) => (
             <button
               key={u.id}
               onClick={() => onLogin(u)}

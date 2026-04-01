@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { C } from "./primitives";
+import { useI18n } from "@/lib/i18n";
 import type { Notification } from "@/lib/data";
 
 const BellIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>;
@@ -7,7 +8,6 @@ const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="n
 
 interface HeaderProps {
   title: string;
-  subtitle?: string | null;
   notifications: Notification[];
   onNotifClick: () => void;
   searchQuery: string;
@@ -15,7 +15,8 @@ interface HeaderProps {
   onLogout?: () => void;
 }
 
-export default function Header({ title, subtitle, notifications, onNotifClick, searchQuery, onSearch, onLogout }: HeaderProps) {
+export default function Header({ title, notifications, onNotifClick, searchQuery, onSearch, onLogout }: HeaderProps) {
+  const { t } = useI18n();
   const unread = notifications.filter((n) => !n.read).length;
   const [showSearch, setShowSearch] = useState(false);
 
@@ -25,10 +26,7 @@ export default function Header({ title, subtitle, notifications, onNotifClick, s
       display: "flex", alignItems: "center", justifyContent: "space-between",
       background: C.w, flexShrink: 0,
     }}>
-      <div>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{title}</h1>
-        {subtitle && <p style={{ fontSize: 13, color: C.g400, marginTop: 2 }}>{subtitle}</p>}
-      </div>
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{title}</h1>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {/* Search */}
@@ -40,7 +38,7 @@ export default function Header({ title, subtitle, notifications, onNotifClick, s
               value={searchQuery}
               onChange={(e) => onSearch(e.target.value)}
               onBlur={() => { if (!searchQuery) setShowSearch(false); }}
-              placeholder="Search tasks..."
+              placeholder={t.search_tasks}
               data-testid="header-search-input"
               style={{
                 padding: "8px 12px 8px 34px", border: `1px solid ${C.g200}`,
@@ -72,7 +70,7 @@ export default function Header({ title, subtitle, notifications, onNotifClick, s
           {unread > 0 && (
             <span style={{
               position: "absolute", top: 4, right: 4, width: 14, height: 14,
-              borderRadius: "50%", background: C.err, color: "#fff",
+              borderRadius: "50%", background: "#EF4444", color: "#fff",
               fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               {unread}
@@ -87,7 +85,7 @@ export default function Header({ title, subtitle, notifications, onNotifClick, s
             data-testid="header-logout-btn"
             style={{ background: C.g100, border: "none", cursor: "pointer", color: C.g500, fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 8, fontFamily: "inherit" }}
           >
-            Sign out
+            {t.login_signout}
           </button>
         )}
       </div>

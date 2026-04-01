@@ -1,152 +1,137 @@
 import { useState } from "react";
 import { C, Av, StatusBadge } from "@/components/primitives";
+import { useI18n, MONTH_NAMES, DAY_NAMES } from "@/lib/i18n";
 import type { Task, User, Project } from "@/lib/data";
-
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+import { fmt } from "@/lib/data";
 
 interface CalendarProps {
   tasks: Task[];
   users: User[];
   projects: Project[];
-  onTaskClick: (t: Task) => void;
+  onTaskClick?: (t: Task) => void;
 }
 
+const ChevLeft = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>;
+const ChevRight = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>;
+
 export default function Calendar({ tasks, users, projects, onTaskClick }: CalendarProps) {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
+  const { t, lang } = useI18n();
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
 
-  const firstDay = new Date(year, month, 1).getDay();
+  const MONTHS = MONTH_NAMES[lang];
+  const DAYS = DAY_NAMES[lang];
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
 
-  const prev = () => { if (month === 0) { setYear(y => y - 1); setMonth(11); } else setMonth(m => m - 1); };
-  const next = () => { if (month === 11) { setYear(y => y + 1); setMonth(0); } else setMonth(m => m + 1); };
+  const projectMap = Object.fromEntries(projects.map((p) => [p.id, p]));
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const tasksByDay: Record<number, Task[]> = {};
+  tasks.forEach((tk) => {
+    if (!tk.due) return;
+    const d = new Date(tk.due);
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const day = d.getDate();
+      if (!tasksByDay[day]) tasksByDay[day] = [];
+      tasksByDay[day].push(tk);
+    }
+  });
+
+  const prevMonth = () => { if (month === 0) { setMonth(11); setYear((y) => y - 1); } else setMonth((m) => m - 1); };
+  const nextMonth = () => { if (month === 11) { setMonth(0); setYear((y) => y + 1); } else setMonth((m) => m + 1); };
+  const thisMonth = tasks.filter((tk) => {
+    if (!tk.due) return false;
+    const d = new Date(tk.due);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const tasksForDay = (d: number) => {
-    const ds = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    return tasks.filter((t) => t.due === ds);
-  };
-
   return (
-    <div className="fade-in" style={{ padding: 28 }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>Calendar</h2>
-          <p style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>Task due dates</p>
+    <div style={{ padding: "32px", display: "grid", gridTemplateColumns: "1fr 280px", gap: 24, alignItems: "start" }}>
+      {/* Calendar grid */}
+      <div style={{ background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
+        {/* Header */}
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.g100}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>
+            {MONTHS[month]} {year}
+          </h2>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={prevMonth} data-testid="cal-prev" style={{ background: C.g100, border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.g600 }}><ChevLeft /></button>
+            <button onClick={() => { setYear(now.getFullYear()); setMonth(now.getMonth()); }} data-testid="cal-today" style={{ background: C.g100, border: "none", borderRadius: 8, padding: "4px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.g600, fontFamily: "inherit" }}>{t.cal_today}</button>
+            <button onClick={nextMonth} data-testid="cal-next" style={{ background: C.g100, border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.g600 }}><ChevRight /></button>
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={prev} style={{ background: C.g100, border: "none", borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.g500 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
-          </button>
-          <span style={{ fontSize: 16, fontWeight: 700, color: C.navy, minWidth: 180, textAlign: "center" }}>{MONTHS[month]} {year}</span>
-          <button onClick={next} style={{ background: C.g100, border: "none", borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.g500 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
-          </button>
-          <button onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); }} style={{ padding: "6px 12px", background: `${C.gold}15`, border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, color: C.gold, cursor: "pointer", fontFamily: "inherit" }}>Today</button>
+
+        {/* Day labels */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderBottom: `1px solid ${C.g100}` }}>
+          {DAYS.map((d) => (
+            <div key={d} style={{ padding: "10px 0", textAlign: "center", fontSize: 11, fontWeight: 600, color: C.g400, textTransform: "uppercase", letterSpacing: ".06em" }}>{d}</div>
+          ))}
+        </div>
+
+        {/* Day cells */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
+          {cells.map((day, i) => {
+            const isToday = day === now.getDate() && year === now.getFullYear() && month === now.getMonth();
+            const dayTasks = day ? tasksByDay[day] || [] : [];
+            return (
+              <div key={i} style={{ minHeight: 80, borderRight: (i + 1) % 7 !== 0 ? `1px solid ${C.g50}` : "none", borderBottom: `1px solid ${C.g50}`, padding: "6px 8px", background: isToday ? `${C.gold}08` : "transparent" }}>
+                {day && (
+                  <>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: isToday ? C.gold : "transparent", color: isToday ? C.w : C.g700, fontSize: 12, fontWeight: isToday ? 700 : 500, marginBottom: 3 }}>
+                      {day}
+                    </div>
+                    {dayTasks.slice(0, 2).map((tk) => {
+                      const p = projectMap[tk.pId];
+                      return (
+                        <div key={tk.id} onClick={() => onTaskClick?.(tk)} data-testid={`cal-task-${tk.id}`}
+                          style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: p ? `${p.color}22` : C.g100, color: p?.color || C.g500, marginBottom: 2, cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}
+                        >
+                          {tk.title}
+                        </div>
+                      );
+                    })}
+                    {dayTasks.length > 2 && <div style={{ fontSize: 10, color: C.g400, fontWeight: 600 }}>+{dayTasks.length - 2}</div>}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}>
-        {/* Calendar grid */}
-        <div style={{ background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`, overflow: "hidden" }}>
-          {/* Day headers */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-            {DAYS.map((d) => (
-              <div key={d} style={{ padding: "12px 8px", textAlign: "center", fontSize: 11, fontWeight: 700, color: C.g400, textTransform: "uppercase", letterSpacing: ".05em", borderBottom: `1px solid ${C.g100}` }}>{d}</div>
-            ))}
-          </div>
-          {/* Day cells */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-            {cells.map((d, i) => {
-              const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-              const dayTasks = d ? tasksForDay(d) : [];
-              return (
-                <div
-                  key={i}
-                  style={{
-                    minHeight: 90, padding: "8px", borderBottom: `1px solid ${C.g50}`, borderRight: (i + 1) % 7 !== 0 ? `1px solid ${C.g50}` : "none",
-                    background: isToday ? `${C.gold}06` : "transparent",
-                  }}
-                >
-                  {d && (
-                    <>
-                      <div style={{
-                        width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 13, fontWeight: isToday ? 700 : 400,
-                        background: isToday ? C.gold : "transparent",
-                        color: isToday ? "#fff" : C.g600,
-                        marginBottom: 4,
-                      }}>{d}</div>
-                      {dayTasks.slice(0, 3).map((t) => {
-                        const proj = projects.find((p) => p.id === t.pId);
-                        return (
-                          <div
-                            key={t.id}
-                            onClick={() => onTaskClick(t)}
-                            data-testid={`cal-task-${t.id}`}
-                            style={{ fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4, marginBottom: 2, background: (proj?.color || C.gold) + "20", color: proj?.color || C.gold, cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                          >
-                            {t.title}
-                          </div>
-                        );
-                      })}
-                      {dayTasks.length > 3 && <div style={{ fontSize: 10, color: C.g400 }}>+{dayTasks.length - 3} more</div>}
-                    </>
-                  )}
+      {/* Sidebar */}
+      <div style={{ background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy, marginBottom: 16 }}>{t.cal_this_month}</h3>
+        <p style={{ fontSize: 12, color: C.g400, marginBottom: 16 }}>{t.cal_subtitle}</p>
+        {thisMonth.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "24px 0", color: C.g400, fontSize: 13 }}>{t.cal_no_tasks}</div>
+        ) : thisMonth.map((tk) => {
+          const p = projectMap[tk.pId];
+          const assignee = userMap[tk.aId];
+          return (
+            <div key={tk.id} onClick={() => onTaskClick?.(tk)} data-testid={`sidebar-task-${tk.id}`}
+              style={{ padding: "10px 0", borderBottom: `1px solid ${C.g50}`, cursor: "pointer" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tk.title}</div>
+                  {p && <div style={{ fontSize: 10, color: p.color, marginTop: 2, fontWeight: 600 }}>{p.name}</div>}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Side: upcoming tasks */}
-        <div>
-          <div style={{ background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`, overflow: "hidden" }}>
-            <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.g100}` }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>This Month</h3>
+                {assignee && <Av ini={assignee.av} size={22} />}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                <StatusBadge status={tk.status} />
+                {tk.due && <span style={{ fontSize: 10, color: C.g400 }}>{tk.due}</span>}
+              </div>
             </div>
-            <div style={{ maxHeight: 480, overflow: "auto" }}>
-              {(() => {
-                const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
-                const monthTasks = tasks.filter((t) => t.due.startsWith(monthStr)).sort((a, b) => a.due.localeCompare(b.due));
-                if (monthTasks.length === 0) return <div style={{ padding: 24, textAlign: "center", color: C.g400, fontSize: 13 }}>No tasks this month</div>;
-                return monthTasks.map((t) => {
-                  const assignee = users.find((u) => u.id === t.assignee);
-                  const proj = projects.find((p) => p.id === t.pId);
-                  const d = new Date(t.due + "T00:00:00");
-                  const isToday2 = t.due === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-                  return (
-                    <div
-                      key={t.id}
-                      onClick={() => onTaskClick(t)}
-                      data-testid={`sidebar-cal-task-${t.id}`}
-                      style={{ padding: "12px 20px", borderBottom: `1px solid ${C.g50}`, cursor: "pointer", display: "flex", gap: 12, alignItems: "center" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = C.g50)}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <div style={{ minWidth: 36, textAlign: "center" }}>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: isToday2 ? C.gold : C.navy }}>{d.getDate()}</div>
-                        <div style={{ fontSize: 9, fontWeight: 600, color: C.g400, textTransform: "uppercase" }}>{DAYS[d.getDay()]}</div>
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</div>
-                        {proj && <div style={{ fontSize: 10, color: proj.color, marginTop: 2 }}>{proj.name}</div>}
-                      </div>
-                      {assignee && <Av ini={assignee.av} size={24} />}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );

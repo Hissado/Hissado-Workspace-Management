@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { C, Av, Btn, Inp, Modal } from "./primitives";
+import { useState, useEffect } from "react";
+import { C, Btn, Inp, Modal } from "./primitives";
+import { useI18n } from "@/lib/i18n";
 import type { Task, User, Project } from "@/lib/data";
 import { uid } from "@/lib/data";
 
@@ -11,123 +12,137 @@ interface TaskModalProps {
   users: User[];
   currentUser: User;
   onSave: (t: Task) => void;
-  onDelete?: (id: string) => void;
+  onDelete: (id: string) => void;
   defaultProject?: string;
 }
 
+const STATUSES = ["To Do", "In Progress", "In Review", "Done"] as const;
+const PRIORITIES = ["Urgent", "High", "Medium", "Low"] as const;
+
 export default function TaskModal({ open, onClose, task, projects, users, currentUser, onSave, onDelete, defaultProject }: TaskModalProps) {
+  const { t, lang } = useI18n();
+
+  const STATUS_LABELS_LOCAL: Record<string, string> = lang === "fr"
+    ? { "To Do": "À faire", "In Progress": "En cours", "In Review": "En révision", "Done": "Terminée" }
+    : { "To Do": "To Do", "In Progress": "In Progress", "In Review": "In Review", "Done": "Done" };
+
+  const PRIORITY_LABELS_LOCAL: Record<string, string> = lang === "fr"
+    ? { Urgent: "Urgent", High: "Haute", Medium: "Moyenne", Low: "Faible" }
+    : { Urgent: "Urgent", High: "High", Medium: "Medium", Low: "Low" };
+
   const isEdit = !!task;
+
   const [title, setTitle] = useState(task?.title || "");
   const [desc, setDesc] = useState(task?.desc || "");
   const [status, setStatus] = useState<Task["status"]>(task?.status || "To Do");
-  const [pri, setPri] = useState<Task["pri"]>(task?.pri || "Medium");
+  const [priority, setPriority] = useState<Task["pri"]>(task?.pri || "Medium");
   const [due, setDue] = useState(task?.due || "");
+  const [pId, setPId] = useState(task?.pId || defaultProject || projects[0]?.id || "");
   const [assignee, setAssignee] = useState(task?.assignee || currentUser.id);
-  const [pId, setPId] = useState(task?.pId || defaultProject || (projects[0]?.id ?? ""));
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const handleSave = () => {
+  useEffect(() => {
+    if (open) {
+      setTitle(task?.title || "");
+      setDesc(task?.desc || "");
+      setStatus(task?.status || "To Do");
+      setPriority(task?.pri || "Medium");
+      setDue(task?.due || "");
+      setPId(task?.pId || defaultProject || projects[0]?.id || "");
+      setAssignee(task?.assignee || currentUser.id);
+      setConfirmDelete(false);
+    }
+  }, [open, task, defaultProject]);
+
+  const save = () => {
     if (!title.trim()) return;
-    onSave({
+    const saved: Task = {
       id: task?.id || uid(),
       title: title.trim(),
       desc,
       status,
-      pri,
+      pri: priority,
       due,
-      assignee,
       pId,
-      prog: task?.prog ?? 0,
-      created: task?.created || new Date().toISOString().slice(0, 10),
+      assignee,
+      created: task?.created || new Date().toISOString().split("T")[0],
       subs: task?.subs || [],
       cmts: task?.cmts || [],
-    });
-    onClose();
-  };
-
-  const handleClose = () => {
-    onClose();
-    setConfirmDelete(false);
+      prog: task?.prog || 0,
+    };
+    onSave(saved);
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title={isEdit ? "Edit Task" : "Create Task"} w={540}>
-      <Inp label="Task Title" value={title} onChange={setTitle} ph="Enter task title..." />
-      <Inp label="Description" value={desc} onChange={setDesc} ph="Optional description..." ta />
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Inp
-          label="Status" value={status} onChange={(v) => setStatus(v as Task["status"])}
-          opts={["To Do", "In Progress", "In Review", "Done"].map((s) => ({ v: s, l: s }))}
-        />
-        <Inp
-          label="Priority" value={pri} onChange={(v) => setPri(v as Task["pri"])}
-          opts={["Urgent", "High", "Medium", "Low"].map((p) => ({ v: p, l: p }))}
+    <Modal open={open} onClose={onClose} title={isEdit ? t.tmod_edit : t.tmod_create}>
+      <Inp label={t.tmod_title_label} value={title} onChange={setTitle} ph={t.tmod_title_ph} />
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.tmod_desc}</label>
+        <textarea
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
+          placeholder={t.tmod_desc_ph}
+          rows={3}
+          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box" }}
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Inp label="Due Date" value={due} onChange={setDue} type="date" />
-        <Inp
-          label="Project" value={pId} onChange={setPId}
-          opts={projects.map((p) => ({ v: p.id, l: p.name }))}
-        />
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.g500, marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Assignee</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {users.filter((u) => u.status === "active").map((u) => (
-            <button
-              key={u.id}
-              onClick={() => setAssignee(u.id)}
-              data-testid={`assignee-${u.id}`}
-              style={{
-                padding: "5px 10px", border: `2px solid ${assignee === u.id ? C.gold : C.g200}`,
-                borderRadius: 20, background: assignee === u.id ? `${C.gold}10` : "transparent",
-                cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                fontSize: 12, fontWeight: 500, color: assignee === u.id ? C.gold : C.g600, fontFamily: "inherit",
-              }}
-            >
-              <Av ini={u.av} size={20} color={assignee === u.id ? C.gold : C.g400} />
-              {u.name.split(" ")[0]}
-            </button>
-          ))}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.tmod_status}</label>
+          <select value={status} onChange={(e) => setStatus(e.target.value as Task["status"])} data-testid="task-status-select" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}>
+            {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS_LOCAL[s]}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.tmod_priority}</label>
+          <select value={priority} onChange={(e) => setPriority(e.target.value as Task["pri"])} data-testid="task-priority-select" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}>
+            {PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS_LOCAL[p]}</option>)}
+          </select>
         </div>
       </div>
 
-      {/* Subtasks if editing */}
-      {isEdit && task?.subs && task.subs.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.g500, marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Subtasks</label>
-          <div style={{ background: C.g50, borderRadius: 8, padding: "8px 12px" }}>
-            {task.subs.map((sub) => (
-              <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0" }}>
-                <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${sub.done ? C.ok : C.g300}`, background: sub.done ? "#D1FAE5" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {sub.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#065F46" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
-                </div>
-                <span style={{ fontSize: 13, color: sub.done ? C.g400 : C.g700, textDecoration: sub.done ? "line-through" : "none" }}>{sub.t}</span>
-              </div>
-            ))}
-          </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.tmod_due}</label>
+          <input type="date" value={due} onChange={(e) => setDue(e.target.value)} data-testid="task-due-input" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
         </div>
-      )}
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.tmod_project}</label>
+          <select value={pId} onChange={(e) => setPId(e.target.value)} data-testid="task-project-select" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}>
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+      </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: `1px solid ${C.g100}` }}>
-        {isEdit && onDelete ? (
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.tmod_assignee}</label>
+        <select value={assignee} onChange={(e) => setAssignee(e.target.value)} data-testid="task-assignee-select" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}>
+          {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </select>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {isEdit ? (
           confirmDelete ? (
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 12, color: C.err }}>Delete this task?</span>
-              <Btn v="danger" sz="sm" onClick={() => { onDelete(task!.id); handleClose(); }}>Yes, Delete</Btn>
-              <Btn v="secondary" sz="sm" onClick={() => setConfirmDelete(false)}>Cancel</Btn>
+              <span style={{ fontSize: 12, color: C.g500 }}>{t.tmod_delete_confirm}</span>
+              <button onClick={() => onDelete(task!.id)} data-testid="confirm-delete-btn" style={{ padding: "6px 12px", background: "#EF4444", color: C.w, border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600 }}>{t.tmod_delete_yes}</button>
+              <button onClick={() => setConfirmDelete(false)} style={{ padding: "6px 12px", background: C.g100, color: C.g500, border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>{t.tmod_cancel}</button>
             </div>
           ) : (
-            <Btn v="danger" sz="sm" onClick={() => setConfirmDelete(true)}>Delete</Btn>
+            <button onClick={() => setConfirmDelete(true)} data-testid="delete-task-btn" style={{ padding: "8px 14px", background: "#FEE2E2", color: "#DC2626", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600 }}>
+              {t.tmod_delete}
+            </button>
           )
         ) : <div />}
+
         <div style={{ display: "flex", gap: 8 }}>
-          <Btn v="secondary" onClick={handleClose}>Cancel</Btn>
-          <Btn onClick={handleSave} disabled={!title.trim()} data-testid="task-save-btn">{isEdit ? "Save Changes" : "Create Task"}</Btn>
+          <button onClick={onClose} style={{ padding: "8px 16px", background: C.g100, color: C.g600, border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>{t.tmod_cancel}</button>
+          <Btn onClick={save} data-testid="save-task-btn">
+            {isEdit ? t.tmod_save : t.tmod_create_btn}
+          </Btn>
         </div>
       </div>
     </Modal>
