@@ -47,7 +47,7 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
         style={{
           background: C.w, border: `1px solid ${C.g100}`, cursor: "pointer",
           color: C.g500, fontSize: 13, display: "flex", alignItems: "center", gap: 6,
-          marginBottom: 24, fontFamily: "'DM Sans', sans-serif", borderRadius: 9,
+          marginBottom: 20, fontFamily: "'DM Sans', sans-serif", borderRadius: 9,
           padding: "7px 14px", fontWeight: 600, boxShadow: SH.xs,
           transition: "all .15s",
         }}
@@ -57,8 +57,16 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
         <ChevLeft /> {t.pdet_back}
       </button>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      {/* Page header — stacks on mobile */}
+      <div style={{
+        display: "flex",
+        flexDirection: isMobile ? "column" : "row",
+        justifyContent: "space-between",
+        alignItems: isMobile ? "flex-start" : "flex-start",
+        gap: isMobile ? 14 : 0,
+        marginBottom: 24,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0 }}>
           <div style={{
             width: 44, height: 44, borderRadius: 12, flexShrink: 0,
             background: `${project.color}15`, border: `1.5px solid ${project.color}30`,
@@ -66,40 +74,42 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
           }}>
             <div style={{ width: 16, height: 16, borderRadius: "50%", background: project.color, boxShadow: `0 0 10px ${project.color}80` }} />
           </div>
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 4px", letterSpacing: "-.01em" }}>{project.name}</h2>
-            {project.desc && <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>{project.desc}</p>}
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 4px", letterSpacing: "-.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}</h2>
+            {project.desc && <p style={{ fontSize: 13, color: C.g400, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.desc}</p>}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ display: "flex", background: C.g100, borderRadius: 10, padding: 3, gap: 2 }}>
-            {([["list", <ListIcon />, t.pdet_list], ["board", <BoardIcon />, t.pdet_board]] as const).map(([v, icon, label]) => (
-              <button
-                key={v}
-                onClick={() => setView(v as "list" | "board")}
-                data-testid={`view-${v}`}
-                style={{
-                  padding: "6px 14px", border: "none", borderRadius: 8, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600,
-                  fontFamily: "'DM Sans', sans-serif",
-                  background: view === v ? C.w : "transparent",
-                  color: view === v ? C.navy : C.g400,
-                  boxShadow: view === v ? SH.xs : "none",
-                  transition: "all .15s",
-                }}
-              >
-                {icon} {label}
-              </button>
-            ))}
-          </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          {!isMobile && (
+            <div style={{ display: "flex", background: C.g100, borderRadius: 10, padding: 3, gap: 2 }}>
+              {([["list", <ListIcon />, t.pdet_list], ["board", <BoardIcon />, t.pdet_board]] as const).map(([v, icon, label]) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v as "list" | "board")}
+                  data-testid={`view-${v}`}
+                  style={{
+                    padding: "6px 14px", border: "none", borderRadius: 8, cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600,
+                    fontFamily: "'DM Sans', sans-serif",
+                    background: view === v ? C.w : "transparent",
+                    color: view === v ? C.navy : C.g400,
+                    boxShadow: view === v ? SH.xs : "none",
+                    transition: "all .15s",
+                  }}
+                >
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+          )}
           <Btn onClick={onAddTask} data-testid="add-task-btn-detail" icon={<PlusIcon />}>
-            {t.pdet_add_task}
+            {isMobile ? t.task_new : t.pdet_add_task}
           </Btn>
         </div>
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? 10 : 16, marginBottom: 16 }}>
         {[
           { label: t.pdet_total_tasks, value: pTasks.length, color: "#4F7CEC" },
           { label: t.pdet_in_progress, value: ipTasks, color: C.gold },
@@ -107,7 +117,7 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
           { label: t.pdet_progress, value: `${pct}%`, color: project.color },
         ].map((s, i) => (
           <div key={i} style={{
-            background: C.w, borderRadius: 14, padding: "18px 22px",
+            background: C.w, borderRadius: 14, padding: isMobile ? "12px 14px" : "18px 22px",
             border: `1px solid ${C.g100}`, boxShadow: SH.sm,
             position: "relative", overflow: "hidden",
           }}>
@@ -115,14 +125,14 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
               position: "absolute", top: 0, left: 0, right: 0, height: 3,
               background: s.color, opacity: 0.7,
             }} />
-            <div style={{ fontSize: 28, fontWeight: 800, color: s.color, marginBottom: 4, fontFamily: "'Playfair Display',serif" }}>{s.value}</div>
-            <div style={{ fontSize: 12, color: C.g400, fontWeight: 500 }}>{s.label}</div>
+            <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: s.color, marginBottom: 2, fontFamily: "'Playfair Display',serif" }}>{s.value}</div>
+            <div style={{ fontSize: isMobile ? 10.5 : 12, color: C.g400, fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Progress bar */}
-      <div style={{ background: C.w, borderRadius: 14, padding: "18px 22px", border: `1px solid ${C.g100}`, marginBottom: 24, boxShadow: SH.sm }}>
+      <div style={{ background: C.w, borderRadius: 14, padding: "14px 18px", border: `1px solid ${C.g100}`, marginBottom: 20, boxShadow: SH.sm }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{t.pdet_overall}</span>
           <span style={{ fontSize: 14, fontWeight: 800, color: project.color }}>{pct}%</span>
@@ -132,8 +142,8 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
 
       {pTasks.length === 0 ? (
         <Empty icon="✓" title={t.pdet_no_tasks} desc={t.pdet_no_tasks_desc} />
-      ) : view === "list" ? (
-        <ListView tasks={pTasks} userMap={userMap} onTaskClick={onTaskClick} t={t} />
+      ) : view === "list" || isMobile ? (
+        <ListView tasks={pTasks} userMap={userMap} onTaskClick={onTaskClick} t={t} isMobile={isMobile} />
       ) : (
         <BoardView tasks={pTasks} userMap={userMap} onTaskClick={onTaskClick} statuses={STATUSES} statusLabels={STATUS_LABELS_LOCAL} />
       )}
@@ -141,7 +151,37 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
   );
 }
 
-function ListView({ tasks, userMap, onTaskClick, t }: { tasks: Task[]; userMap: Record<string, User>; onTaskClick: (t: Task) => void; t: any }) {
+function ListView({ tasks, userMap, onTaskClick, t, isMobile }: { tasks: Task[]; userMap: Record<string, User>; onTaskClick: (t: Task) => void; t: any; isMobile: boolean }) {
+  if (isMobile) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {tasks.map((tk) => {
+          const assignee = userMap[tk.assignee];
+          const isOverdue = tk.due && new Date(tk.due) < new Date() && tk.status !== "Done";
+          return (
+            <div key={tk.id} onClick={() => onTaskClick(tk)} data-testid={`task-detail-${tk.id}`}
+              style={{
+                background: C.w, borderRadius: 13, padding: "14px 16px",
+                border: `1px solid ${isOverdue ? "#FECACA" : C.g100}`,
+                cursor: "pointer", boxShadow: SH.xs,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: C.navy, flex: 1, lineHeight: 1.3 }}>{tk.title}</div>
+                {assignee && <Av ini={assignee.av} size={26} />}
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <StatusBadge status={tk.status} />
+                <PriorityBadge pri={tk.pri} />
+                {tk.due && <span style={{ fontSize: 11, color: isOverdue ? "#EF4444" : C.g400, marginLeft: "auto" }}>{fmt(new Date(tk.due))}</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`, overflow: "hidden" }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 100px 100px 90px", gap: 16, padding: "12px 20px", borderBottom: `1px solid ${C.g100}`, fontSize: 11, fontWeight: 600, color: C.g400, textTransform: "uppercase", letterSpacing: ".08em" }}>

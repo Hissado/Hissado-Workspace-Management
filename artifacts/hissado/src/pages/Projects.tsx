@@ -44,18 +44,22 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
   return (
     <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       {/* Page header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+      <div style={{
+        display: "flex", flexDirection: isMobile ? "column" : "row",
+        justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "flex-start",
+        gap: isMobile ? 12 : 0, marginBottom: isMobile ? 20 : 32,
+      }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.proj_title}</h2>
-          <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+          <h2 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.proj_title}</h2>
+          <div style={{ display: "flex", gap: isMobile ? 12 : 20, alignItems: "center", flexWrap: "wrap" }}>
             {[
               { label: STATUS_LABELS_LOCAL.active, count: activeCount, color: "#10B981" },
               { label: STATUS_LABELS_LOCAL["on-hold"], count: holdCount, color: "#F59E0B" },
               { label: STATUS_LABELS_LOCAL.completed, count: doneCount, color: "#3B82F6" },
             ].map((item) => (
-              <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: item.color }} />
-                <span style={{ fontSize: 12.5, color: C.g500, fontWeight: 500 }}>
+              <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: C.g500, fontWeight: 500 }}>
                   <span style={{ fontWeight: 700, color: C.g700 }}>{item.count}</span> {item.label}
                 </span>
               </div>
@@ -63,7 +67,7 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
           </div>
         </div>
         {canCreate && (
-          <Btn onClick={onAdd} data-testid="new-project-btn" icon={<PlusIcon />}>
+          <Btn onClick={onAdd} data-testid="new-project-btn" icon={<PlusIcon />} style={isMobile ? { alignSelf: "flex-start" } : {}}>
             {t.proj_new}
           </Btn>
         )}

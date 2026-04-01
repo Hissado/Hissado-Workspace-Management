@@ -70,27 +70,30 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
   return (
     <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+      <div style={{
+        display: "flex", flexDirection: isMobile ? "column" : "row",
+        justifyContent: "space-between", alignItems: "flex-start",
+        gap: isMobile ? 12 : 0, marginBottom: isMobile ? 16 : 28,
+      }}>
         <div>
           <h2 style={{
-            fontSize: 22, fontWeight: 700, color: C.navy,
+            fontSize: isMobile ? 20 : 22, fontWeight: 700, color: C.navy,
             fontFamily: "'Playfair Display',serif", margin: "0 0 5px", letterSpacing: "-.01em",
           }}>{t.task_title}</h2>
           <p style={{ fontSize: 13, color: C.g400, margin: 0, fontWeight: 500 }}>
             <span style={{ color: C.g700, fontWeight: 700 }}>{filtered.length}</span> {t.proj_total_tasks}
           </p>
         </div>
-        <Btn onClick={onAddTask} data-testid="add-task-btn" icon={<PlusIcon />}>
+        <Btn onClick={onAddTask} data-testid="add-task-btn" icon={<PlusIcon />} style={isMobile ? { alignSelf: "flex-start" } : {}}>
           {t.task_new}
         </Btn>
       </div>
 
       {/* Filter bar */}
       <div style={{
-        background: C.w, borderRadius: 14, padding: "14px 18px",
+        background: C.w, borderRadius: 14, padding: isMobile ? "12px 14px" : "14px 18px",
         border: `1px solid ${C.g100}`, boxShadow: SH.xs,
-        display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap",
-        alignItems: "center",
+        display: "flex", flexDirection: "column", gap: 10, marginBottom: 16,
       }}>
         {/* Status pills */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -100,7 +103,8 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
               onClick={() => setStatusFilter(s.k)}
               data-testid={`status-filter-${s.k}`}
               style={{
-                padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                padding: isMobile ? "5px 12px" : "6px 16px", borderRadius: 20,
+                fontSize: isMobile ? 11 : 12, fontWeight: 600,
                 cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
                 border: `1px solid ${statusFilter === s.k ? C.navy : C.g200}`,
                 background: statusFilter === s.k ? C.navy : "transparent",
@@ -125,14 +129,13 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
           ))}
         </div>
 
-        <div style={{ flex: 1 }} />
-
         {/* Dropdowns */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
             style={{
+              flex: isMobile ? 1 : "unset",
               padding: "7px 32px 7px 12px", border: `1px solid ${C.g200}`,
               borderRadius: 9, fontSize: 12, fontFamily: "'DM Sans', sans-serif",
               background: C.w, cursor: "pointer", color: C.g600, fontWeight: 500,
@@ -144,7 +147,7 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
             {PRIORITY_OPTS.map((o) => <option key={o.k} value={o.k}>{o.l}</option>)}
           </select>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.g400 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, color: C.g400 }}>
             <SortIcon />
           </div>
 
@@ -152,6 +155,7 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
             style={{
+              flex: isMobile ? 1 : "unset",
               padding: "7px 32px 7px 12px", border: `1px solid ${C.g200}`,
               borderRadius: 9, fontSize: 12, fontFamily: "'DM Sans', sans-serif",
               background: C.w, cursor: "pointer", color: C.g600, fontWeight: 500,
@@ -233,14 +237,14 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
 
                 {/* Assignee */}
                 {assignee && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 90, flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
                     <Av ini={assignee.av} size={26} />
-                    <span style={{ fontSize: 12.5, color: C.g500, fontWeight: 500 }}>{assignee.name.split(" ")[0]}</span>
+                    {!isMobile && <span style={{ fontSize: 12.5, color: C.g500, fontWeight: 500 }}>{assignee.name.split(" ")[0]}</span>}
                   </div>
                 )}
 
                 {/* Due date */}
-                {tk.due && (
+                {!isMobile && tk.due && (
                   <div style={{
                     fontSize: 12, fontWeight: 600,
                     color: isOverdue ? C.err : C.g400,

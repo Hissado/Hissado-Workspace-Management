@@ -158,15 +158,19 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
   return (
     <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+      <div style={{
+        display: "flex", flexDirection: isMobile ? "column" : "row",
+        justifyContent: "space-between", alignItems: "flex-start",
+        gap: isMobile ? 12 : 0, marginBottom: isMobile ? 20 : 28,
+      }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.team_title}</h2>
+          <h2 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.team_title}</h2>
           <p style={{ fontSize: 13, color: C.g400, margin: 0, fontWeight: 500 }}>
             <span style={{ color: C.g700, fontWeight: 700 }}>{activeCount}</span> active · <span style={{ color: C.g700, fontWeight: 700 }}>{users.length}</span> total
           </p>
         </div>
         {canInviteMembers(currentUser) && (
-          <Btn onClick={() => { resetInviteForm(); setShowInvite(true); }} data-testid="invite-btn" icon={<PlusIcon />}>
+          <Btn onClick={() => { resetInviteForm(); setShowInvite(true); }} data-testid="invite-btn" icon={<PlusIcon />} style={isMobile ? { alignSelf: "flex-start" } : {}}>
             {t.team_invite}
           </Btn>
         )}
@@ -195,16 +199,16 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
 
       {/* Filters */}
       <div style={{
-        display: "flex", gap: 10, marginBottom: 24,
-        background: C.w, borderRadius: 13, padding: "12px 16px",
+        display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap",
+        background: C.w, borderRadius: 13, padding: isMobile ? "10px 14px" : "12px 16px",
         border: `1px solid ${C.g100}`, boxShadow: SH.xs, alignItems: "center",
       }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: C.g400, letterSpacing: ".05em", textTransform: "uppercase" }}>Filter</span>
-        <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={selectStyle}>
+        <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={{ ...selectStyle, flex: isMobile ? 1 : "unset" }}>
           <option value="all">{t.team_all_depts}</option>
           {deptsInUse.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
-        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} style={selectStyle}>
+        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} style={{ ...selectStyle, flex: isMobile ? 1 : "unset" }}>
           <option value="all">{t.team_all_roles}</option>
           {rolesInUse.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
         </select>

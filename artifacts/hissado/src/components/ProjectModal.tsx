@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C, Av, Btn, Inp, Modal } from "./primitives";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Project, User } from "@/lib/data";
 import { uid, fmt } from "@/lib/data";
 
@@ -16,6 +17,7 @@ interface ProjectModalProps {
 
 export default function ProjectModal({ open, onClose, users, currentUser, onSave }: ProjectModalProps) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const STATUS_OPTS = [
     { k: "active", l: t.pmod_status_active },
@@ -55,11 +57,11 @@ export default function ProjectModal({ open, onClose, users, currentUser, onSave
           style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 14 }}>
         <div>
           <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.pmod_status}</label>
           <select value={status} onChange={(e) => setStatus(e.target.value as Project["status"])} data-testid="project-status-select"
-            style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none" }}>
+            style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", outline: "none", background: C.w, color: C.navy }}>
             {STATUS_OPTS.map((s) => <option key={s.k} value={s.k}>{s.l}</option>)}
           </select>
         </div>

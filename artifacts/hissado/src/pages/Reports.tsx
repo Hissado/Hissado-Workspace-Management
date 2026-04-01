@@ -61,27 +61,27 @@ export default function Reports({ tasks, projects, users }: ReportsProps) {
 
   return (
     <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.rep_title}</h2>
         <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>{t.rep_subtitle}</p>
       </div>
 
       {/* Summary stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? 10 : 16, marginBottom: 24 }}>
         {stats.map((s, i) => (
           <div key={i} style={{
-            background: C.w, borderRadius: 14, padding: "20px 24px",
+            background: C.w, borderRadius: 14, padding: isMobile ? "14px 16px" : "20px 24px",
             border: `1px solid ${C.g100}`, boxShadow: "0 2px 8px rgba(0,0,0,.05)",
             position: "relative", overflow: "hidden",
           }}>
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: s.color, opacity: .7 }} />
-            <div style={{ fontSize: 32, fontWeight: 800, color: s.color, marginBottom: 4, fontFamily: "'Playfair Display',serif" }}>{s.value}</div>
-            <div style={{ fontSize: 12.5, color: C.g500, fontWeight: 500 }}>{s.label}</div>
+            <div style={{ fontSize: isMobile ? 26 : 32, fontWeight: 800, color: s.color, marginBottom: 4, fontFamily: "'Playfair Display',serif" }}>{s.value}</div>
+            <div style={{ fontSize: isMobile ? 11 : 12.5, color: C.g500, fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 20 }}>
         <Card title={t.rep_by_status}>
           {STATUSES.map((s) => (
             <Bar key={s} label={STATUS_LABELS[s][lang]} value={statusCounts[s]} max={tasks.length} color={STATUS_COLORS_CHART[s]} />
@@ -95,7 +95,7 @@ export default function Reports({ tasks, projects, users }: ReportsProps) {
         </Card>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
         <Card title={t.rep_project_progress}>
           {projects.map((p) => {
             const pTasks = tasks.filter((x) => x.pId === p.id);
@@ -105,7 +105,7 @@ export default function Reports({ tasks, projects, users }: ReportsProps) {
               <div key={p.id} style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.color }} />
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.color, flexShrink: 0 }} />
                     <span style={{ fontSize: 13, color: C.g600, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: C.navy }}>{pct}%</span>

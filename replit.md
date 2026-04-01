@@ -1,216 +1,78 @@
-# Workspace
+# Hissado Project Management App
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+Hissado is a full-featured project management web application designed to streamline project workflows. It provides a comprehensive suite of tools for task management, team collaboration, file sharing, and reporting. The application aims to enhance productivity and organization for teams of various sizes, offering robust access control and a premium user experience.
 
-## Hissado Project Management App
+## User Preferences
 
-Full-featured project management web app at `artifacts/hissado/` (port 24018, preview at `/`).
+- All content pages should use responsive padding: `"32px 36px 60px"` for desktop and `"16px 16px 40px"` for mobile.
+- Hover effects should use `onMouseEnter/Leave` inline style mutation, avoiding `useState` inside `.map()` calls.
+- Page headers should consistently use `fontSize:22`, `fontFamily:"Playfair Display"`, `serif`, and `letterSpacing:"-.01em"`.
+- Stat cards require a colored top accent bar with `position:absolute`, `top:0`, and `height:3`.
+- The `Modal` component must support dismissal via the Escape key.
+- The `ConfirmDialog` component needs to support Escape for cancel and Enter for confirm shortcuts.
+- The `Inp` component should pass its `autoComplete?` prop directly to the underlying `<input>` element.
+- The `getLuminance()` helper should be static and called once per render, not on every mount within the `Av` component.
+- All hooks in `App.tsx` must be called before any conditional returns to prevent Rules of Hooks violations.
+- `useMemo` should be used for all 6 access-controlled slices (`myProjects`, `myTasks`, `myConversations`, `myTeam`, `myFiles`, `myFolders`), ensuring null-safety for the pre-login state.
+- `useMemo` should also be applied to `messagesMap`, `PAGE_TITLES`, and `unreadCount`.
+- `useCallback` is required for `navigate`, `openProjectDetail`, `openTask`, `openAddTask`, `saveTask`, and `handleDeleteProject`.
+- The `i18n.tsx` context value must be memoized with `useMemo`, and `setLang` stabilized with `useCallback` to prevent unnecessary re-renders of consumers.
+- Google Fonts (DM Sans + Playfair Display) should be preloaded in `index.html`.
+- `index.css` should include `text-rendering: optimizeLegibility`, `scroll-behavior: smooth`, improved scrollbar styling, and `font-family: inherit` on form elements.
+- The user prefers detailed explanations for complex features and clear communication.
+- The user prefers an iterative development approach, with frequent updates and opportunities for feedback.
+- The user wants the agent to ask for confirmation before making any major architectural changes or introducing new dependencies.
 
-### Architecture
-- **Frontend**: React + Vite + TypeScript, NO backend
-- **State**: Zustand with localStorage persistence (`hissado-pm-v3` key)
-- **i18n**: Full EN/FR bilingual support via `src/lib/i18n.tsx` context
-- **Access Control**: Project-based RBAC via `src/lib/access.ts` (admin, manager, member, client)
-- **Fonts**: DM Sans + Playfair Display (Google Fonts)
-- **Theme (PREMIUM)**: Deep navy `C.navy=#070D1A`, gold `C.gold=#C9A96E`, bg `C.bg=#EFF2F8`
+## System Architecture
 
-### Premium Design System (primitives.tsx)
-- `C` color constants: `navy, gold, bg, w, g50..g700, ok, err, info`
-- `SH` shadow constants: `xs, sm, md, lg, xl, modal, gold`
-- Components: `Av, Btn (sz, icon prop), Inp (opts/autoComplete for select/inputs), Modal, PBar, StatusBadge, PriorityBadge, Bdg, Card, SectionHeader, Empty, FileIcon`
-- All content pages use responsive padding: `"32px 36px 60px"` desktop, `"16px 16px 40px"` mobile (via `isMobile` from `useIsMobile()` hook)
-- Hover effects: use `onMouseEnter/Leave` inline style mutation (never useState inside .map())
-- Page headers: `fontSize:22, fontFamily:"Playfair Display",serif, letterSpacing:"-.01em"`
-- Stat cards: colored top accent bar `position:absolute, top:0, height:3`
-- `Modal` component: supports Escape key to dismiss (useEffect keyboard listener)
-- `ConfirmDialog`: supports Escape (cancel) and Enter (confirm) keyboard shortcuts
-- `Inp` component: `autoComplete?` prop passes through to `<input>`
-- `getLuminance()` helper: moved outside `Av` component (static, called once per render not on every mount)
+The application is built as a pnpm workspace monorepo using TypeScript.
 
-### Performance Architecture
-- **ALL hooks in App.tsx called before any conditional returns** (critical: prevents Rules of Hooks violation)
-- `useMemo` for all 6 access-controlled slices (`myProjects`, `myTasks`, `myConversations`, `myTeam`, `myFiles`, `myFolders`) — null-safe for pre-login state
-- `useMemo` for `messagesMap`, `PAGE_TITLES`, `unreadCount`
-- `useCallback` for `navigate`, `openProjectDetail`, `openTask`, `openAddTask`, `saveTask`, `handleDeleteProject`
-- `i18n.tsx`: context value memoized with `useMemo`, `setLang` stable with `useCallback` — prevents all consumers re-rendering on unrelated state changes
-- Google Fonts: preloaded in `index.html` (DM Sans + Playfair Display) — removed Inter (unused), removed duplicate CSS `@import`
-- `index.css`: `text-rendering: optimizeLegibility`, `scroll-behavior: smooth`, improved scrollbar styling, `font-family: inherit` on form elements
+### Frontend
+- **Framework**: React with Vite
+- **State Management**: Zustand, with state persisted to `localStorage` under the key `hissado-pm-v3`.
+- **Internationalization**: Full English/French support managed via `src/lib/i18n.tsx` context.
+- **Access Control**: Project-based Role-Based Access Control (RBAC) implemented in `src/lib/access.ts`, supporting roles: admin, manager, member, client.
+- **Styling**: Utilizes DM Sans and Playfair Display fonts. A premium theme with `C.navy=#070D1A`, `C.gold=#C9A96E`, and `C.bg=#EFF2F8` is applied.
+- **Design System**: A custom design system in `primitives.tsx` defines color (`C`) and shadow (`SH`) constants, and reusable components like `Av`, `Btn`, `Inp`, `Modal`, `PBar`, `StatusBadge`, `PriorityBadge`, `Bdg`, `Card`, `SectionHeader`, `Empty`, and `FileIcon`.
+- **Mobile Responsiveness**: Achieved using a `768px` breakpoint with the `useIsMobile()` hook. UI elements like login, sidebar, dashboard grids, settings tabs, chat, modals, and content page padding adapt dynamically.
 
-### CRITICAL Type Facts (data.ts source of truth)
-- Task fields: `pri` (not `priority`), `assignee` (not `aId`), `pId`, `due`, `created`, `prog`, `subs`, `cmts`
-- Task priority values: `"Urgent" | "High" | "Medium" | "Low"`
-- Task status values: `"To Do" | "In Progress" | "In Review" | "Done"`
-- Project status: `"active" | "on-hold" | "completed"` (NOT "hold" or "done")
-- Project field: `created` (not `createdAt`)
-- User role: `string` (was a union, now a free string to support custom roles; built-in IDs: admin/manager/member/client)
-- User has NO `title` or `joined` fields; has: id, name, email, role, av, status, dept
-- FileItem: `id` = file ID, `fId` = folder reference (not `folderId`)
-- Folder: id, name, pId
-- Messages in store: flat `Message[]`, grouped to `Record<string, Message[]>` by cId in App.tsx useMemo
-- `fmt(d: Date)` — takes Date object ONLY; wrap strings: `fmt(new Date(tk.due))`
-- `fmtT(d: string | Date)` — takes either string or Date
-- `PBar` prop: `value` (not `pct`)
-- `Bdg`: takes `children` (ReactNode) + `v` variant (not `color`+`label`)
-- `PriorityBadge`: takes `pri` prop (not `priority`)
+### Backend
+- **API Framework**: Express 5.
+- **Database**: PostgreSQL, managed with Drizzle ORM.
+- **Validation**: Zod is used for schema validation, integrated with `drizzle-zod`.
+- **API Codegen**: Orval generates API client and Zod schemas from an OpenAPI specification.
+- **Email Service**: Integrates with Resend for sending branded HTML email invitations.
 
-### User Authentication & Security
-- **Password fields**: `User.password` (plaintext for demo), `User.mustChangePassword: boolean`, `invitedAt`, `invitedBy`
-- **Login verification**: `handleLogin` checks `u.password === enteredPassword`; wrong password shows error
-- **Forced password reset**: If `currentUser.mustChangePassword === true`, `PasswordChange` screen renders before app (in App.tsx)
-- **PasswordChange component** (`src/pages/PasswordChange.tsx`): Full-screen overlay with strength meter, eye toggle, bilingual
-- **Seed passwords**: admin=`admin123`, manager=`manager123`, member=`member123`, client=`client123`
+### Core Features
+- **Project Management**: CRUD operations for projects, tasks, and sub-tasks. Tasks include `pri` (priority), `assignee`, `pId`, `due`, `created`, `prog`, `subs`, `cmts` fields.
+- **User & Permissions**: User roles are dynamic strings (admin, manager, member, client). Admin controls for departments, roles, and permissions are available. Users can be invited via email, with temporary passwords and forced password resets.
+- **File & Folder Management**: Hierarchical file and folder organization with `FileItem.fId` linking files to folders.
+- **Communication**: Chat functionality with direct and group conversations.
+- **Reporting**: Dashboards and analytics charts for project status, priority, progress, and workload.
+- **Authentication**: Login with email/password, temporary passwords for invited users, and a forced password change flow with strength meter.
+- **Admin Controls**: Cascading delete functionality for projects, conversations, folders, and files.
 
-### Admin Delete Controls
-- **ConfirmDialog** (`src/components/ConfirmDialog.tsx`): Reusable danger confirmation dialog, `data-testid="confirm-delete-btn"`
-- **Delete project**: Admin trash button on each project card → ConfirmDialog → cascading delete (tasks, files, folders, convos)
-- **Delete conversation**: Admin trash button in chat list + header → ConfirmDialog → removes conversation + messages
-- **Delete folder**: Admin trash icon on folder cards → ConfirmDialog → removes folder + all its files
-- **Delete file**: Admin trash icon on file cards → ConfirmDialog
-- All delete props optional: `onDelete?`, `onDeleteConversation?`, `onDeleteFile?`, `onDeleteFolder?` (only set if admin)
+### Critical Type Definitions
+- Task priority values: `"Urgent" | "High" | "Medium" | "Low"`.
+- Task status values: `"To Do" | "In Progress" | "In Review" | "Done"`.
+- Project status values: `"active" | "on-hold" | "completed"`.
+- `fmt(d: Date)` accepts Date objects. `fmtT(d: string | Date)` accepts string or Date.
 
-### Mobile Responsiveness (768px breakpoint)
-- **Hook**: `useIsMobile()` at `src/hooks/use-mobile.tsx` — returns boolean, 768px breakpoint via `matchMedia`
-- **Login**: Single-column on mobile — compact dark brand header (logo + tagline + inline FR toggle) + white rounded form card below; desktop retains two-column layout
-- **Sidebar**: `position:fixed` drawer on mobile — hidden by default (`translateX(-100%)`), slides in when `mobileNavOpen=true`; close button inside; auto-closes on nav click; z-index 1050
-- **App.tsx**: `mobileNavOpen` state; dark backdrop overlay (`position:fixed, inset:0, zIndex:1049`); passes `onOpenMobileNav` prop to Header
-- **Header**: Hamburger icon (≡) on mobile (left of title), icon-only search/logout icons; passes `onHamburger` callback to App
-- **Dashboard**: Stats grid `4-col → 2-col`; content grid `2-col → 1-col`; inline padding responsive
-- **Settings**: Vertical tab sidebar on desktop → horizontal scrolling pill tabs on mobile; content form grid `2-col → 1-col`
-- **Chat**: `mobileShowChat` state — toggles between conversation list and active chat panel; back button `← Conversations` in chat header on mobile
-- **Modal (primitives.tsx)**: `padding: 12px` outer / `"16px 18px"` inner on mobile; `borderRadius: 16`; `maxHeight: 92vh`
-- **All content pages**: `padding: isMobile ? "16px 16px 40px" : "32px 36px 60px"` — affects Projects, Team, Files, MyTasks, Reports, ProjectDetail
-- **Notification panel**: `right: isMobile ? 8 : 20`, `width: isMobile ? "calc(100vw - 16px)" : 340`
+## External Dependencies
 
-### Email Invitations (Resend)
-- **API endpoint**: `POST /api/invite` — sends branded HTML welcome email via Resend
-- **`artifacts/api-server/src/lib/resend.ts`**: Replit connector client (never cached)
-- **`artifacts/api-server/src/routes/invite.ts`**: Route handler with full HTML email template
-- **Invite flow**: Team page generates `generateTempPassword()`, calls `/api/invite`, shows success state with temp credentials
-- **Vite proxy**: `/api` proxied to API server port 8080 in `vite.config.ts`
-- **Invited user badge**: "Pending setup" badge shown on team cards for `mustChangePassword=true` users
-
-### Department / Role / Permission Management (Admin)
-- **Types** (`data.ts`): `Permission` (string), `RoleDef { id, label, isSystem, badgeVariant }`, `ALL_PERMISSIONS`, `SEED_DEPARTMENTS`, `SEED_ROLE_DEFS`, `SEED_ROLE_PERMISSIONS`
-- **Store** (`store.ts`): `departments: string[]`, `roleDefs: RoleDef[]`, `rolePermissions: Record<string, string[]>` — all persisted; full CRUD actions for each
-- **`hasPermission(user, perm, store)`** in `access.ts` — checks `store.rolePermissions[user.role]`
-- **AdminPanel.tsx**: Full admin panel component (reads directly from store): department chip CRUD, role tabs with permission-grid toggles, ConfirmDialog for destructive ops
-- **Settings.tsx**: "Admin Panel" tab (visible to admin only) renders `<AdminPanel />`
-- **Sidebar.tsx**: `permissions?: Set<string>` prop; `NAV_PERM` map gates nav items; App.tsx computes `myPermissions` useMemo from `rolePermissions[currentUser.role]`
-- **Team.tsx**: `deptList?: string[]` + `roleDefs?: RoleDef[]` props; `roleLabel(id)` + `roleBadgeVariant(id)` helpers replace hardcoded `ROLE_BADGE_VARIANT`/`ROLE_LABELS_LOCAL` lookups everywhere (cards, summary strip, profile modal, invite form)
-
-### Pages
-- **Login** (`/`): Quick login with user list, email+password login, language toggle, password verification
-- **Dashboard**: Stats, project progress bars, upcoming tasks, recent tasks table
-- **Projects**: Card grid view; click → Project Detail (list/kanban views)
-- **My Tasks**: Filterable (status + priority) / sortable task list
-- **Chat**: Messaging with direct & group conversations; messages grouped by cId
-- **Files**: Folder navigation + file upload (FileItem.fId = folder ref)
-- **Calendar**: Monthly view with task due dates
-- **Reports**: Analytics charts (status, priority, project progress, workload)
-- **Team**: Member cards + invite modal; role badges + summary strip driven by stored roleDefs
-- **Settings**: Profile, notifications, appearance, security, + Admin Panel (admin only)
-
-### Key Files
-- `src/lib/data.ts` — Types, helpers (uid, fmt, fmtT), seed data, color maps
-- `src/lib/store.ts` — Zustand store with full CRUD; messages: Message[]
-- `src/lib/i18n.tsx` — Full EN/FR translation dictionary + STATUS_LABELS/PRIORITY_LABELS exports
-- `src/lib/access.ts` — Access control utilities (accessibleProjects, accessibleTasks, etc.)
-- `src/App.tsx` — Routing, access control filtering, messages grouping, modal orchestration
-- `src/components/primitives.tsx` — Shared UI (Av, Bdg, Btn, Inp, Modal, PBar, StatusBadge, PriorityBadge, etc.)
-- `src/components/Sidebar.tsx` — Navigation sidebar with collapse + language switcher
-- `src/components/Header.tsx` — Top header with search + notifications
-- `src/components/TaskModal.tsx` — Create/edit/delete tasks (uses `pri` and `assignee` fields)
-- `src/components/ProjectModal.tsx` — Create projects (status: active/on-hold/completed)
-
-## Stack
-
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
-
-## Structure
-
-```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
-```
-
-## TypeScript & Composite Projects
-
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
-
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
-
-## Root Scripts
-
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
-
-## Packages
-
-### `artifacts/api-server` (`@workspace/api-server`)
-
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
-
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
-
-### `lib/db` (`@workspace/db`)
-
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
-
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+- **pnpm workspaces**: Monorepo management.
+- **TypeScript**: Version 5.9.
+- **Node.js**: Version 24.
+- **React**: Frontend library.
+- **Vite**: Frontend build tool.
+- **Zustand**: State management library.
+- **Resend**: Email API for sending invitations.
+- **Express**: Node.js web application framework.
+- **PostgreSQL**: Relational database.
+- **Drizzle ORM**: TypeScript ORM for PostgreSQL.
+- **Zod**: Schema validation library.
+- **drizzle-zod**: Integration between Drizzle ORM and Zod.
+- **Orval**: OpenAPI client code generator.
+- **React Query**: Data fetching and caching library for React.

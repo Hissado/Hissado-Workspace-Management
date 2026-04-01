@@ -73,7 +73,7 @@ export default function Dashboard({ projects, tasks, users, onTaskClick }: Dashb
             background: C.w, borderRadius: 16,
             border: `1px solid ${C.g100}`,
             boxShadow: SH.sm,
-            padding: "22px 24px",
+            padding: isMobile ? "14px 14px" : "22px 24px",
             position: "relative", overflow: "hidden",
             transition: "box-shadow .2s, transform .2s",
           }}
@@ -83,15 +83,15 @@ export default function Dashboard({ projects, tasks, users, onTaskClick }: Dashb
             {/* Accent bar top */}
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${s.color},${s.color}60)`, borderRadius: "16px 16px 0 0" }} />
             <div style={{
-              width: 40, height: 40, borderRadius: 12, marginBottom: 16,
+              width: isMobile ? 32 : 40, height: isMobile ? 32 : 40, borderRadius: 10, marginBottom: isMobile ? 10 : 16,
               background: s.light, display: "flex", alignItems: "center", justifyContent: "center",
               color: s.color,
             }}>
               {statIcons[i]}
             </div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: C.navy, marginBottom: 4, fontFamily: "'Playfair Display',serif", lineHeight: 1 }}>{s.value}</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.g700, marginBottom: 3 }}>{s.label}</div>
-            <div style={{ fontSize: 11.5, color: C.g400 }}>{s.sub}</div>
+            <div style={{ fontSize: isMobile ? 24 : 32, fontWeight: 800, color: C.navy, marginBottom: 4, fontFamily: "'Playfair Display',serif", lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: isMobile ? 11.5 : 13, fontWeight: 600, color: C.g700, marginBottom: 3 }}>{s.label}</div>
+            {!isMobile && <div style={{ fontSize: 11.5, color: C.g400 }}>{s.sub}</div>}
           </div>
         ))}
       </div>
