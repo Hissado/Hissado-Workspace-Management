@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User, Project, Task, Notification, Conversation, Message, FileItem, Folder } from "./data";
+import type { User, Project, Task, Notification, Conversation, Message, FileItem, Folder, RoleDef, Permission } from "./data";
 import {
   SEED_USERS, SEED_PROJECTS, SEED_TASKS, SEED_NOTIFICATIONS,
   SEED_CONVERSATIONS, SEED_MESSAGES, SEED_FILES, SEED_FOLDERS,
+  SEED_ROLE_DEFS, SEED_ROLE_PERMISSIONS, SEED_DEPARTMENTS,
 } from "./data";
 
 export type Page =
@@ -32,6 +33,9 @@ interface AppState {
   messages: Message[];
   files: FileItem[];
   folders: Folder[];
+  departments: string[];
+  roleDefs: RoleDef[];
+  rolePermissions: Record<string, Permission[]>;
 
   setCurrentUser: (u: User | null) => void;
   setPage: (p: Page) => void;
@@ -68,6 +72,16 @@ interface AppState {
   deleteFile: (id: string) => void;
   addFolder: (f: Folder) => void;
   deleteFolder: (id: string) => void;
+
+  addDepartment: (name: string) => void;
+  updateDepartment: (oldName: string, newName: string) => void;
+  deleteDepartment: (name: string) => void;
+
+  addRoleDef: (r: RoleDef) => void;
+  updateRoleDef: (r: RoleDef) => void;
+  deleteRoleDef: (id: string) => void;
+
+  setRolePermissions: (roleId: string, perms: Permission[]) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -93,6 +107,9 @@ export const useStore = create<AppState>()(
       messages: SEED_MESSAGES,
       files: SEED_FILES,
       folders: SEED_FOLDERS,
+      departments: SEED_DEPARTMENTS,
+      roleDefs: SEED_ROLE_DEFS,
+      rolePermissions: SEED_ROLE_PERMISSIONS,
 
       setCurrentUser: (u) => set({ currentUser: u }),
       setPage: (p) => set({ page: p }),
@@ -161,6 +178,30 @@ export const useStore = create<AppState>()(
         folders: s.folders.filter((f) => f.id !== id),
         files: s.files.filter((f) => f.fId !== id),
       })),
+
+      addDepartment: (name) => set((s) => ({ departments: [...s.departments, name] })),
+      updateDepartment: (oldName, newName) => set((s) => ({
+        departments: s.departments.map((d) => (d === oldName ? newName : d)),
+        users: s.users.map((u) => (u.dept === oldName ? { ...u, dept: newName } : u)),
+      })),
+      deleteDepartment: (name) => set((s) => ({
+        departments: s.departments.filter((d) => d !== name),
+      })),
+
+      addRoleDef: (r) => set((s) => ({ roleDefs: [...s.roleDefs, r] })),
+      updateRoleDef: (r) => set((s) => ({ roleDefs: s.roleDefs.map((x) => (x.id === r.id ? r : x)) })),
+      deleteRoleDef: (id) => set((s) => {
+        const { [id]: _removed, ...remainingPerms } = s.rolePermissions;
+        return {
+          roleDefs: s.roleDefs.filter((r) => r.id !== id),
+          users: s.users.map((u) => (u.role === id ? { ...u, role: "member" } : u)),
+          rolePermissions: remainingPerms as Record<string, Permission[]>,
+        };
+      }),
+
+      setRolePermissions: (roleId, perms) => set((s) => ({
+        rolePermissions: { ...s.rolePermissions, [roleId]: perms },
+      })),
     }),
     {
       name: "hissado-pm-v3",
@@ -174,6 +215,9 @@ export const useStore = create<AppState>()(
         messages: state.messages,
         files: state.files,
         folders: state.folders,
+        departments: state.departments,
+        roleDefs: state.roleDefs,
+        rolePermissions: state.rolePermissions,
       }),
     }
   )

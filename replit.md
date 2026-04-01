@@ -44,7 +44,7 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 - Task status values: `"To Do" | "In Progress" | "In Review" | "Done"`
 - Project status: `"active" | "on-hold" | "completed"` (NOT "hold" or "done")
 - Project field: `created` (not `createdAt`)
-- User role: `"admin" | "manager" | "member" | "client"` (no "viewer")
+- User role: `string` (was a union, now a free string to support custom roles; built-in IDs: admin/manager/member/client)
 - User has NO `title` or `joined` fields; has: id, name, email, role, av, status, dept
 - FileItem: `id` = file ID, `fId` = folder reference (not `folderId`)
 - Folder: id, name, pId
@@ -78,6 +78,15 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 - **Vite proxy**: `/api` proxied to API server port 8080 in `vite.config.ts`
 - **Invited user badge**: "Pending setup" badge shown on team cards for `mustChangePassword=true` users
 
+### Department / Role / Permission Management (Admin)
+- **Types** (`data.ts`): `Permission` (string), `RoleDef { id, label, isSystem, badgeVariant }`, `ALL_PERMISSIONS`, `SEED_DEPARTMENTS`, `SEED_ROLE_DEFS`, `SEED_ROLE_PERMISSIONS`
+- **Store** (`store.ts`): `departments: string[]`, `roleDefs: RoleDef[]`, `rolePermissions: Record<string, string[]>` — all persisted; full CRUD actions for each
+- **`hasPermission(user, perm, store)`** in `access.ts` — checks `store.rolePermissions[user.role]`
+- **AdminPanel.tsx**: Full admin panel component (reads directly from store): department chip CRUD, role tabs with permission-grid toggles, ConfirmDialog for destructive ops
+- **Settings.tsx**: "Admin Panel" tab (visible to admin only) renders `<AdminPanel />`
+- **Sidebar.tsx**: `permissions?: Set<string>` prop; `NAV_PERM` map gates nav items; App.tsx computes `myPermissions` useMemo from `rolePermissions[currentUser.role]`
+- **Team.tsx**: `deptList?: string[]` + `roleDefs?: RoleDef[]` props; `roleLabel(id)` + `roleBadgeVariant(id)` helpers replace hardcoded `ROLE_BADGE_VARIANT`/`ROLE_LABELS_LOCAL` lookups everywhere (cards, summary strip, profile modal, invite form)
+
 ### Pages
 - **Login** (`/`): Quick login with user list, email+password login, language toggle, password verification
 - **Dashboard**: Stats, project progress bars, upcoming tasks, recent tasks table
@@ -87,8 +96,8 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 - **Files**: Folder navigation + file upload (FileItem.fId = folder ref)
 - **Calendar**: Monthly view with task due dates
 - **Reports**: Analytics charts (status, priority, project progress, workload)
-- **Team**: Member cards + invite modal (no viewer role, no title/joined fields)
-- **Settings**: Profile, notifications, appearance, security tabs
+- **Team**: Member cards + invite modal; role badges + summary strip driven by stored roleDefs
+- **Settings**: Profile, notifications, appearance, security, + Admin Panel (admin only)
 
 ### Key Files
 - `src/lib/data.ts` — Types, helpers (uid, fmt, fmtT), seed data, color maps

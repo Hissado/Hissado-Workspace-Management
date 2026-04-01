@@ -1,4 +1,16 @@
-import type { User, Project, Task, Conversation, FileItem, Folder } from "./data";
+import type { User, Project, Task, Conversation, FileItem, Folder, Permission } from "./data";
+
+/**
+ * Check if a user has a specific feature permission based on the stored permission config.
+ */
+export function hasPermission(
+  user: User,
+  permission: Permission,
+  rolePermissions: Record<string, string[]>
+): boolean {
+  const perms = rolePermissions[user.role] ?? [];
+  return perms.includes(permission);
+}
 
 /**
  * Returns true if the user has access to the given project.

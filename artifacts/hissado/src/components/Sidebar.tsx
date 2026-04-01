@@ -28,6 +28,7 @@ interface SidebarProps {
   userAv?: string;
   unread?: number;
   onProjectClick?: (p: Project) => void;
+  permissions?: Set<string>;
 }
 
 function NavItem({
@@ -85,15 +86,26 @@ function NavItem({
   );
 }
 
+const NAV_PERM: Partial<Record<Page, string>> = {
+  dashboard: "view_dashboard",
+  projects: "view_projects",
+  tasks: "view_tasks",
+  chat: "view_chat",
+  files: "view_files",
+  calendar: "view_calendar",
+  reports: "view_reports",
+  team: "view_team",
+};
+
 export default function Sidebar({
   page, onNavigate, projects, collapsed, onToggleCollapse,
-  userRole, userName, userAv, unread = 0, onProjectClick,
+  userRole, userName, userAv, unread = 0, onProjectClick, permissions,
 }: SidebarProps) {
   const { t, lang, setLang } = useI18n();
   const [langHov, setLangHov] = useState(false);
   const isAdmin = userRole === "admin" || userRole === "manager";
 
-  const NAV_ITEMS: { k: Page; icon: React.ReactNode; l: string; badge?: number }[] = [
+  const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number }[] = [
     { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
     { k: "projects", icon: <FolderIcon />, l: t.nav_projects },
     { k: "tasks", icon: <CheckIcon />, l: t.nav_tasks },
@@ -103,6 +115,13 @@ export default function Sidebar({
     { k: "reports", icon: <ChartIcon />, l: t.nav_reports },
     { k: "team", icon: <UsersIcon />, l: t.nav_team },
   ];
+
+  const NAV_ITEMS = permissions
+    ? ALL_NAV.filter((n) => {
+        const perm = NAV_PERM[n.k];
+        return !perm || permissions.has(perm);
+      })
+    : ALL_NAV;
 
   const nextLang: Lang = lang === "en" ? "fr" : "en";
 

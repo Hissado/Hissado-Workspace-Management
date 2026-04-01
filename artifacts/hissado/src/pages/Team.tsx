@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C, SH, Av, Btn, Modal, Inp, Bdg, Empty } from "@/components/primitives";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useI18n } from "@/lib/i18n";
-import type { User } from "@/lib/data";
+import type { User, RoleDef } from "@/lib/data";
 import { uid } from "@/lib/data";
 import { canInviteMembers, canDeleteUser } from "@/lib/access";
 
@@ -14,12 +14,13 @@ const SendIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="non
 const CheckCircleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>;
 const KeyIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></svg>;
 
-const DEPT_LIST = ["Engineering", "Design", "Marketing", "Product", "Operations", "Sales", "Executive", "External"];
-const ROLE_LIST: User["role"][] = ["admin", "manager", "member", "client"];
-
-const ROLE_BADGE_VARIANT: Record<string, "danger" | "gold" | "info" | "default"> = {
-  admin: "danger", manager: "gold", member: "info", client: "default",
-};
+const FALLBACK_DEPTS = ["Engineering", "Design", "Marketing", "Product", "Operations", "Sales", "Executive", "External"];
+const FALLBACK_ROLES: RoleDef[] = [
+  { id: "admin",   label: "Admin",   isSystem: true, badgeVariant: "danger" },
+  { id: "manager", label: "Manager", isSystem: true, badgeVariant: "gold" },
+  { id: "member",  label: "Member",  isSystem: true, badgeVariant: "info" },
+  { id: "client",  label: "Client",  isSystem: true, badgeVariant: "default" },
+];
 
 function generateTempPassword(): string {
   const words = ["Maple", "River", "Stone", "Cloud", "Tiger", "Eagle", "Swift", "Ember", "Noble", "Crest"];
@@ -33,9 +34,11 @@ interface TeamProps {
   currentUser: User;
   onAddUser: (u: User) => void;
   onDeleteUser: (id: string) => void;
+  deptList?: string[];
+  roleDefs?: RoleDef[];
 }
 
-export default function Team({ users, currentUser, onAddUser, onDeleteUser }: TeamProps) {
+export default function Team({ users, currentUser, onAddUser, onDeleteUser, deptList, roleDefs }: TeamProps) {
   const { t, lang } = useI18n();
   const [deptFilter, setDeptFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -44,27 +47,39 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser }: Te
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<User["role"]>("member");
-  const [inviteDept, setInviteDept] = useState("Engineering");
+  const [inviteRole, setInviteRole] = useState<string>("member");
+  const [inviteDept, setInviteDept] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState<{ name: string; email: string; tempPw: string } | null>(null);
   const [inviteError, setInviteError] = useState("");
 
+  const activeRoleDefs = roleDefs ?? FALLBACK_ROLES;
+  const activeDeptList = deptList ?? FALLBACK_DEPTS;
+
   const ROLE_LABELS_LOCAL: Record<string, string> = lang === "fr"
     ? { admin: "Administrateur", manager: "Responsable", member: "Membre", client: "Client" }
     : { admin: "Admin", manager: "Manager", member: "Member", client: "Client" };
+
+  function roleLabel(roleId: string): string {
+    const def = activeRoleDefs.find((r) => r.id === roleId);
+    return def ? def.label : (ROLE_LABELS_LOCAL[roleId] ?? roleId);
+  }
+  function roleBadgeVariant(roleId: string) {
+    const def = activeRoleDefs.find((r) => r.id === roleId);
+    return def?.badgeVariant ?? "default";
+  }
 
   const filtered = users.filter((u) =>
     (deptFilter === "all" || u.dept === deptFilter) &&
     (roleFilter === "all" || u.role === roleFilter)
   );
 
-  const departments = [...new Set(users.map((u) => u.dept).filter(Boolean))];
-  const roles = [...new Set(users.map((u) => u.role))];
+  const deptsInUse = [...new Set(users.map((u) => u.dept).filter(Boolean))];
+  const rolesInUse = [...new Set(users.map((u) => u.role))];
 
   const resetInviteForm = () => {
     setInviteName(""); setInviteEmail(""); setInviteRole("member");
-    setInviteDept("Engineering"); setInviteError(""); setInviteSuccess(null);
+    setInviteDept(activeDeptList[0] ?? ""); setInviteError(""); setInviteSuccess(null);
   };
 
   const sendInvite = async () => {
@@ -156,23 +171,21 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser }: Te
       </div>
 
       {/* Summary strip */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-        {Object.entries({ admin: "danger", manager: "gold", member: "info", client: "default" } as const).map(([role, variant]) => {
-          const count = users.filter((u) => u.role === role).length;
+      <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+        {activeRoleDefs.map((rd) => {
+          const count = users.filter((u) => u.role === rd.id).length;
           if (count === 0) return null;
           return (
-            <div key={role} style={{
+            <div key={rd.id} style={{
               background: C.w, borderRadius: 12, padding: "10px 16px",
-              border: `1px solid ${C.g100}`, boxShadow: SH.xs,
-              display: "flex", alignItems: "center", gap: 8,
+              border: `1.5px solid ${roleFilter === rd.id ? C.gold : C.g100}`,
+              boxShadow: SH.xs, display: "flex", alignItems: "center", gap: 8,
               cursor: "pointer", transition: "all .15s",
             }}
-              onClick={() => setRoleFilter(roleFilter === role ? "all" : role)}
+              onClick={() => setRoleFilter(roleFilter === rd.id ? "all" : rd.id)}
             >
               <span style={{ fontSize: 18, fontWeight: 800, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{count}</span>
-              <span style={{ fontSize: 12, color: C.g400, fontWeight: 500, textTransform: "capitalize" }}>
-                {ROLE_LABELS_LOCAL[role]}{count !== 1 ? "s" : ""}
-              </span>
+              <Bdg v={rd.badgeVariant}>{rd.label}</Bdg>
             </div>
           );
         })}
@@ -187,11 +200,11 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser }: Te
         <span style={{ fontSize: 12, fontWeight: 600, color: C.g400, letterSpacing: ".05em", textTransform: "uppercase" }}>Filter</span>
         <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={selectStyle}>
           <option value="all">{t.team_all_depts}</option>
-          {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+          {deptsInUse.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} style={selectStyle}>
           <option value="all">{t.team_all_roles}</option>
-          {roles.map((r) => <option key={r} value={r}>{ROLE_LABELS_LOCAL[r] || r}</option>)}
+          {rolesInUse.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
         </select>
         {(deptFilter !== "all" || roleFilter !== "all") && (
           <button
@@ -239,7 +252,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser }: Te
                 </div>
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-                <Bdg v={ROLE_BADGE_VARIANT[u.role] || "default"}>{ROLE_LABELS_LOCAL[u.role] || u.role}</Bdg>
+                <Bdg v={roleBadgeVariant(u.role)}>{roleLabel(u.role)}</Bdg>
                 {u.mustChangePassword && (
                   <span style={{
                     display: "inline-flex", alignItems: "center", gap: 4,
@@ -335,14 +348,14 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser }: Te
             <Inp
               label={t.team_role}
               value={inviteRole}
-              onChange={(v) => setInviteRole(v as User["role"])}
-              opts={ROLE_LIST.map((r) => ({ v: r, l: ROLE_LABELS_LOCAL[r] || r }))}
+              onChange={setInviteRole}
+              opts={activeRoleDefs.map((r) => ({ v: r.id, l: r.label }))}
             />
             <Inp
               label={t.team_dept}
               value={inviteDept}
               onChange={setInviteDept}
-              opts={DEPT_LIST.map((d) => ({ v: d, l: d }))}
+              opts={activeDeptList.map((d) => ({ v: d, l: d }))}
             />
 
             {/* Info box */}
@@ -394,7 +407,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser }: Te
             <div style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{showProfile.name}</div>
             <div style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>{showProfile.dept}</div>
             <div style={{ marginTop: 10, display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
-              <Bdg v={ROLE_BADGE_VARIANT[showProfile.role] || "default"}>{ROLE_LABELS_LOCAL[showProfile.role] || showProfile.role}</Bdg>
+              <Bdg v={roleBadgeVariant(showProfile.role)}>{roleLabel(showProfile.role)}</Bdg>
               {showProfile.mustChangePassword && (
                 <span style={{
                   display: "inline-flex", alignItems: "center", gap: 4,
@@ -409,7 +422,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser }: Te
           {[
             { l: t.team_email_label, v: showProfile.email },
             { l: t.team_dept_label, v: showProfile.dept },
-            { l: t.team_role, v: ROLE_LABELS_LOCAL[showProfile.role] || showProfile.role },
+            { l: t.team_role, v: roleLabel(showProfile.role) },
             { l: t.team_status_label, v: showProfile.status },
             ...(showProfile.invitedBy ? [{ l: "Invited by", v: showProfile.invitedBy }] : []),
           ].map((row) => (

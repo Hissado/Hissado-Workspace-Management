@@ -14,11 +14,74 @@ export const addH = (d: Date, n: number) => {
   return r;
 };
 
+export type BdgVariant = "default" | "gold" | "success" | "warning" | "danger" | "info" | "navy";
+
+export type Permission =
+  | "view_dashboard" | "view_projects" | "create_projects"
+  | "view_tasks" | "create_tasks"
+  | "view_files" | "upload_files"
+  | "view_chat" | "send_messages"
+  | "view_calendar" | "view_reports"
+  | "view_team" | "invite_members"
+  | "view_settings";
+
+export type RoleDef = {
+  id: string;
+  label: string;
+  isSystem: boolean;
+  badgeVariant: BdgVariant;
+};
+
+export const ALL_PERMISSIONS: { id: Permission; group: string; label: string; labelFr: string }[] = [
+  { id: "view_dashboard",  group: "Dashboard", label: "View Dashboard",              labelFr: "Tableau de bord" },
+  { id: "view_projects",   group: "Projects",  label: "View Projects",               labelFr: "Voir les projets" },
+  { id: "create_projects", group: "Projects",  label: "Create & Manage Projects",    labelFr: "Créer et gérer les projets" },
+  { id: "view_tasks",      group: "Tasks",     label: "View Tasks",                  labelFr: "Voir les tâches" },
+  { id: "create_tasks",    group: "Tasks",     label: "Create & Edit Tasks",         labelFr: "Créer et modifier les tâches" },
+  { id: "view_files",      group: "Files",     label: "View Files",                  labelFr: "Voir les fichiers" },
+  { id: "upload_files",    group: "Files",     label: "Upload Files",                labelFr: "Téléverser des fichiers" },
+  { id: "view_chat",       group: "Messages",  label: "View Messages",               labelFr: "Voir les messages" },
+  { id: "send_messages",   group: "Messages",  label: "Send Messages",               labelFr: "Envoyer des messages" },
+  { id: "view_calendar",   group: "Calendar",  label: "View Calendar",               labelFr: "Voir le calendrier" },
+  { id: "view_reports",    group: "Reports",   label: "View Reports",                labelFr: "Voir les rapports" },
+  { id: "view_team",       group: "Team",      label: "View Team Directory",         labelFr: "Annuaire d'équipe" },
+  { id: "invite_members",  group: "Team",      label: "Invite Members",              labelFr: "Inviter des membres" },
+  { id: "view_settings",   group: "Settings",  label: "View Settings",               labelFr: "Paramètres" },
+];
+
+const _ALL_PERMS = ALL_PERMISSIONS.map((p) => p.id) as Permission[];
+
+export const SEED_ROLE_DEFS: RoleDef[] = [
+  { id: "admin",   label: "Admin",   isSystem: true, badgeVariant: "danger" },
+  { id: "manager", label: "Manager", isSystem: true, badgeVariant: "gold" },
+  { id: "member",  label: "Member",  isSystem: true, badgeVariant: "info" },
+  { id: "client",  label: "Client",  isSystem: true, badgeVariant: "default" },
+];
+
+export const SEED_ROLE_PERMISSIONS: Record<string, Permission[]> = {
+  admin:   [..._ALL_PERMS],
+  manager: [..._ALL_PERMS],
+  member: [
+    "view_dashboard", "view_projects", "view_tasks", "create_tasks",
+    "view_files", "upload_files", "view_chat", "send_messages",
+    "view_calendar", "view_reports", "view_team", "view_settings",
+  ],
+  client: [
+    "view_dashboard", "view_projects", "view_tasks",
+    "view_files", "view_chat", "view_team",
+  ],
+};
+
+export const SEED_DEPARTMENTS: string[] = [
+  "Engineering", "Design", "Marketing", "Product",
+  "Operations", "Sales", "Executive", "External",
+];
+
 export type User = {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "manager" | "member" | "client";
+  role: string;
   av: string;
   status: "active" | "inactive";
   dept: string;

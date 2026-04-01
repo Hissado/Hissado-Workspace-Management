@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C, Av, Btn, Inp } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import type { User } from "@/lib/data";
+import AdminPanel from "@/pages/AdminPanel";
 
 interface SettingsProps {
   currentUser: User;
@@ -11,11 +12,13 @@ interface SettingsProps {
 export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
   const { t } = useI18n();
 
+  const isAdmin = currentUser.role === "admin";
   const TABS = [
     { k: "profile", l: t.set_profile },
     { k: "notifications", l: t.set_notifications },
     { k: "appearance", l: t.set_appearance },
     { k: "security", l: t.set_security },
+    ...(isAdmin ? [{ k: "admin", l: t.set_admin }] : []),
   ];
 
   const [tab, setTab] = useState("profile");
@@ -133,6 +136,16 @@ export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
                 ))}
               </div>
               {theme === "system" && <p style={{ fontSize: 12, color: C.g400, marginTop: 14 }}>{t.set_theme_system_desc}</p>}
+            </div>
+          )}
+
+          {tab === "admin" && isAdmin && (
+            <div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: C.navy, marginBottom: 6 }}>{t.set_admin}</h3>
+              <p style={{ fontSize: 13, color: C.g400, marginBottom: 28 }}>
+                {t.set_admin_desc}
+              </p>
+              <AdminPanel />
             </div>
           )}
 

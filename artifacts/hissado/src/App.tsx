@@ -32,6 +32,7 @@ export default function App() {
     currentUser, page, collapsed, searchQuery,
     selectedProject, selectedTask, showTaskModal, showProjectModal,
     users, projects, tasks, notifications, conversations, messages, files, folders,
+    departments, roleDefs, rolePermissions,
     setCurrentUser, setPage, setCollapsed, setSearchQuery,
     setSelectedProject, setSelectedTask, setShowTaskModal, setShowProjectModal,
     addTask, updateTask, deleteTask,
@@ -84,6 +85,12 @@ export default function App() {
   );
 
   const isAdmin = currentUser?.role === "admin";
+
+  // Effective permission set for the current user based on stored role permissions
+  const myPermissions = useMemo(() => {
+    if (!currentUser) return new Set<string>();
+    return new Set<string>(rolePermissions[currentUser.role] ?? []);
+  }, [currentUser, rolePermissions]);
 
   const PAGE_TITLES = useMemo<Record<Page, string>>(() => ({
     dashboard: t.nav_dashboard,
@@ -172,6 +179,7 @@ export default function App() {
         userAv={currentUser.av}
         unread={unreadCount}
         onProjectClick={openProjectDetail}
+        permissions={myPermissions}
       />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
@@ -305,7 +313,14 @@ export default function App() {
             <Reports tasks={myTasks} projects={myProjects} users={myTeam} />
           )}
           {page === "team" && (
-            <Team users={myTeam} currentUser={currentUser} onAddUser={addUser} onDeleteUser={deleteUser} />
+            <Team
+              users={myTeam}
+              currentUser={currentUser}
+              onAddUser={addUser}
+              onDeleteUser={deleteUser}
+              deptList={departments}
+              roleDefs={roleDefs}
+            />
           )}
           {page === "settings" && (
             <Settings currentUser={currentUser} onUpdateUser={(updates) => updateUser({ ...currentUser, ...updates })} />
