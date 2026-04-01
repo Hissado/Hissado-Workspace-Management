@@ -209,8 +209,8 @@ export default function Login({ users, onLogin }: LoginProps) {
           )}
 
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
-            <Inp label={t.login_email} value={email} onChange={setEmail} ph="your@email.com" type="email" />
-            <Inp label={t.login_password} value={password} onChange={setPassword} ph="••••••••" type="password" />
+            <Inp label={t.login_email} value={email} onChange={setEmail} ph="your@email.com" type="email" autoComplete="email" />
+            <Inp label={t.login_password} value={password} onChange={setPassword} ph="••••••••" type="password" autoComplete="current-password" />
 
             <Btn
               onClick={handleLogin}

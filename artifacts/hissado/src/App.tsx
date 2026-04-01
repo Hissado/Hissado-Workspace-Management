@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useStore } from "@/lib/store";
 import type { Page } from "@/lib/store";
 import type { Task, Project, Message } from "@/lib/data";
@@ -24,14 +24,7 @@ import Calendar from "@/pages/Calendar";
 import Reports from "@/pages/Reports";
 import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
-
-const NAVY = "#0F1A2E";
-const G50 = "#F8F9FC";
-const G100 = "#F0F2F7";
-const G400 = "#9BA3B5";
-const G700 = "#343B4F";
-const GOLD = "#C8A45C";
-const WHITE = "#FFF";
+import { C } from "@/components/primitives";
 
 export default function App() {
   const { t } = useI18n();
@@ -52,7 +45,9 @@ export default function App() {
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [taskDefaultProject, setTaskDefaultProject] = useState<string | undefined>();
 
-  // Group flat messages array by conversation ID
+  // ── ALL hooks must come before any conditional returns ──
+
+  // Group messages by conversation ID
   const messagesMap = useMemo(() => {
     const map: Record<string, Message[]> = {};
     messages.forEach((m) => {
@@ -62,12 +57,95 @@ export default function App() {
     return map;
   }, [messages]);
 
-  // ── Login flow ──
+  // Access-controlled data slices — null-safe (currentUser may be null before login)
+  const myProjects = useMemo(
+    () => currentUser ? accessibleProjects(currentUser, projects) : [],
+    [currentUser, projects]
+  );
+  const myTasks = useMemo(
+    () => currentUser ? accessibleTasks(currentUser, tasks, projects) : [],
+    [currentUser, tasks, projects]
+  );
+  const myConversations = useMemo(
+    () => currentUser ? accessibleConversations(currentUser, conversations, projects) : [],
+    [currentUser, conversations, projects]
+  );
+  const myTeam = useMemo(
+    () => currentUser ? accessibleTeamMembers(currentUser, users, projects) : [],
+    [currentUser, users, projects]
+  );
+  const myFiles = useMemo(
+    () => currentUser ? accessibleFiles(currentUser, files, projects) : [],
+    [currentUser, files, projects]
+  );
+  const myFolders = useMemo(
+    () => currentUser ? accessibleFolders(currentUser, folders, projects) : [],
+    [currentUser, folders, projects]
+  );
+
+  const isAdmin = currentUser?.role === "admin";
+
+  const PAGE_TITLES = useMemo<Record<Page, string>>(() => ({
+    dashboard: t.nav_dashboard,
+    projects: t.nav_projects,
+    pdetail: selectedProject?.name || t.nav_projects,
+    tasks: t.nav_tasks,
+    chat: t.nav_chat,
+    files: t.nav_files,
+    calendar: t.nav_calendar,
+    reports: t.nav_reports,
+    team: t.nav_team,
+    settings: t.nav_settings,
+  }), [t, selectedProject?.name]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
+
+  const navigate = useCallback((p: Page) => {
+    setPage(p);
+    setShowNotifPanel(false);
+  }, [setPage]);
+
+  const openProjectDetail = useCallback((p: Project) => {
+    setSelectedProject(p);
+    setPage("pdetail");
+  }, [setSelectedProject, setPage]);
+
+  const openTask = useCallback((task: Task) => {
+    setSelectedTask(task);
+    setShowTaskModal(true);
+  }, [setSelectedTask, setShowTaskModal]);
+
+  const openAddTask = useCallback((projId?: string) => {
+    setSelectedTask(null);
+    setTaskDefaultProject(projId || selectedProject?.id);
+    setShowTaskModal(true);
+  }, [setSelectedTask, selectedProject?.id, setShowTaskModal]);
+
+  const saveTask = useCallback((task: Task) => {
+    const existing = tasks.find((x) => x.id === task.id);
+    if (existing) updateTask(task);
+    else addTask(task);
+    setShowTaskModal(false);
+    setSelectedTask(null);
+  }, [tasks, updateTask, addTask, setShowTaskModal, setSelectedTask]);
+
+  const handleDeleteProject = useCallback((id: string) => {
+    if (selectedProject?.id === id) {
+      setSelectedProject(null);
+      setPage("projects");
+    }
+    deleteProject(id);
+  }, [selectedProject?.id, setSelectedProject, setPage, deleteProject]);
+
+  // ── Conditional renders (after all hooks) ──
+
   if (!currentUser) {
     return <Login users={users} onLogin={(u) => setCurrentUser(u)} />;
   }
 
-  // ── Forced password reset ──
   if (currentUser.mustChangePassword) {
     return (
       <PasswordChange
@@ -81,70 +159,8 @@ export default function App() {
     );
   }
 
-  // ── Access-controlled data slices ──
-  const myProjects = accessibleProjects(currentUser, projects);
-  const myTasks = accessibleTasks(currentUser, tasks, projects);
-  const myConversations = accessibleConversations(currentUser, conversations, projects);
-  const myTeam = accessibleTeamMembers(currentUser, users, projects);
-  const myFiles = accessibleFiles(currentUser, files, projects);
-  const myFolders = accessibleFolders(currentUser, folders, projects);
-
-  const isAdmin = currentUser.role === "admin";
-
-  const PAGE_TITLES: Record<Page, string> = {
-    dashboard: t.nav_dashboard,
-    projects: t.nav_projects,
-    pdetail: selectedProject?.name || t.nav_projects,
-    tasks: t.nav_tasks,
-    chat: t.nav_chat,
-    files: t.nav_files,
-    calendar: t.nav_calendar,
-    reports: t.nav_reports,
-    team: t.nav_team,
-    settings: t.nav_settings,
-  };
-
-  const navigate = (p: Page) => {
-    setPage(p);
-    setShowNotifPanel(false);
-  };
-
-  const openProjectDetail = (p: Project) => {
-    setSelectedProject(p);
-    setPage("pdetail");
-  };
-
-  const openTask = (task: Task) => {
-    setSelectedTask(task);
-    setShowTaskModal(true);
-  };
-
-  const openAddTask = (projId?: string) => {
-    setSelectedTask(null);
-    setTaskDefaultProject(projId || selectedProject?.id);
-    setShowTaskModal(true);
-  };
-
-  const saveTask = (task: Task) => {
-    const existing = tasks.find((x) => x.id === task.id);
-    if (existing) updateTask(task);
-    else addTask(task);
-    setShowTaskModal(false);
-    setSelectedTask(null);
-  };
-
-  const handleDeleteProject = (id: string) => {
-    if (selectedProject?.id === id) {
-      setSelectedProject(null);
-      setPage("projects");
-    }
-    deleteProject(id);
-  };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#EFF2F8" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: C.bg }}>
       <Sidebar
         page={page}
         onNavigate={navigate}
@@ -172,20 +188,47 @@ export default function App() {
         {showNotifPanel && (
           <>
             <div style={{ position: "fixed", inset: 0, zIndex: 498 }} onClick={() => setShowNotifPanel(false)} />
-            <div style={{ position: "fixed", top: 74, right: 20, width: 340, background: WHITE, borderRadius: 16, border: `1px solid ${G100}`, boxShadow: "0 8px 30px rgba(0,0,0,.12)", zIndex: 499, overflow: "hidden" }}>
-              <div style={{ padding: "14px 16px", borderBottom: `1px solid ${G100}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{t.notif_title}</h3>
-                <button onClick={markAllNotifsRead} style={{ fontSize: 11, color: GOLD, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>{t.notif_mark_read}</button>
+            <div style={{
+              position: "fixed", top: 74, right: 20, width: 340,
+              background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`,
+              boxShadow: "0 8px 30px rgba(0,0,0,.12)", zIndex: 499, overflow: "hidden",
+            }}>
+              <div style={{
+                padding: "14px 16px", borderBottom: `1px solid ${C.g100}`,
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: 0 }}>{t.notif_title}</h3>
+                <button
+                  onClick={markAllNotifsRead}
+                  style={{
+                    fontSize: 11, color: C.gold, background: "none", border: "none",
+                    cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                  }}
+                >
+                  {t.notif_mark_read}
+                </button>
               </div>
               <div style={{ maxHeight: 380, overflow: "auto" }}>
                 {notifications.length === 0 ? (
-                  <div style={{ padding: 32, textAlign: "center", color: G400, fontSize: 13 }}>{t.notif_empty}</div>
+                  <div style={{ padding: 32, textAlign: "center", color: C.g400, fontSize: 13 }}>{t.notif_empty}</div>
                 ) : notifications.map((n) => (
-                  <div key={n.id} style={{ padding: "12px 16px", borderBottom: `1px solid ${G50}`, background: n.read ? "transparent" : `${GOLD}06`, display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    {!n.read && <div style={{ width: 6, height: 6, borderRadius: "50%", background: GOLD, marginTop: 5, flexShrink: 0 }} />}
+                  <div
+                    key={n.id}
+                    style={{
+                      padding: "12px 16px", borderBottom: `1px solid ${C.g50}`,
+                      background: n.read ? "transparent" : `${C.gold}06`,
+                      display: "flex", gap: 10, alignItems: "flex-start",
+                    }}
+                  >
+                    {!n.read && (
+                      <div style={{
+                        width: 6, height: 6, borderRadius: "50%", background: C.gold,
+                        marginTop: 5, flexShrink: 0,
+                      }} />
+                    )}
                     <div style={{ flex: 1, marginLeft: n.read ? 16 : 0 }}>
-                      <div style={{ fontSize: 13, color: G700 }}>{n.text}</div>
-                      <div style={{ fontSize: 11, color: G400, marginTop: 3 }}>{n.date || ""}</div>
+                      <div style={{ fontSize: 13, color: C.g700 }}>{n.text}</div>
+                      <div style={{ fontSize: 11, color: C.g400, marginTop: 3 }}>{n.date || ""}</div>
                     </div>
                   </div>
                 ))}
@@ -224,8 +267,8 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
               <div style={{ textAlign: "center", padding: 40 }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: NAVY, marginBottom: 8 }}>{t.access_denied}</h2>
-                <p style={{ fontSize: 14, color: G400 }}>{t.access_denied_desc}</p>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, marginBottom: 8 }}>{t.access_denied}</h2>
+                <p style={{ fontSize: 14, color: C.g400 }}>{t.access_denied_desc}</p>
               </div>
             </div>
           )}

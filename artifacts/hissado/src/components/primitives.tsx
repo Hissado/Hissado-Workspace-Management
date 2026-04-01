@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useState } from "react";
+import { type CSSProperties, type ReactNode, useState, useEffect } from "react";
 import { FILE_TYPES, STATUS_COLORS, PRIORITY_COLORS } from "@/lib/data";
 
 // ── Premium Color System ──
@@ -58,14 +58,15 @@ export const SH = {
 };
 
 // ── Avatar ──
+function getLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
 export function Av({ ini, size = 32, color = C.gold }: { ini: string; size?: number; color?: string }) {
-  const luminance = (hex: string) => {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-    return 0.299 * r + 0.587 * g + 0.114 * b;
-  };
-  const textColor = luminance(color) > 0.55 ? C.navy : "#fff";
+  const textColor = getLuminance(color) > 0.55 ? C.navy : "#fff";
   return (
     <div
       style={{
@@ -201,11 +202,11 @@ export function Btn({
 
 // ── Input / Select / Textarea ──
 export function Inp({
-  label, value, onChange, type = "text", ph, style = {}, ta, opts,
+  label, value, onChange, type = "text", ph, style = {}, ta, opts, autoComplete,
 }: {
   label?: string; value: string; onChange: (v: string) => void;
   type?: string; ph?: string; style?: CSSProperties; ta?: boolean;
-  opts?: { v: string; l: string }[];
+  opts?: { v: string; l: string }[]; autoComplete?: string;
 }) {
   const [focused, setFocused] = useState(false);
 
@@ -258,6 +259,7 @@ export function Inp({
           type={type} value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={ph}
+          autoComplete={autoComplete}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={is}
@@ -271,6 +273,13 @@ export function Inp({
 export function Modal({ open, onClose, title, children, w = 540 }: {
   open: boolean; onClose: () => void; title: string; children: ReactNode; w?: number;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <div

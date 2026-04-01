@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { C, SH, Btn } from "@/components/primitives";
 
 interface ConfirmDialogProps {
@@ -23,23 +24,37 @@ export default function ConfirmDialog({
   open, title, message, confirmLabel = "Delete", cancelLabel = "Cancel",
   danger = true, onConfirm, onCancel,
 }: ConfirmDialogProps) {
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+      if (e.key === "Enter") onConfirm();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, onCancel, onConfirm]);
+
   if (!open) return null;
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 900,
-      background: "rgba(7,13,26,.55)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 20,
-    }}
+    <div
+      className="fade-in"
+      style={{
+        position: "fixed", inset: 0, zIndex: 1100,
+        background: "rgba(7,13,26,.55)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 20,
+      }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div style={{
-        background: C.w, borderRadius: 20, padding: "36px 32px 28px",
-        maxWidth: 420, width: "100%", boxShadow: SH.modal,
-        textAlign: "center",
-      }}>
-        {/* Icon */}
+      <div
+        className="scale-in"
+        style={{
+          background: C.w, borderRadius: 20, padding: "36px 32px 28px",
+          maxWidth: 420, width: "100%", boxShadow: SH.modal,
+          textAlign: "center",
+        }}
+      >
         <div style={{
           width: 64, height: 64, borderRadius: 18,
           background: danger ? "#FEF2F2" : "#EFF6FF",

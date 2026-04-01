@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from "react";
 
 export type Lang = "en" | "fr";
 
@@ -559,13 +559,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const stored = (typeof localStorage !== "undefined" ? localStorage.getItem("hissado-lang") : null) as Lang | null;
   const [lang, setLangState] = useState<Lang>(stored || "en");
 
-  const setLang = (l: Lang) => {
+  const setLang = useCallback((l: Lang) => {
     setLangState(l);
     localStorage.setItem("hissado-lang", l);
-  };
+  }, []);
+
+  const value = useMemo(() => ({ lang, setLang, t: T[lang] as Translations }), [lang, setLang]);
 
   return (
-    <I18nContext.Provider value={{ lang, setLang, t: T[lang] as Translations }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );

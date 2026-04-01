@@ -61,19 +61,19 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     if (!input.trim() || !selected) return;
     const msg: Message = { id: uid(), cId: selected, from: currentUser.id, text: input.trim(), ts: new Date().toISOString() };
     onSendMessage(selected, msg);
-    onAddNotification({ id: uid(), text: `New message in ${getConvoLabel(convo!)}`, read: false, date: fmtT(msg.ts) });
+    onAddNotification({ id: uid(), type: "message", text: `New message in ${getConvoLabel(convo!)}`, read: false, date: fmtT(msg.ts) });
     setInput("");
   };
 
   const createConvo = () => {
     if (newType === "direct") {
       if (!newPerson) return;
-      const cv: Conversation = { id: uid(), type: "direct", parts: [currentUser.id, newPerson], name: "" };
+      const cv: Conversation = { id: uid(), type: "direct", parts: [currentUser.id, newPerson], name: null, created: new Date().toISOString() };
       onCreateConvo(cv);
       setSelected(cv.id);
     } else {
       if (!newGroupName || newGroupMembers.length === 0) return;
-      const cv: Conversation = { id: uid(), type: "group", parts: [currentUser.id, ...newGroupMembers], name: newGroupName };
+      const cv: Conversation = { id: uid(), type: "group", parts: [currentUser.id, ...newGroupMembers], name: newGroupName, created: new Date().toISOString() };
       onCreateConvo(cv);
       setSelected(cv.id);
     }

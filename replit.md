@@ -19,11 +19,24 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 ### Premium Design System (primitives.tsx)
 - `C` color constants: `navy, gold, bg, w, g50..g700, ok, err, info`
 - `SH` shadow constants: `xs, sm, md, lg, xl, modal, gold`
-- Components: `Av, Btn (sz, icon prop), Inp (opts for select), Modal, PBar, StatusBadge, PriorityBadge, Bdg, Card, SectionHeader, Empty, FileIcon`
+- Components: `Av, Btn (sz, icon prop), Inp (opts/autoComplete for select/inputs), Modal, PBar, StatusBadge, PriorityBadge, Bdg, Card, SectionHeader, Empty, FileIcon`
 - All content pages use `background: C.bg, minHeight: "100%", padding: "32px 36px 60px"`
 - Hover effects: use `onMouseEnter/Leave` inline style mutation (never useState inside .map())
 - Page headers: `fontSize:22, fontFamily:"Playfair Display",serif, letterSpacing:"-.01em"`
 - Stat cards: colored top accent bar `position:absolute, top:0, height:3`
+- `Modal` component: supports Escape key to dismiss (useEffect keyboard listener)
+- `ConfirmDialog`: supports Escape (cancel) and Enter (confirm) keyboard shortcuts
+- `Inp` component: `autoComplete?` prop passes through to `<input>`
+- `getLuminance()` helper: moved outside `Av` component (static, called once per render not on every mount)
+
+### Performance Architecture
+- **ALL hooks in App.tsx called before any conditional returns** (critical: prevents Rules of Hooks violation)
+- `useMemo` for all 6 access-controlled slices (`myProjects`, `myTasks`, `myConversations`, `myTeam`, `myFiles`, `myFolders`) — null-safe for pre-login state
+- `useMemo` for `messagesMap`, `PAGE_TITLES`, `unreadCount`
+- `useCallback` for `navigate`, `openProjectDetail`, `openTask`, `openAddTask`, `saveTask`, `handleDeleteProject`
+- `i18n.tsx`: context value memoized with `useMemo`, `setLang` stable with `useCallback` — prevents all consumers re-rendering on unrelated state changes
+- Google Fonts: preloaded in `index.html` (DM Sans + Playfair Display) — removed Inter (unused), removed duplicate CSS `@import`
+- `index.css`: `text-rendering: optimizeLegibility`, `scroll-behavior: smooth`, improved scrollbar styling, `font-family: inherit` on form elements
 
 ### CRITICAL Type Facts (data.ts source of truth)
 - Task fields: `pri` (not `priority`), `assignee` (not `aId`), `pId`, `due`, `created`, `prog`, `subs`, `cmts`

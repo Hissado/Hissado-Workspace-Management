@@ -113,7 +113,7 @@ export default function Calendar({ tasks, users, projects, onTaskClick }: Calend
           <div style={{ textAlign: "center", padding: "24px 0", color: C.g400, fontSize: 13 }}>{t.cal_no_tasks}</div>
         ) : thisMonth.map((tk) => {
           const p = projectMap[tk.pId];
-          const assignee = userMap[tk.aId];
+          const assignee = userMap[tk.assignee];
           return (
             <div key={tk.id} onClick={() => onTaskClick?.(tk)} data-testid={`sidebar-task-${tk.id}`}
               style={{ padding: "10px 0", borderBottom: `1px solid ${C.g50}`, cursor: "pointer" }}
