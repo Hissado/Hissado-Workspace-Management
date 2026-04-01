@@ -20,7 +20,7 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 - `C` color constants: `navy, gold, bg, w, g50..g700, ok, err, info`
 - `SH` shadow constants: `xs, sm, md, lg, xl, modal, gold`
 - Components: `Av, Btn (sz, icon prop), Inp (opts/autoComplete for select/inputs), Modal, PBar, StatusBadge, PriorityBadge, Bdg, Card, SectionHeader, Empty, FileIcon`
-- All content pages use `background: C.bg, minHeight: "100%", padding: "32px 36px 60px"`
+- All content pages use responsive padding: `"32px 36px 60px"` desktop, `"16px 16px 40px"` mobile (via `isMobile` from `useIsMobile()` hook)
 - Hover effects: use `onMouseEnter/Leave` inline style mutation (never useState inside .map())
 - Page headers: `fontSize:22, fontFamily:"Playfair Display",serif, letterSpacing:"-.01em"`
 - Stat cards: colored top accent bar `position:absolute, top:0, height:3`
@@ -69,6 +69,19 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 - **Delete folder**: Admin trash icon on folder cards → ConfirmDialog → removes folder + all its files
 - **Delete file**: Admin trash icon on file cards → ConfirmDialog
 - All delete props optional: `onDelete?`, `onDeleteConversation?`, `onDeleteFile?`, `onDeleteFolder?` (only set if admin)
+
+### Mobile Responsiveness (768px breakpoint)
+- **Hook**: `useIsMobile()` at `src/hooks/use-mobile.tsx` — returns boolean, 768px breakpoint via `matchMedia`
+- **Login**: Single-column on mobile — compact dark brand header (logo + tagline + inline FR toggle) + white rounded form card below; desktop retains two-column layout
+- **Sidebar**: `position:fixed` drawer on mobile — hidden by default (`translateX(-100%)`), slides in when `mobileNavOpen=true`; close button inside; auto-closes on nav click; z-index 1050
+- **App.tsx**: `mobileNavOpen` state; dark backdrop overlay (`position:fixed, inset:0, zIndex:1049`); passes `onOpenMobileNav` prop to Header
+- **Header**: Hamburger icon (≡) on mobile (left of title), icon-only search/logout icons; passes `onHamburger` callback to App
+- **Dashboard**: Stats grid `4-col → 2-col`; content grid `2-col → 1-col`; inline padding responsive
+- **Settings**: Vertical tab sidebar on desktop → horizontal scrolling pill tabs on mobile; content form grid `2-col → 1-col`
+- **Chat**: `mobileShowChat` state — toggles between conversation list and active chat panel; back button `← Conversations` in chat header on mobile
+- **Modal (primitives.tsx)**: `padding: 12px` outer / `"16px 18px"` inner on mobile; `borderRadius: 16`; `maxHeight: 92vh`
+- **All content pages**: `padding: isMobile ? "16px 16px 40px" : "32px 36px 60px"` — affects Projects, Team, Files, MyTasks, Reports, ProjectDetail
+- **Notification panel**: `right: isMobile ? 8 : 20`, `width: isMobile ? "calc(100vw - 16px)" : 340`
 
 ### Email Invitations (Resend)
 - **API endpoint**: `POST /api/invite` — sends branded HTML welcome email via Resend

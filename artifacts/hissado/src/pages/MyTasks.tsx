@@ -3,6 +3,7 @@ import { C, SH, Av, Btn, StatusBadge, PriorityBadge, Empty } from "@/components/
 import { useI18n } from "@/lib/i18n";
 import type { Project, Task, User } from "@/lib/data";
 import { fmt } from "@/lib/data";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const ClipboardIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /></svg>;
@@ -21,6 +22,7 @@ const PRIORITY_ORDER: Record<string, number> = { Urgent: 0, High: 1, Medium: 2, 
 
 export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask }: MyTasksProps) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const STATUS_TABS = [
     { k: "All", l: t.task_all },
@@ -66,7 +68,7 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
   });
 
   return (
-    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+    <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>

@@ -3,6 +3,7 @@ import { C, SH, Av, Btn, PBar, StatusBadge, PriorityBadge, Empty } from "@/compo
 import { useI18n } from "@/lib/i18n";
 import type { Project, Task, User } from "@/lib/data";
 import { fmt } from "@/lib/data";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const ListIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>;
@@ -23,6 +24,7 @@ type Status = typeof STATUSES[number];
 
 export default function ProjectDetail({ project, tasks, users, onTaskClick, onAddTask, onBack }: ProjectDetailProps) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const [view, setView] = useState<"list" | "board">("list");
 
   const STATUS_LABELS_LOCAL: Record<Status, string> = {
@@ -39,7 +41,7 @@ export default function ProjectDetail({ project, tasks, users, onTaskClick, onAd
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
   return (
-    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+    <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       <button
         onClick={onBack}
         style={{

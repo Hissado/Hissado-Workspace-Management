@@ -1,5 +1,6 @@
 import { type CSSProperties, type ReactNode, useState, useEffect } from "react";
 import { FILE_TYPES, STATUS_COLORS, PRIORITY_COLORS } from "@/lib/data";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ── Premium Color System ──
 export const C = {
@@ -273,6 +274,7 @@ export function Inp({
 export function Modal({ open, onClose, title, children, w = 540 }: {
   open: boolean; onClose: () => void; title: string; children: ReactNode; w?: number;
 }) {
+  const isMobile = useIsMobile();
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -285,7 +287,8 @@ export function Modal({ open, onClose, title, children, w = 540 }: {
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 1000,
-        display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: isMobile ? 12 : 20,
       }}
       onClick={onClose}
     >
@@ -297,18 +300,18 @@ export function Modal({ open, onClose, title, children, w = 540 }: {
         className="scale-in"
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: C.w, borderRadius: 20, width: "100%", maxWidth: w,
-          maxHeight: "88vh", overflow: "auto", position: "relative",
+          background: C.w, borderRadius: isMobile ? 16 : 20, width: "100%", maxWidth: w,
+          maxHeight: isMobile ? "92vh" : "88vh", overflow: "auto", position: "relative",
           boxShadow: SH.modal,
           border: `1px solid ${C.g100}`,
         }}
       >
         <div style={{
-          padding: "22px 28px",
+          padding: isMobile ? "16px 18px" : "22px 28px",
           borderBottom: `1px solid ${C.g100}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
           position: "sticky", top: 0, background: C.w, zIndex: 1,
-          borderRadius: "20px 20px 0 0",
+          borderRadius: isMobile ? "16px 16px 0 0" : "20px 20px 0 0",
         }}>
           <div>
             <h3 style={{
@@ -330,7 +333,7 @@ export function Modal({ open, onClose, title, children, w = 540 }: {
             </svg>
           </button>
         </div>
-        <div style={{ padding: "24px 28px" }}>{children}</div>
+        <div style={{ padding: isMobile ? "16px 18px" : "24px 28px" }}>{children}</div>
       </div>
     </div>
   );

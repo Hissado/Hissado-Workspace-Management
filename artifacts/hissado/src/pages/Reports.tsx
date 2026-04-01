@@ -1,5 +1,6 @@
 import { C, PBar } from "@/components/primitives";
 import { useI18n, STATUS_LABELS, PRIORITY_LABELS } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Task, Project, User } from "@/lib/data";
 
 interface ReportsProps {
@@ -32,6 +33,7 @@ function Bar({ label, value, max, color }: { label: string; value: number; max: 
 
 export default function Reports({ tasks, projects, users }: ReportsProps) {
   const { t, lang } = useI18n();
+  const isMobile = useIsMobile();
 
   const doneTasks = tasks.filter((x) => x.status === "Done").length;
   const overdueTasks = tasks.filter((x) => x.due && new Date(x.due) < new Date() && x.status !== "Done").length;
@@ -58,7 +60,7 @@ export default function Reports({ tasks, projects, users }: ReportsProps) {
   ];
 
   return (
-    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+    <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       <div style={{ marginBottom: 28 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.rep_title}</h2>
         <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>{t.rep_subtitle}</p>

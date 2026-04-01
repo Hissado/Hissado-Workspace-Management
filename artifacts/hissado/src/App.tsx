@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/lib/store";
 import type { Page } from "@/lib/store";
 import type { Task, Project, Message } from "@/lib/data";
@@ -45,6 +46,8 @@ export default function App() {
 
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [taskDefaultProject, setTaskDefaultProject] = useState<string | undefined>();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // ── ALL hooks must come before any conditional returns ──
 
@@ -113,6 +116,7 @@ export default function App() {
   const navigate = useCallback((p: Page) => {
     setPage(p);
     setShowNotifPanel(false);
+    setMobileNavOpen(false);
   }, [setPage]);
 
   const openProjectDetail = useCallback((p: Project) => {
@@ -168,6 +172,17 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: C.bg }}>
+      {/* Mobile nav backdrop */}
+      {isMobile && mobileNavOpen && (
+        <div
+          onClick={() => setMobileNavOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1040,
+            background: "rgba(7,13,26,.55)", backdropFilter: "blur(2px)",
+          }}
+        />
+      )}
+
       <Sidebar
         page={page}
         onNavigate={navigate}
@@ -180,6 +195,8 @@ export default function App() {
         unread={unreadCount}
         onProjectClick={openProjectDetail}
         permissions={myPermissions}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
       />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
@@ -190,6 +207,7 @@ export default function App() {
           searchQuery={searchQuery}
           onSearch={setSearchQuery}
           onLogout={() => setCurrentUser(null)}
+          onMobileMenuOpen={() => setMobileNavOpen(true)}
         />
 
         {/* Notification Panel */}
@@ -197,7 +215,8 @@ export default function App() {
           <>
             <div style={{ position: "fixed", inset: 0, zIndex: 498 }} onClick={() => setShowNotifPanel(false)} />
             <div style={{
-              position: "fixed", top: 74, right: 20, width: 340,
+              position: "fixed", top: 74, right: isMobile ? 8 : 20,
+              width: isMobile ? "calc(100vw - 16px)" : 340,
               background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`,
               boxShadow: "0 8px 30px rgba(0,0,0,.12)", zIndex: 499, overflow: "hidden",
             }}>

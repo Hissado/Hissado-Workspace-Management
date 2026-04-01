@@ -1,5 +1,6 @@
 import { C, SH, Av, PBar, StatusBadge, PriorityBadge, Card, SectionHeader } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Project, Task, User } from "@/lib/data";
 import { fmt, fmtT } from "@/lib/data";
 
@@ -23,6 +24,7 @@ const statIcons = [
 
 export default function Dashboard({ projects, tasks, users, onTaskClick }: DashboardProps) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((x) => x.status === "Done").length;
@@ -63,9 +65,9 @@ export default function Dashboard({ projects, tasks, users, onTaskClick }: Dashb
   ];
 
   return (
-    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+    <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       {/* Stats Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? 12 : 20, marginBottom: isMobile ? 16 : 28 }}>
         {stats.map((s, i) => (
           <div key={i} className="fade-in" style={{
             background: C.w, borderRadius: 16,
@@ -94,7 +96,7 @@ export default function Dashboard({ projects, tasks, users, onTaskClick }: Dashb
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap: isMobile ? 16 : 24 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* Projects progress */}
           <Card style={{ padding: 28 }}>

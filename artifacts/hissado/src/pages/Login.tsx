@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C, SH, Av, Btn, Inp } from "@/components/primitives";
 import { useI18n, type Lang } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { User } from "@/lib/data";
 
 const GlobeIcon = () => (
@@ -36,6 +37,7 @@ const FEATURES = [
 
 export default function Login({ users, onLogin }: LoginProps) {
   const { t, lang, setLang } = useI18n();
+  const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -56,11 +58,59 @@ export default function Login({ users, onLogin }: LoginProps) {
 
   return (
     <div style={{
-      minHeight: "100vh", display: "flex",
-      background: C.bg, fontFamily: "'DM Sans', sans-serif",
+      minHeight: "100vh", display: "flex", flexDirection: isMobile ? "column" : "row",
+      background: isMobile
+        ? `linear-gradient(160deg, ${C.navy} 0%, ${C.navyM} 40%, #0A1425 100%)`
+        : C.bg,
+      fontFamily: "'DM Sans', sans-serif",
     }}>
-      {/* LEFT: Brand Panel */}
-      <div style={{
+      {/* Mobile: compact brand header */}
+      {isMobile && (
+        <div style={{ padding: "32px 24px 28px", position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+              <div style={{
+                width: 38, height: 38,
+                background: `linear-gradient(145deg,${C.gold} 0%,${C.goldD} 100%)`,
+                borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: `0 4px 16px ${C.gold}45`,
+              }}>
+                <span style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 20, lineHeight: 1 }}>H</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: ".13em", fontFamily: "'DM Sans',sans-serif" }}>HISSADO</div>
+                <div style={{ fontSize: 8.5, fontWeight: 600, color: `${C.gold}CC`, letterSpacing: ".22em", textTransform: "uppercase", fontFamily: "'DM Sans',sans-serif" }}>PROJECT</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setLang(nextLang)}
+              data-testid="login-lang-btn"
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.15)",
+                borderRadius: 8, padding: "6px 12px", cursor: "pointer",
+                color: "rgba(255,255,255,.8)", fontSize: 12, fontWeight: 700,
+                fontFamily: "inherit",
+              }}
+            >
+              <GlobeIcon />
+              {lang === "en" ? "FR" : "EN"}
+            </button>
+          </div>
+          <h1 style={{
+            fontSize: 26, fontWeight: 600, color: "#fff",
+            fontFamily: "'Playfair Display',serif",
+            lineHeight: 1.25, margin: "22px 0 0",
+            letterSpacing: "-.01em",
+          }}>
+            Where great projects<br />
+            <span style={{ color: C.gold }}>come to life.</span>
+          </h1>
+        </div>
+      )}
+
+      {/* LEFT: Brand Panel (desktop only) */}
+      {!isMobile && <div style={{
         width: "42%", minHeight: "100vh", flexShrink: 0,
         background: `linear-gradient(160deg, ${C.navy} 0%, ${C.navyM} 50%, #0A1425 100%)`,
         display: "flex", flexDirection: "column",
@@ -151,17 +201,20 @@ export default function Login({ users, onLogin }: LoginProps) {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* RIGHT: Form Panel */}
       <div style={{
         flex: 1, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        padding: "48px 60px",
+        alignItems: "center", justifyContent: isMobile ? "flex-start" : "center",
+        padding: isMobile ? "24px 20px 40px" : "48px 60px",
         position: "relative",
+        background: isMobile ? C.w : "transparent",
+        borderRadius: isMobile ? "20px 20px 0 0" : 0,
+        minHeight: isMobile ? "auto" : undefined,
       }}>
-        {/* Language toggle */}
-        <button
+        {/* Language toggle (desktop only — mobile shows it in brand header) */}
+        {!isMobile && <button
           onClick={() => setLang(nextLang)}
           data-testid="login-lang-btn"
           style={{
@@ -178,7 +231,7 @@ export default function Login({ users, onLogin }: LoginProps) {
         >
           <GlobeIcon />
           {lang === "en" ? "FR" : "EN"}
-        </button>
+        </button>}
 
         <div className="scale-in" style={{ width: "100%", maxWidth: 400 }}>
           <div style={{ marginBottom: 36 }}>

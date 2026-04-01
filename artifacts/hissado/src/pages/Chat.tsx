@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { C, Av, Btn, Modal, Inp } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Conversation, Message, User, Notification } from "@/lib/data";
 import { uid, fmtT } from "@/lib/data";
 import ConfirmDialog from "@/components/ConfirmDialog";
+
+const BackIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>;
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
@@ -24,7 +27,9 @@ interface ChatProps {
 
 export default function Chat({ conversations, messages, users, currentUser, onSendMessage, onCreateConvo, onAddNotification, onDeleteConversation }: ChatProps) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const [selected, setSelected] = useState<string | null>(conversations[0]?.id || null);
+  const [mobileShowChat, setMobileShowChat] = useState(false);
   const [search, setSearch] = useState("");
   const [input, setInput] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -95,10 +100,19 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
 
   const otherUsers = users.filter((u) => u.id !== currentUser.id);
 
+  const showList = !isMobile || !mobileShowChat || !selected;
+  const showChat = !isMobile || (mobileShowChat && !!selected);
+
   return (
     <div style={{ display: "flex", height: "calc(100vh - 68px)", overflow: "hidden" }}>
-      {/* Sidebar */}
-      <div style={{ width: 300, borderRight: `1px solid ${C.g100}`, display: "flex", flexDirection: "column", background: C.w, flexShrink: 0 }}>
+      {/* Conversation list — full width on mobile when showing list, 300px on desktop */}
+      <div style={{
+        width: isMobile ? (showList ? "100%" : "0px") : 300,
+        display: showList ? "flex" : "none",
+        borderRight: isMobile ? "none" : `1px solid ${C.g100}`,
+        flexDirection: "column", background: C.w, flexShrink: 0,
+        overflow: "hidden",
+      }}>
         <div style={{ padding: "16px", borderBottom: `1px solid ${C.g100}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{t.chat_title}</h2>
@@ -120,7 +134,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             const isActive = selected === cv.id;
             return (
               <div key={cv.id} style={{ position: "relative" }}>
-                <div onClick={() => setSelected(cv.id)} data-testid={`convo-${cv.id}`}
+                <div onClick={() => { setSelected(cv.id); if (isMobile) setMobileShowChat(true); }} data-testid={`convo-${cv.id}`}
                   style={{ padding: "12px 16px", display: "flex", gap: 10, cursor: "pointer", background: isActive ? `${C.navy}08` : "transparent", borderBottom: `1px solid ${C.g50}`, paddingRight: onDeleteConversation ? 36 : 16 }}
                   onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = C.g50; }}
                   onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
@@ -168,10 +182,19 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
       </div>
 
       {/* Main chat area */}
-      {convo ? (
+      {showChat && convo ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* Chat header */}
           <div style={{ padding: "12px 20px", borderBottom: `1px solid ${C.g100}`, display: "flex", alignItems: "center", gap: 10, background: C.w, flexShrink: 0 }}>
+            {/* Back button on mobile */}
+            {isMobile && (
+              <button
+                onClick={() => setMobileShowChat(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: C.navy, display: "flex", padding: "4px", flexShrink: 0 }}
+              >
+                <BackIcon />
+              </button>
+            )}
             {getConvoAv(convo)}
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{getConvoLabel(convo)}</div>
@@ -234,13 +257,13 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             </button>
           </div>
         </div>
-      ) : (
+      ) : (!isMobile ? (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 10 }}>
           <div style={{ fontSize: 40 }}>💬</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{t.chat_empty_title}</div>
           <div style={{ fontSize: 13, color: C.g400 }}>{t.chat_empty_desc}</div>
         </div>
-      )}
+      ) : null)}
 
       {/* New conversation modal */}
       <Modal open={showNew} onClose={() => setShowNew(false)} title={t.chat_new}>

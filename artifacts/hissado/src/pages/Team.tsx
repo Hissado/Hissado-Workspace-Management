@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import type { User, RoleDef } from "@/lib/data";
 import { uid } from "@/lib/data";
 import { canInviteMembers, canDeleteUser } from "@/lib/access";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>;
@@ -40,6 +41,7 @@ interface TeamProps {
 
 export default function Team({ users, currentUser, onAddUser, onDeleteUser, deptList, roleDefs }: TeamProps) {
   const { t, lang } = useI18n();
+  const isMobile = useIsMobile();
   const [deptFilter, setDeptFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showInvite, setShowInvite] = useState(false);
@@ -154,7 +156,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
   const activeCount = users.filter((u) => u.status === "active").length;
 
   return (
-    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+    <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>

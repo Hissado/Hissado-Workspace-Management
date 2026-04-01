@@ -3,6 +3,7 @@ import { C, Av, Logo } from "./primitives";
 import type { Page } from "@/lib/store";
 import type { Project } from "@/lib/data";
 import { useI18n, type Lang } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const HomeIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
 const FolderIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>;
@@ -29,6 +30,8 @@ interface SidebarProps {
   unread?: number;
   onProjectClick?: (p: Project) => void;
   permissions?: Set<string>;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 function NavItem({
@@ -97,13 +100,18 @@ const NAV_PERM: Partial<Record<Page, string>> = {
   team: "view_team",
 };
 
+const XIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
+
 export default function Sidebar({
   page, onNavigate, projects, collapsed, onToggleCollapse,
   userRole, userName, userAv, unread = 0, onProjectClick, permissions,
+  mobileOpen = false, onMobileClose,
 }: SidebarProps) {
   const { t, lang, setLang } = useI18n();
   const [langHov, setLangHov] = useState(false);
+  const isMobile = useIsMobile();
   const isAdmin = userRole === "admin" || userRole === "manager";
+  const isCollapsed = !isMobile && collapsed;
 
   const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number }[] = [
     { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
@@ -127,13 +135,22 @@ export default function Sidebar({
 
   return (
     <aside style={{
-      width: collapsed ? 64 : 256,
-      minHeight: "100vh",
+      ...(isMobile ? {
+        position: "fixed" as const, top: 0, left: 0, bottom: 0, zIndex: 1050,
+        width: 272, height: "100dvh",
+        transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+        overflowY: "auto" as const,
+        transition: "transform .28s cubic-bezier(.4,0,.2,1)",
+      } : {
+        position: "relative" as const,
+        width: isCollapsed ? 64 : 256,
+        minHeight: "100vh",
+        transition: "width .25s cubic-bezier(.4,0,.2,1)",
+      }),
       background: `linear-gradient(180deg,${C.navy} 0%,${C.navyD} 100%)`,
       display: "flex", flexDirection: "column",
-      transition: "width .25s cubic-bezier(.4,0,.2,1)", flexShrink: 0,
+      flexShrink: 0,
       borderRight: "1px solid rgba(255,255,255,.04)",
-      position: "relative",
     }}>
       {/* Subtle grid pattern overlay */}
       <div style={{
@@ -145,32 +162,48 @@ export default function Sidebar({
 
       {/* Logo + collapse */}
       <div style={{
-        padding: collapsed ? "18px 0" : "18px 18px",
+        padding: isCollapsed ? "18px 0" : "18px 18px",
         borderBottom: "1px solid rgba(255,255,255,.05)",
         display: "flex", alignItems: "center",
-        justifyContent: collapsed ? "center" : "space-between",
+        justifyContent: isCollapsed ? "center" : "space-between",
         minHeight: 68, position: "relative",
       }}>
-        {!collapsed && <Logo />}
-        <button
-          onClick={onToggleCollapse}
-          data-testid="sidebar-collapse-btn"
-          style={{
-            background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.06)",
-            borderRadius: 8, width: 28, height: 28,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: "rgba(255,255,255,.3)", flexShrink: 0,
-            transition: "all .15s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = `${C.gold}18`; e.currentTarget.style.color = C.goldL; e.currentTarget.style.borderColor = `${C.gold}30`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.05)"; e.currentTarget.style.color = "rgba(255,255,255,.3)"; e.currentTarget.style.borderColor = "rgba(255,255,255,.06)"; }}
-        >
-          {collapsed ? <ChevRight /> : <ChevLeft />}
-        </button>
+        {!isCollapsed && <Logo />}
+        {isMobile ? (
+          <button
+            onClick={onMobileClose}
+            data-testid="sidebar-close-btn"
+            style={{
+              background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.06)",
+              borderRadius: 8, width: 32, height: 32,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", color: "rgba(255,255,255,.5)", flexShrink: 0,
+              transition: "all .15s",
+            }}
+          >
+            <XIcon />
+          </button>
+        ) : (
+          <button
+            onClick={onToggleCollapse}
+            data-testid="sidebar-collapse-btn"
+            style={{
+              background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.06)",
+              borderRadius: 8, width: 28, height: 28,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", color: "rgba(255,255,255,.3)", flexShrink: 0,
+              transition: "all .15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = `${C.gold}18`; e.currentTarget.style.color = C.goldL; e.currentTarget.style.borderColor = `${C.gold}30`; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.05)"; e.currentTarget.style.color = "rgba(255,255,255,.3)"; e.currentTarget.style.borderColor = "rgba(255,255,255,.06)"; }}
+          >
+            {isCollapsed ? <ChevRight /> : <ChevLeft />}
+          </button>
+        )}
       </div>
 
       {/* Nav items */}
-      <nav style={{ padding: collapsed ? "12px 8px" : "12px 10px", flex: 1, position: "relative" }}>
+      <nav style={{ padding: isCollapsed ? "12px 8px" : "12px 10px", flex: 1, position: "relative" }}>
         {NAV_ITEMS.map((n) => {
           const active = page === n.k || (n.k === "projects" && page === "pdetail");
           return (
@@ -180,7 +213,7 @@ export default function Sidebar({
               icon={n.icon}
               label={n.l}
               active={active}
-              collapsed={collapsed}
+              collapsed={isCollapsed}
               onClick={() => onNavigate(n.k)}
               badge={n.badge}
             />
@@ -188,7 +221,7 @@ export default function Sidebar({
         })}
 
         {/* Active projects */}
-        {!collapsed && projects.filter((p) => p.status === "active").length > 0 && (
+        {!isCollapsed && projects.filter((p) => p.status === "active").length > 0 && (
           <div style={{ marginTop: 24, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,.05)" }}>
             <div style={{
               fontSize: 9.5, fontWeight: 800, color: "rgba(255,255,255,.2)",
@@ -231,7 +264,7 @@ export default function Sidebar({
               icon={<GearIcon />}
               label={t.nav_settings}
               active={page === "settings"}
-              collapsed={collapsed}
+              collapsed={isCollapsed}
               onClick={() => onNavigate("settings")}
             />
           </div>
@@ -240,7 +273,7 @@ export default function Sidebar({
 
       {/* Bottom: Language + User */}
       <div style={{
-        padding: collapsed ? "12px 8px" : "12px 14px",
+        padding: isCollapsed ? "12px 8px" : "12px 14px",
         borderTop: "1px solid rgba(255,255,255,.05)",
         position: "relative",
       }}>
@@ -253,12 +286,12 @@ export default function Sidebar({
           onMouseLeave={() => setLangHov(false)}
           style={{
             width: "100%",
-            marginBottom: collapsed ? 8 : 12,
-            padding: collapsed ? 10 : "7px 12px",
+            marginBottom: isCollapsed ? 8 : 12,
+            padding: isCollapsed ? 10 : "7px 12px",
             border: `1px solid ${langHov ? `${C.gold}35` : "rgba(255,255,255,.08)"}`,
             borderRadius: 9, cursor: "pointer",
             display: "flex", alignItems: "center", gap: 8,
-            justifyContent: collapsed ? "center" : "flex-start",
+            justifyContent: isCollapsed ? "center" : "flex-start",
             background: langHov ? `${C.gold}12` : "rgba(255,255,255,.03)",
             color: langHov ? C.goldL : "rgba(255,255,255,.38)",
             fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
@@ -266,7 +299,7 @@ export default function Sidebar({
           }}
         >
           <GlobeIcon />
-          {!collapsed && (
+          {!isCollapsed && (
             <span>
               {lang === "en" ? (
                 <><span style={{ fontWeight: 800, color: C.goldL }}>EN</span><span style={{ opacity: 0.35 }}> / FR</span></>
@@ -278,7 +311,7 @@ export default function Sidebar({
         </button>
 
         {/* User info */}
-        {!collapsed && userName && (
+        {!isCollapsed && userName && (
           <div style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "9px 10px", borderRadius: 10,
@@ -299,7 +332,7 @@ export default function Sidebar({
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981", flexShrink: 0 }} />
           </div>
         )}
-        {collapsed && userAv && (
+        {isCollapsed && userAv && (
           <div style={{ display: "flex", justifyContent: "center" }}>
             <div style={{ position: "relative" }}>
               <Av ini={userAv} size={34} color={C.gold} />

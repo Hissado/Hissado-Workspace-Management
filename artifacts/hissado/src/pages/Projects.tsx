@@ -3,6 +3,7 @@ import { C, SH, Av, Btn, PBar } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import type { Project, Task, User } from "@/lib/data";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const FolderIcon2 = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>;
@@ -27,6 +28,7 @@ const STATUS_STYLES: Record<string, { bg: string; c: string; dot: string }> = {
 
 export default function Projects({ projects, tasks, users, onAdd, onProjectClick, canCreate, canDelete, onDelete }: ProjectsProps) {
   const { t, lang } = useI18n();
+  const isMobile = useIsMobile();
   const [confirmDelete, setConfirmDelete] = useState<Project | null>(null);
 
   const STATUS_LABELS_LOCAL: Record<string, string> = lang === "fr"
@@ -40,7 +42,7 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
   const doneCount = projects.filter((p) => p.status === "completed").length;
 
   return (
-    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+    <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
       {/* Page header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
         <div>

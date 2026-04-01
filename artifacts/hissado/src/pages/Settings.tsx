@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C, Av, Btn, Inp } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { User } from "@/lib/data";
 import AdminPanel from "@/pages/AdminPanel";
 
@@ -11,6 +12,7 @@ interface SettingsProps {
 
 export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const isAdmin = currentUser.role === "admin";
   const TABS = [
@@ -43,34 +45,58 @@ export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
   ];
 
   return (
-    <div style={{ padding: "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.set_title}</h2>
+    <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+      <div style={{ marginBottom: isMobile ? 16 : 28 }}>
+        <h2 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 6px", letterSpacing: "-.01em" }}>{t.set_title}</h2>
         <p style={{ fontSize: 13, color: C.g400, margin: 0 }}>{t.set_subtitle}</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28 }}>
-        {/* Sidebar tabs */}
-        <div style={{ background: C.w, borderRadius: 16, padding: "12px", border: `1px solid ${C.g100}`, height: "fit-content" }}>
-          {TABS.map((tb) => (
-            <button
-              key={tb.k}
-              onClick={() => setTab(tb.k)}
-              data-testid={`settings-tab-${tb.k}`}
-              style={{
-                width: "100%", padding: "10px 14px", border: "none", borderRadius: 8,
-                cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 13,
-                background: tab === tb.k ? `${C.navy}08` : "transparent",
-                color: tab === tb.k ? C.navy : C.g500, fontWeight: tab === tb.k ? 600 : 400,
-              }}
-            >
-              {tb.l}
-            </button>
-          ))}
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", gap: isMobile ? 16 : 28 }}>
+        {/* Tabs — horizontal scroll on mobile, vertical list on desktop */}
+        {isMobile ? (
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+            {TABS.map((tb) => (
+              <button
+                key={tb.k}
+                onClick={() => setTab(tb.k)}
+                data-testid={`settings-tab-${tb.k}`}
+                style={{
+                  padding: "8px 16px", borderRadius: 20, flexShrink: 0,
+                  cursor: "pointer", fontFamily: "inherit", fontSize: 13,
+                  background: tab === tb.k ? C.navy : C.w,
+                  color: tab === tb.k ? "#fff" : C.g500,
+                  fontWeight: tab === tb.k ? 600 : 400,
+                  boxShadow: tab === tb.k ? "none" : `0 1px 3px rgba(0,0,0,.06)`,
+                  border: `1px solid ${tab === tb.k ? C.navy : C.g100}`,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {tb.l}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div style={{ background: C.w, borderRadius: 16, padding: "12px", border: `1px solid ${C.g100}`, height: "fit-content" }}>
+            {TABS.map((tb) => (
+              <button
+                key={tb.k}
+                onClick={() => setTab(tb.k)}
+                data-testid={`settings-tab-${tb.k}`}
+                style={{
+                  width: "100%", padding: "10px 14px", border: "none", borderRadius: 8,
+                  cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 13,
+                  background: tab === tb.k ? `${C.navy}08` : "transparent",
+                  color: tab === tb.k ? C.navy : C.g500, fontWeight: tab === tb.k ? 600 : 400,
+                }}
+              >
+                {tb.l}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Content */}
-        <div style={{ background: C.w, borderRadius: 16, padding: 28, border: `1px solid ${C.g100}` }}>
+        <div style={{ background: C.w, borderRadius: 16, padding: isMobile ? "20px 16px" : 28, border: `1px solid ${C.g100}` }}>
           {tab === "profile" && (
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: C.navy, marginBottom: 24 }}>{t.set_profile_info}</h3>
@@ -82,7 +108,7 @@ export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
                   <div style={{ fontSize: 12, color: C.g300, marginTop: 2 }}>{currentUser.dept}</div>
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 520 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, maxWidth: 520 }}>
                 <Inp label={t.set_full_name} value={name} onChange={setName} ph="John Smith" />
                 <Inp label={t.set_email} value={currentUser.email} onChange={() => {}} ph="Email" type="email" />
               </div>
