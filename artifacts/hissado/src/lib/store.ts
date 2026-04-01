@@ -51,19 +51,23 @@ interface AppState {
 
   addProject: (p: Project) => void;
   updateProject: (p: Project) => void;
+  deleteProject: (id: string) => void;
 
   addUser: (u: User) => void;
   updateUser: (u: User) => void;
+  deleteUser: (id: string) => void;
 
   addNotification: (n: Notification) => void;
   markAllNotifsRead: () => void;
 
   addConversation: (c: Conversation) => void;
+  deleteConversation: (id: string) => void;
   addMessage: (m: Message) => void;
 
   addFile: (f: FileItem) => void;
   deleteFile: (id: string) => void;
   addFolder: (f: Folder) => void;
+  deleteFolder: (id: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -108,19 +112,35 @@ export const useStore = create<AppState>()(
 
       addProject: (p) => set((s) => ({ projects: [...s.projects, p] })),
       updateProject: (p) => set((s) => ({ projects: s.projects.map((x) => (x.id === p.id ? p : x)) })),
+      deleteProject: (id) => set((s) => ({
+        projects: s.projects.filter((x) => x.id !== id),
+        tasks: s.tasks.filter((t) => t.pId !== id),
+        files: s.files.filter((f) => f.pId !== id),
+        folders: s.folders.filter((f) => f.pId !== id),
+        conversations: s.conversations.filter((c) => c.pId !== id),
+      })),
 
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
+      deleteUser: (id) => set((s) => ({ users: s.users.filter((x) => x.id !== id) })),
 
       addNotification: (n) => set((s) => ({ notifications: [n, ...s.notifications] })),
       markAllNotifsRead: () => set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) })),
 
       addConversation: (c) => set((s) => ({ conversations: [...s.conversations, c] })),
+      deleteConversation: (id) => set((s) => ({
+        conversations: s.conversations.filter((c) => c.id !== id),
+        messages: s.messages.filter((m) => m.cId !== id),
+      })),
       addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
 
       addFile: (f) => set((s) => ({ files: [...s.files, f] })),
       deleteFile: (id) => set((s) => ({ files: s.files.filter((f) => f.id !== id) })),
       addFolder: (f) => set((s) => ({ folders: [...s.folders, f] })),
+      deleteFolder: (id) => set((s) => ({
+        folders: s.folders.filter((f) => f.id !== id),
+        files: s.files.filter((f) => f.fId !== id),
+      })),
     }),
     {
       name: "hissado-pm-v3",

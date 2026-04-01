@@ -22,6 +22,10 @@ export type User = {
   av: string;
   status: "active" | "inactive";
   dept: string;
+  password?: string;
+  mustChangePassword?: boolean;
+  invitedAt?: string;
+  invitedBy?: string;
 };
 
 export type Project = {
@@ -128,11 +132,11 @@ export const FILE_TYPES: Record<string, { c: string; l: string }> = {
 
 // ── Seed Data ──
 export const SEED_USERS: User[] = [
-  { id: "u1", name: "Issa Daouda", email: "issa@hissado.com", role: "admin", av: "ID", status: "active", dept: "Executive" },
-  { id: "u2", name: "Sarah Mitchell", email: "sarah@hissado.com", role: "manager", av: "SM", status: "active", dept: "Engineering" },
-  { id: "u3", name: "James Chen", email: "james@hissado.com", role: "member", av: "JC", status: "active", dept: "Engineering" },
-  { id: "u4", name: "Amara Diallo", email: "amara@hissado.com", role: "member", av: "AD", status: "active", dept: "Design" },
-  { id: "u5", name: "Client Portal", email: "client@external.com", role: "client", av: "CP", status: "active", dept: "External" },
+  { id: "u1", name: "Issa Daouda", email: "issa@hissado.com", role: "admin", av: "ID", status: "active", dept: "Executive", password: "admin123", mustChangePassword: false },
+  { id: "u2", name: "Sarah Mitchell", email: "sarah@hissado.com", role: "manager", av: "SM", status: "active", dept: "Engineering", password: "manager123", mustChangePassword: false },
+  { id: "u3", name: "James Chen", email: "james@hissado.com", role: "member", av: "JC", status: "active", dept: "Engineering", password: "member123", mustChangePassword: false },
+  { id: "u4", name: "Amara Diallo", email: "amara@hissado.com", role: "member", av: "AD", status: "active", dept: "Design", password: "member123", mustChangePassword: false },
+  { id: "u5", name: "Client Portal", email: "client@external.com", role: "client", av: "CP", status: "active", dept: "External", password: "client123", mustChangePassword: false },
 ];
 
 export const SEED_PROJECTS: Project[] = [

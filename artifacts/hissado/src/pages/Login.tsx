@@ -42,9 +42,14 @@ export default function Login({ users, onLogin }: LoginProps) {
   const [hovered, setHovered] = useState<string | null>(null);
 
   const handleLogin = () => {
-    const u = users.find((u) => u.email === email);
-    if (u) { onLogin(u); setError(""); }
-    else setError(t.login_error);
+    const u = users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
+    if (!u) { setError(t.login_error); return; }
+    if (u.password && password && u.password !== password) {
+      setError(t.login_wrong_password || "Incorrect password. Please try again.");
+      return;
+    }
+    onLogin(u);
+    setError("");
   };
 
   const nextLang: Lang = lang === "en" ? "fr" : "en";
@@ -203,18 +208,20 @@ export default function Login({ users, onLogin }: LoginProps) {
             </div>
           )}
 
-          <Inp label={t.login_email} value={email} onChange={setEmail} ph="your@email.com" type="email" />
-          <Inp label={t.login_password} value={password} onChange={setPassword} ph="••••••••" type="password" />
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <Inp label={t.login_email} value={email} onChange={setEmail} ph="your@email.com" type="email" />
+            <Inp label={t.login_password} value={password} onChange={setPassword} ph="••••••••" type="password" />
 
-          <Btn
-            onClick={handleLogin}
-            data-testid="login-submit-btn"
-            sz="lg"
-            icon={<ArrowIcon />}
-            style={{ width: "100%", justifyContent: "center", marginTop: 4, borderRadius: 12 }}
-          >
-            {t.login_submit}
-          </Btn>
+            <Btn
+              onClick={handleLogin}
+              data-testid="login-submit-btn"
+              sz="lg"
+              icon={<ArrowIcon />}
+              style={{ width: "100%", justifyContent: "center", marginTop: 4, borderRadius: 12 }}
+            >
+              {t.login_submit}
+            </Btn>
+          </form>
 
           {/* Divider */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "28px 0 20px" }}>

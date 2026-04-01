@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { C, SH, Av, Btn, PBar } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import type { Project, Task, User } from "@/lib/data";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const FolderIcon2 = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>;
+const TrashIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>;
 
 interface ProjectsProps {
   projects: Project[];
@@ -12,6 +15,8 @@ interface ProjectsProps {
   onAdd: () => void;
   onProjectClick: (p: Project) => void;
   canCreate?: boolean;
+  canDelete?: boolean;
+  onDelete?: (id: string) => void;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; c: string; dot: string }> = {
@@ -20,8 +25,9 @@ const STATUS_STYLES: Record<string, { bg: string; c: string; dot: string }> = {
   completed: { bg: "#EFF6FF", c: "#1E40AF", dot: "#3B82F6" },
 };
 
-export default function Projects({ projects, tasks, users, onAdd, onProjectClick, canCreate }: ProjectsProps) {
+export default function Projects({ projects, tasks, users, onAdd, onProjectClick, canCreate, canDelete, onDelete }: ProjectsProps) {
   const { t, lang } = useI18n();
+  const [confirmDelete, setConfirmDelete] = useState<Project | null>(null);
 
   const STATUS_LABELS_LOCAL: Record<string, string> = lang === "fr"
     ? { active: "Actif", "on-hold": "En pause", completed: "Terminé" }
@@ -120,17 +126,35 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
                     </div>
                     <h3 style={{ fontSize: 15, fontWeight: 700, color: C.navy, lineHeight: 1.25, margin: 0 }}>{p.name}</h3>
                   </div>
-                  <span style={{
-                    fontSize: 10.5, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
-                    background: ss.bg, color: ss.c,
-                    border: `1px solid ${ss.dot}30`,
-                    letterSpacing: ".04em", textTransform: "uppercase",
-                    flexShrink: 0, marginLeft: 8,
-                    display: "flex", alignItems: "center", gap: 5,
-                  }}>
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: ss.dot }} />
-                    {STATUS_LABELS_LOCAL[p.status] || p.status}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: 8 }}>
+                    <span style={{
+                      fontSize: 10.5, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
+                      background: ss.bg, color: ss.c,
+                      border: `1px solid ${ss.dot}30`,
+                      letterSpacing: ".04em", textTransform: "uppercase",
+                      display: "flex", alignItems: "center", gap: 5,
+                    }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: ss.dot }} />
+                      {STATUS_LABELS_LOCAL[p.status] || p.status}
+                    </span>
+                    {canDelete && onDelete && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmDelete(p); }}
+                        data-testid={`delete-project-${p.id}`}
+                        title="Delete project"
+                        style={{
+                          width: 28, height: 28, borderRadius: 8, border: `1px solid ${C.g200}`,
+                          background: C.w, cursor: "pointer", color: C.g400,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          transition: "all .15s", flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#FEF2F2"; e.currentTarget.style.color = C.err; e.currentTarget.style.borderColor = "#FECACA"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = C.w; e.currentTarget.style.color = C.g400; e.currentTarget.style.borderColor = C.g200; }}
+                      >
+                        <TrashIcon />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {p.desc && (
@@ -203,6 +227,21 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
           })}
         </div>
       )}
+
+      {/* Confirm delete dialog */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title={lang === "fr" ? "Supprimer le projet" : "Delete Project"}
+        message={
+          lang === "fr"
+            ? `Êtes-vous sûr de vouloir supprimer "${confirmDelete?.name}" ? Toutes les tâches, fichiers et conversations associés seront définitivement supprimés.`
+            : `Are you sure you want to delete "${confirmDelete?.name}"? All associated tasks, files, and conversations will be permanently removed.`
+        }
+        confirmLabel={lang === "fr" ? "Supprimer" : "Delete Project"}
+        cancelLabel={lang === "fr" ? "Annuler" : "Cancel"}
+        onConfirm={() => { if (confirmDelete) onDelete?.(confirmDelete.id); setConfirmDelete(null); }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

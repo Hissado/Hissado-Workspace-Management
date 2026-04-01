@@ -24,7 +24,14 @@ const T = {
     login_submit: "Sign In",
     login_quick: "Quick Login",
     login_error: "Invalid credentials. Try one of the accounts below.",
+    login_wrong_password: "Incorrect password. Please try again.",
     login_signout: "Sign out",
+    pw_change_title: "Set Your Password",
+    pw_change_desc: "For security, you must set a new password before continuing.",
+    pw_current: "Current (Temporary) Password",
+    pw_new: "New Password",
+    pw_confirm: "Confirm New Password",
+    pw_set_btn: "Set Password & Continue",
 
     // Dashboard
     dash_active_projects: "Active Projects",
@@ -284,7 +291,14 @@ const T = {
     login_submit: "Se connecter",
     login_quick: "Connexion rapide",
     login_error: "Identifiants incorrects. Utilisez l'un des comptes ci-dessous.",
+    login_wrong_password: "Mot de passe incorrect. Veuillez réessayer.",
     login_signout: "Se déconnecter",
+    pw_change_title: "Définir votre mot de passe",
+    pw_change_desc: "Pour des raisons de sécurité, vous devez définir un nouveau mot de passe avant de continuer.",
+    pw_current: "Mot de passe actuel (temporaire)",
+    pw_new: "Nouveau mot de passe",
+    pw_confirm: "Confirmer le nouveau mot de passe",
+    pw_set_btn: "Définir le mot de passe et continuer",
 
     // Dashboard
     dash_active_projects: "Projets actifs",

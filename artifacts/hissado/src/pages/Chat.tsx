@@ -3,11 +3,13 @@ import { C, Av, Btn, Modal, Inp } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import type { Conversation, Message, User, Notification } from "@/lib/data";
 import { uid, fmtT } from "@/lib/data";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
 const SendIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
 const UsersIcon2 = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>;
 
 interface ChatProps {
   conversations: Conversation[];
@@ -17,9 +19,10 @@ interface ChatProps {
   onSendMessage: (cId: string, msg: Message) => void;
   onCreateConvo: (cv: Conversation) => void;
   onAddNotification: (n: Notification) => void;
+  onDeleteConversation?: (id: string) => void;
 }
 
-export default function Chat({ conversations, messages, users, currentUser, onSendMessage, onCreateConvo, onAddNotification }: ChatProps) {
+export default function Chat({ conversations, messages, users, currentUser, onSendMessage, onCreateConvo, onAddNotification, onDeleteConversation }: ChatProps) {
   const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(conversations[0]?.id || null);
   const [search, setSearch] = useState("");
@@ -29,6 +32,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   const [newPerson, setNewPerson] = useState("");
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupMembers, setNewGroupMembers] = useState<string[]>([]);
+  const [confirmDeleteConvo, setConfirmDeleteConvo] = useState<Conversation | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const convo = conversations.find((c) => c.id === selected);
@@ -79,6 +83,16 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     setNewGroupMembers([]);
   };
 
+  const handleDeleteConvo = () => {
+    if (!confirmDeleteConvo) return;
+    onDeleteConversation?.(confirmDeleteConvo.id);
+    if (selected === confirmDeleteConvo.id) {
+      const remaining = conversations.filter((c) => c.id !== confirmDeleteConvo.id);
+      setSelected(remaining[0]?.id || null);
+    }
+    setConfirmDeleteConvo(null);
+  };
+
   const otherUsers = users.filter((u) => u.id !== currentUser.id);
 
   return (
@@ -105,28 +119,48 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             const lastMsg = (messages[cv.id] || []).at(-1);
             const isActive = selected === cv.id;
             return (
-              <div key={cv.id} onClick={() => setSelected(cv.id)} data-testid={`convo-${cv.id}`}
-                style={{ padding: "12px 16px", display: "flex", gap: 10, cursor: "pointer", background: isActive ? `${C.navy}08` : "transparent", borderBottom: `1px solid ${C.g50}` }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = C.g50; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
-              >
-                {getConvoAv(cv)}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getConvoLabel(cv)}</span>
-                    {lastMsg && <span style={{ fontSize: 10, color: C.g400, flexShrink: 0, marginLeft: 4 }}>{fmtT(lastMsg.ts)}</span>}
+              <div key={cv.id} style={{ position: "relative" }}>
+                <div onClick={() => setSelected(cv.id)} data-testid={`convo-${cv.id}`}
+                  style={{ padding: "12px 16px", display: "flex", gap: 10, cursor: "pointer", background: isActive ? `${C.navy}08` : "transparent", borderBottom: `1px solid ${C.g50}`, paddingRight: onDeleteConversation ? 36 : 16 }}
+                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = C.g50; }}
+                  onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                >
+                  {getConvoAv(cv)}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getConvoLabel(cv)}</span>
+                      {lastMsg && <span style={{ fontSize: 10, color: C.g400, flexShrink: 0, marginLeft: 4 }}>{fmtT(lastMsg.ts)}</span>}
+                    </div>
+                    {lastMsg && (
+                      <div style={{ fontSize: 12, color: C.g400, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {lastMsg.from === currentUser.id ? t.chat_you : ""}{lastMsg.text}
+                      </div>
+                    )}
+                    {cv.type === "group" && (
+                      <div style={{ fontSize: 10, color: C.g300, marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
+                        <UsersIcon2 /> {cv.parts.length} {t.chat_members}
+                      </div>
+                    )}
                   </div>
-                  {lastMsg && (
-                    <div style={{ fontSize: 12, color: C.g400, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {lastMsg.from === currentUser.id ? t.chat_you : ""}{lastMsg.text}
-                    </div>
-                  )}
-                  {cv.type === "group" && (
-                    <div style={{ fontSize: 10, color: C.g300, marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
-                      <UsersIcon2 /> {cv.parts.length} {t.chat_members}
-                    </div>
-                  )}
                 </div>
+                {onDeleteConversation && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteConvo(cv); }}
+                    data-testid={`delete-convo-${cv.id}`}
+                    title="Delete conversation"
+                    style={{
+                      position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                      width: 22, height: 22, borderRadius: 6, border: "none",
+                      background: "transparent", cursor: "pointer", color: C.g300,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "all .12s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = C.err; e.currentTarget.style.background = "#FEF2F2"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = C.g300; e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -139,10 +173,28 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
           {/* Chat header */}
           <div style={{ padding: "12px 20px", borderBottom: `1px solid ${C.g100}`, display: "flex", alignItems: "center", gap: 10, background: C.w, flexShrink: 0 }}>
             {getConvoAv(convo)}
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{getConvoLabel(convo)}</div>
               <div style={{ fontSize: 11, color: "#22C55E", fontWeight: 600 }}>{t.chat_online}</div>
             </div>
+            {onDeleteConversation && (
+              <button
+                onClick={() => setConfirmDeleteConvo(convo)}
+                data-testid="delete-convo-header-btn"
+                title="Delete conversation"
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "6px 12px", border: `1px solid ${C.g200}`,
+                  borderRadius: 8, background: C.w, cursor: "pointer",
+                  fontSize: 12, fontWeight: 600, color: C.g500,
+                  fontFamily: "'DM Sans', sans-serif", transition: "all .15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#FEF2F2"; e.currentTarget.style.color = C.err; e.currentTarget.style.borderColor = "#FECACA"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = C.w; e.currentTarget.style.color = C.g500; e.currentTarget.style.borderColor = C.g200; }}
+              >
+                <TrashIcon /> Delete
+              </button>
+            )}
           </div>
 
           {/* Messages */}
@@ -230,6 +282,16 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
           {t.chat_start}
         </Btn>
       </Modal>
+
+      {/* Confirm delete conversation */}
+      <ConfirmDialog
+        open={!!confirmDeleteConvo}
+        title="Delete Conversation"
+        message={`Are you sure you want to delete "${confirmDeleteConvo ? getConvoLabel(confirmDeleteConvo) : ""}"? All messages in this conversation will be permanently removed.`}
+        confirmLabel="Delete"
+        onConfirm={handleDeleteConvo}
+        onCancel={() => setConfirmDeleteConvo(null)}
+      />
     </div>
   );
 }

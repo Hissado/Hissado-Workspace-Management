@@ -13,6 +13,7 @@ import Header from "@/components/Header";
 import TaskModal from "@/components/TaskModal";
 import ProjectModal from "@/components/ProjectModal";
 import Login from "@/pages/Login";
+import PasswordChange from "@/pages/PasswordChange";
 import Dashboard from "@/pages/Dashboard";
 import Projects from "@/pages/Projects";
 import ProjectDetail from "@/pages/ProjectDetail";
@@ -41,11 +42,11 @@ export default function App() {
     setCurrentUser, setPage, setCollapsed, setSearchQuery,
     setSelectedProject, setSelectedTask, setShowTaskModal, setShowProjectModal,
     addTask, updateTask, deleteTask,
-    addProject,
+    addProject, updateProject, deleteProject,
     addUser, updateUser,
     addNotification, markAllNotifsRead,
-    addConversation, addMessage,
-    addFile, addFolder,
+    addConversation, deleteConversation, addMessage,
+    addFile, deleteFile, addFolder, deleteFolder,
   } = useStore();
 
   const [showNotifPanel, setShowNotifPanel] = useState(false);
@@ -61,8 +62,23 @@ export default function App() {
     return map;
   }, [messages]);
 
+  // ── Login flow ──
   if (!currentUser) {
     return <Login users={users} onLogin={(u) => setCurrentUser(u)} />;
+  }
+
+  // ── Forced password reset ──
+  if (currentUser.mustChangePassword) {
+    return (
+      <PasswordChange
+        user={currentUser}
+        onComplete={(newPw) => {
+          const updated = { ...currentUser, password: newPw, mustChangePassword: false };
+          updateUser(updated);
+          setCurrentUser(updated);
+        }}
+      />
+    );
   }
 
   // ── Access-controlled data slices ──
@@ -72,6 +88,8 @@ export default function App() {
   const myTeam = accessibleTeamMembers(currentUser, users, projects);
   const myFiles = accessibleFiles(currentUser, files, projects);
   const myFolders = accessibleFolders(currentUser, folders, projects);
+
+  const isAdmin = currentUser.role === "admin";
 
   const PAGE_TITLES: Record<Page, string> = {
     dashboard: t.nav_dashboard,
@@ -113,6 +131,14 @@ export default function App() {
     else addTask(task);
     setShowTaskModal(false);
     setSelectedTask(null);
+  };
+
+  const handleDeleteProject = (id: string) => {
+    if (selectedProject?.id === id) {
+      setSelectedProject(null);
+      setPage("projects");
+    }
+    deleteProject(id);
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -180,6 +206,8 @@ export default function App() {
               onAdd={() => setShowProjectModal(true)}
               onProjectClick={openProjectDetail}
               canCreate={canCreateProject(currentUser)}
+              canDelete={isAdmin}
+              onDelete={handleDeleteProject}
             />
           )}
           {page === "pdetail" && selectedProject && myProjects.find((p) => p.id === selectedProject.id) && (
@@ -213,10 +241,19 @@ export default function App() {
               onSendMessage={(_, msg) => addMessage(msg)}
               onCreateConvo={addConversation}
               onAddNotification={addNotification}
+              onDeleteConversation={isAdmin ? deleteConversation : undefined}
             />
           )}
           {page === "files" && (
-            <Files files={myFiles} folders={myFolders} users={myTeam} onAddFile={addFile} onAddFolder={addFolder} />
+            <Files
+              files={myFiles}
+              folders={myFolders}
+              users={myTeam}
+              onAddFile={addFile}
+              onAddFolder={addFolder}
+              onDeleteFile={isAdmin ? deleteFile : undefined}
+              onDeleteFolder={isAdmin ? deleteFolder : undefined}
+            />
           )}
           {page === "calendar" && (
             <Calendar tasks={myTasks} users={myTeam} projects={myProjects} onTaskClick={openTask} />

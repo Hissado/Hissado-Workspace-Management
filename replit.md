@@ -42,8 +42,31 @@ Full-featured project management web app at `artifacts/hissado/` (port 24018, pr
 - `Bdg`: takes `children` (ReactNode) + `v` variant (not `color`+`label`)
 - `PriorityBadge`: takes `pri` prop (not `priority`)
 
+### User Authentication & Security
+- **Password fields**: `User.password` (plaintext for demo), `User.mustChangePassword: boolean`, `invitedAt`, `invitedBy`
+- **Login verification**: `handleLogin` checks `u.password === enteredPassword`; wrong password shows error
+- **Forced password reset**: If `currentUser.mustChangePassword === true`, `PasswordChange` screen renders before app (in App.tsx)
+- **PasswordChange component** (`src/pages/PasswordChange.tsx`): Full-screen overlay with strength meter, eye toggle, bilingual
+- **Seed passwords**: admin=`admin123`, manager=`manager123`, member=`member123`, client=`client123`
+
+### Admin Delete Controls
+- **ConfirmDialog** (`src/components/ConfirmDialog.tsx`): Reusable danger confirmation dialog, `data-testid="confirm-delete-btn"`
+- **Delete project**: Admin trash button on each project card → ConfirmDialog → cascading delete (tasks, files, folders, convos)
+- **Delete conversation**: Admin trash button in chat list + header → ConfirmDialog → removes conversation + messages
+- **Delete folder**: Admin trash icon on folder cards → ConfirmDialog → removes folder + all its files
+- **Delete file**: Admin trash icon on file cards → ConfirmDialog
+- All delete props optional: `onDelete?`, `onDeleteConversation?`, `onDeleteFile?`, `onDeleteFolder?` (only set if admin)
+
+### Email Invitations (Resend)
+- **API endpoint**: `POST /api/invite` — sends branded HTML welcome email via Resend
+- **`artifacts/api-server/src/lib/resend.ts`**: Replit connector client (never cached)
+- **`artifacts/api-server/src/routes/invite.ts`**: Route handler with full HTML email template
+- **Invite flow**: Team page generates `generateTempPassword()`, calls `/api/invite`, shows success state with temp credentials
+- **Vite proxy**: `/api` proxied to API server port 8080 in `vite.config.ts`
+- **Invited user badge**: "Pending setup" badge shown on team cards for `mustChangePassword=true` users
+
 ### Pages
-- **Login** (`/`): Quick login with user list, email login, language toggle
+- **Login** (`/`): Quick login with user list, email+password login, language toggle, password verification
 - **Dashboard**: Stats, project progress bars, upcoming tasks, recent tasks table
 - **Projects**: Card grid view; click → Project Detail (list/kanban views)
 - **My Tasks**: Filterable (status + priority) / sortable task list

@@ -8,6 +8,9 @@ import { canInviteMembers } from "@/lib/access";
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const MailIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>;
 const UsersIcon2 = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+const SendIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
+const CheckCircleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>;
+const KeyIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></svg>;
 
 const DEPT_LIST = ["Engineering", "Design", "Marketing", "Product", "Operations", "Sales", "Executive", "External"];
 const ROLE_LIST: User["role"][] = ["admin", "manager", "member", "client"];
@@ -15,6 +18,13 @@ const ROLE_LIST: User["role"][] = ["admin", "manager", "member", "client"];
 const ROLE_BADGE_VARIANT: Record<string, "danger" | "gold" | "info" | "default"> = {
   admin: "danger", manager: "gold", member: "info", client: "default",
 };
+
+function generateTempPassword(): string {
+  const words = ["Maple", "River", "Stone", "Cloud", "Tiger", "Eagle", "Swift", "Ember", "Noble", "Crest"];
+  const nums = Math.floor(100 + Math.random() * 900);
+  const syms = ["!", "@", "#", "$", "&"][Math.floor(Math.random() * 5)];
+  return words[Math.floor(Math.random() * words.length)] + nums + syms;
+}
 
 interface TeamProps {
   users: User[];
@@ -32,6 +42,9 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<User["role"]>("member");
   const [inviteDept, setInviteDept] = useState("Engineering");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState<{ name: string; email: string; tempPw: string } | null>(null);
+  const [inviteError, setInviteError] = useState("");
 
   const ROLE_LABELS_LOCAL: Record<string, string> = lang === "fr"
     ? { admin: "Administrateur", manager: "Responsable", member: "Membre", client: "Client" }
@@ -45,16 +58,68 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
   const departments = [...new Set(users.map((u) => u.dept).filter(Boolean))];
   const roles = [...new Set(users.map((u) => u.role))];
 
-  const sendInvite = () => {
-    if (!inviteName || !inviteEmail) return;
-    const u: User = {
-      id: uid(), name: inviteName, email: inviteEmail,
-      av: inviteName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2),
-      role: inviteRole, dept: inviteDept, status: "active",
+  const resetInviteForm = () => {
+    setInviteName(""); setInviteEmail(""); setInviteRole("member");
+    setInviteDept("Engineering"); setInviteError(""); setInviteSuccess(null);
+  };
+
+  const sendInvite = async () => {
+    if (!inviteName.trim() || !inviteEmail.trim()) {
+      setInviteError("Name and email are required.");
+      return;
+    }
+    if (users.some((u) => u.email.toLowerCase() === inviteEmail.toLowerCase())) {
+      setInviteError("A user with this email already exists.");
+      return;
+    }
+
+    const tempPassword = generateTempPassword();
+    setInviteLoading(true);
+    setInviteError("");
+
+    const newUser: User = {
+      id: uid(),
+      name: inviteName.trim(),
+      email: inviteEmail.trim().toLowerCase(),
+      av: inviteName.trim().split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2),
+      role: inviteRole,
+      dept: inviteDept,
+      status: "active",
+      password: tempPassword,
+      mustChangePassword: true,
+      invitedAt: new Date().toISOString(),
+      invitedBy: currentUser.name,
     };
-    onAddUser(u);
-    setShowInvite(false);
-    setInviteName(""); setInviteEmail("");
+
+    try {
+      const res = await fetch("/api/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          tempPassword,
+          invitedBy: currentUser.name,
+          workspaceName: "Hissado Project",
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Email failed to send");
+      }
+
+      onAddUser(newUser);
+      setInviteSuccess({ name: newUser.name, email: newUser.email, tempPw: tempPassword });
+    } catch (err: any) {
+      // Still add user even if email fails — show warning
+      onAddUser(newUser);
+      setInviteSuccess({ name: newUser.name, email: newUser.email, tempPw: tempPassword });
+      setInviteError(`Note: Email delivery failed (${err.message}). Share credentials manually.`);
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
   const selectStyle = {
@@ -80,16 +145,14 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
           </p>
         </div>
         {canInviteMembers(currentUser) && (
-          <Btn onClick={() => setShowInvite(true)} data-testid="invite-btn" icon={<PlusIcon />}>
+          <Btn onClick={() => { resetInviteForm(); setShowInvite(true); }} data-testid="invite-btn" icon={<PlusIcon />}>
             {t.team_invite}
           </Btn>
         )}
       </div>
 
       {/* Summary strip */}
-      <div style={{
-        display: "flex", gap: 12, marginBottom: 24,
-      }}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
         {Object.entries({ admin: "danger", manager: "gold", member: "info", client: "default" } as const).map(([role, variant]) => {
           const count = users.filter((u) => u.role === role).length;
           if (count === 0) return null;
@@ -98,15 +161,11 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
               background: C.w, borderRadius: 12, padding: "10px 16px",
               border: `1px solid ${C.g100}`, boxShadow: SH.xs,
               display: "flex", alignItems: "center", gap: 8,
-              cursor: "pointer",
-              transition: "all .15s",
+              cursor: "pointer", transition: "all .15s",
             }}
               onClick={() => setRoleFilter(roleFilter === role ? "all" : role)}
             >
-              <span style={{
-                fontSize: 18, fontWeight: 800, color: C.navy,
-                fontFamily: "'Playfair Display',serif",
-              }}>{count}</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{count}</span>
               <span style={{ fontSize: 12, color: C.g400, fontWeight: 500, textTransform: "capitalize" }}>
                 {ROLE_LABELS_LOCAL[role]}{count !== 1 ? "s" : ""}
               </span>
@@ -119,8 +178,7 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
       <div style={{
         display: "flex", gap: 10, marginBottom: 24,
         background: C.w, borderRadius: 13, padding: "12px 16px",
-        border: `1px solid ${C.g100}`, boxShadow: SH.xs,
-        alignItems: "center",
+        border: `1px solid ${C.g100}`, boxShadow: SH.xs, alignItems: "center",
       }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: C.g400, letterSpacing: ".05em", textTransform: "uppercase" }}>Filter</span>
         <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={selectStyle}>
@@ -156,13 +214,11 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
               style={{
                 background: C.w, borderRadius: 16, padding: "22px",
                 border: `1px solid ${C.g100}`, cursor: "pointer",
-                transition: "box-shadow .18s, transform .18s",
-                boxShadow: SH.sm,
+                transition: "box-shadow .18s, transform .18s", boxShadow: SH.sm,
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = SH.lg; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = SH.sm; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
             >
-              {/* Avatar + name */}
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
                 <div style={{ position: "relative" }}>
                   <Av ini={u.av} size={48} />
@@ -178,13 +234,18 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
                   <div style={{ fontSize: 12, color: C.g400, fontWeight: 500 }}>{u.dept || "—"}</div>
                 </div>
               </div>
-
-              {/* Badges */}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
                 <Bdg v={ROLE_BADGE_VARIANT[u.role] || "default"}>{ROLE_LABELS_LOCAL[u.role] || u.role}</Bdg>
+                {u.mustChangePassword && (
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700,
+                    background: "#FFF7ED", color: "#B45309", border: "1px solid #FDE68A",
+                  }}>
+                    <KeyIcon /> Pending setup
+                  </span>
+                )}
               </div>
-
-              {/* Email */}
               <div style={{
                 display: "flex", alignItems: "center", gap: 7,
                 fontSize: 12.5, color: C.g500,
@@ -200,24 +261,119 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
       )}
 
       {/* Invite Modal */}
-      <Modal open={showInvite} onClose={() => setShowInvite(false)} title={t.team_invite}>
-        <Inp label={t.team_full_name} value={inviteName} onChange={setInviteName} ph={t.team_full_name_ph} />
-        <Inp label="Email" value={inviteEmail} onChange={setInviteEmail} ph={t.team_email_ph} type="email" />
-        <Inp
-          label={t.team_role}
-          value={inviteRole}
-          onChange={(v) => setInviteRole(v as User["role"])}
-          opts={ROLE_LIST.map((r) => ({ v: r, l: ROLE_LABELS_LOCAL[r] || r }))}
-        />
-        <Inp
-          label={t.team_dept}
-          value={inviteDept}
-          onChange={setInviteDept}
-          opts={DEPT_LIST.map((d) => ({ v: d, l: d }))}
-        />
-        <Btn onClick={sendInvite} data-testid="send-invite-btn" sz="lg" style={{ width: "100%", justifyContent: "center" }}>
-          {t.team_send_invite}
-        </Btn>
+      <Modal open={showInvite} onClose={() => { setShowInvite(false); resetInviteForm(); }} title={t.team_invite} w={460}>
+        {inviteSuccess ? (
+          <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: "#F0FDF4", border: "1.5px solid #BBF7D0",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 16px", color: "#10B981",
+            }}>
+              <CheckCircleIcon />
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif", margin: "0 0 8px" }}>
+              Invitation Sent!
+            </h3>
+            <p style={{ fontSize: 13.5, color: C.g500, margin: "0 0 20px", lineHeight: 1.6 }}>
+              <strong>{inviteSuccess.name}</strong> ({inviteSuccess.email}) has been added to the workspace.
+              {!inviteError && " A welcome email with login credentials has been sent."}
+            </p>
+
+            {/* Temp password display */}
+            <div style={{
+              background: C.g50, border: `1px solid ${C.g200}`,
+              borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.g400, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 8 }}>
+                Temporary Credentials
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 12, color: C.g500 }}>Email</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.navy, fontFamily: "monospace" }}>{inviteSuccess.email}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: C.g500 }}>Temp Password</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: C.gold, fontFamily: "monospace", letterSpacing: ".04em" }}>{inviteSuccess.tempPw}</span>
+              </div>
+            </div>
+
+            {inviteError && (
+              <div style={{
+                background: "#FFFBEB", border: "1px solid #FDE68A",
+                borderRadius: 10, padding: "10px 14px", marginBottom: 16,
+                fontSize: 12.5, color: "#92400E", textAlign: "left",
+              }}>
+                ⚠️ {inviteError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <Btn onClick={() => { resetInviteForm(); }} sz="sm" style={{ flex: 1, justifyContent: "center" }} icon={<PlusIcon />}>
+                Invite Another
+              </Btn>
+              <button
+                onClick={() => { setShowInvite(false); resetInviteForm(); }}
+                style={{
+                  flex: 1, padding: "9px 16px", border: `1px solid ${C.g200}`,
+                  borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 600,
+                  fontFamily: "inherit", background: C.w, color: C.g600,
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Inp label={t.team_full_name} value={inviteName} onChange={setInviteName} ph={t.team_full_name_ph} />
+            <Inp label="Email" value={inviteEmail} onChange={setInviteEmail} ph={t.team_email_ph} type="email" />
+            <Inp
+              label={t.team_role}
+              value={inviteRole}
+              onChange={(v) => setInviteRole(v as User["role"])}
+              opts={ROLE_LIST.map((r) => ({ v: r, l: ROLE_LABELS_LOCAL[r] || r }))}
+            />
+            <Inp
+              label={t.team_dept}
+              value={inviteDept}
+              onChange={setInviteDept}
+              opts={DEPT_LIST.map((d) => ({ v: d, l: d }))}
+            />
+
+            {/* Info box */}
+            <div style={{
+              background: `${C.gold}0A`, border: `1px solid ${C.gold}25`,
+              borderRadius: 10, padding: "10px 14px", marginBottom: 16,
+              display: "flex", gap: 8, alignItems: "flex-start",
+            }}>
+              <div style={{ color: C.gold, flexShrink: 0, marginTop: 1 }}><KeyIcon /></div>
+              <p style={{ fontSize: 12.5, color: C.g600, margin: 0, lineHeight: 1.5 }}>
+                A secure temporary password will be generated and emailed to the new member. They will be required to set a new password on first login.
+              </p>
+            </div>
+
+            {inviteError && (
+              <div style={{
+                background: C.errL, border: `1px solid #FECACA`,
+                borderRadius: 10, padding: "10px 14px", marginBottom: 12,
+                fontSize: 13, color: C.errD, fontWeight: 500,
+              }}>
+                {inviteError}
+              </div>
+            )}
+
+            <Btn
+              onClick={sendInvite}
+              data-testid="send-invite-btn"
+              sz="lg"
+              style={{ width: "100%", justifyContent: "center", opacity: inviteLoading ? .7 : 1 }}
+              icon={<SendIcon />}
+            >
+              {inviteLoading ? "Sending invitation…" : t.team_send_invite}
+            </Btn>
+          </>
+        )}
       </Modal>
 
       {/* Profile Modal */}
@@ -227,16 +383,23 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
             <div style={{ display: "inline-block", position: "relative", marginBottom: 14 }}>
               <Av ini={showProfile.av} size={72} />
               <div style={{
-                position: "absolute", bottom: 2, right: 2,
-                width: 14, height: 14, borderRadius: "50%",
-                background: showProfile.status === "active" ? "#10B981" : C.g300,
-                border: `2.5px solid ${C.w}`,
+                position: "absolute", bottom: 2, right: 2, width: 14, height: 14, borderRadius: "50%",
+                background: showProfile.status === "active" ? "#10B981" : C.g300, border: `2.5px solid ${C.w}`,
               }} />
             </div>
             <div style={{ fontSize: 20, fontWeight: 700, color: C.navy, fontFamily: "'Playfair Display',serif" }}>{showProfile.name}</div>
             <div style={{ fontSize: 13, color: C.g400, marginTop: 4 }}>{showProfile.dept}</div>
-            <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
+            <div style={{ marginTop: 10, display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
               <Bdg v={ROLE_BADGE_VARIANT[showProfile.role] || "default"}>{ROLE_LABELS_LOCAL[showProfile.role] || showProfile.role}</Bdg>
+              {showProfile.mustChangePassword && (
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700,
+                  background: "#FFF7ED", color: "#B45309", border: "1px solid #FDE68A",
+                }}>
+                  Pending first login
+                </span>
+              )}
             </div>
           </div>
           {[
@@ -244,6 +407,7 @@ export default function Team({ users, currentUser, onAddUser }: TeamProps) {
             { l: t.team_dept_label, v: showProfile.dept },
             { l: t.team_role, v: ROLE_LABELS_LOCAL[showProfile.role] || showProfile.role },
             { l: t.team_status_label, v: showProfile.status },
+            ...(showProfile.invitedBy ? [{ l: "Invited by", v: showProfile.invitedBy }] : []),
           ].map((row) => (
             <div key={row.l} style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
