@@ -66,7 +66,18 @@ function getLuminance(hex: string): number {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
-export function Av({ ini, size = 32, color = C.gold }: { ini: string; size?: number; color?: string }) {
+export function Av({ ini, photo, size = 32, color = C.gold }: { ini: string; photo?: string; size?: number; color?: string }) {
+  if (photo) {
+    return (
+      <div style={{
+        width: size, height: size, borderRadius: "50%", overflow: "hidden",
+        flexShrink: 0, boxShadow: `0 2px 8px rgba(0,0,0,0.18)`,
+        border: "2px solid rgba(255,255,255,0.15)",
+      }}>
+        <img src={photo} alt={ini} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      </div>
+    );
+  }
   const textColor = getLuminance(color) > 0.55 ? C.navy : "#fff";
   return (
     <div

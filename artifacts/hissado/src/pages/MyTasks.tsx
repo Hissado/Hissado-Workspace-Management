@@ -238,7 +238,7 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
                 {/* Assignee */}
                 {assignee && (
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
-                    <Av ini={assignee.av} size={26} />
+                    <Av ini={assignee.av} photo={assignee.photo} size={26} />
                     {!isMobile && <span style={{ fontSize: 12.5, color: C.g500, fontWeight: 500 }}>{assignee.name.split(" ")[0]}</span>}
                   </div>
                 )}

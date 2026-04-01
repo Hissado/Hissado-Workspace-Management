@@ -192,6 +192,7 @@ export default function App() {
         userRole={currentUser.role}
         userName={currentUser.name}
         userAv={currentUser.av}
+        userPhoto={currentUser.photo}
         unread={unreadCount}
         onProjectClick={openProjectDetail}
         permissions={myPermissions}
@@ -342,7 +343,14 @@ export default function App() {
             />
           )}
           {page === "settings" && (
-            <Settings currentUser={currentUser} onUpdateUser={(updates) => updateUser({ ...currentUser, ...updates })} />
+            <Settings
+              currentUser={currentUser}
+              onUpdateUser={(updates) => {
+                const updated = { ...currentUser, ...updates };
+                updateUser(updated);
+                setCurrentUser(updated);
+              }}
+            />
           )}
         </main>
       </div>

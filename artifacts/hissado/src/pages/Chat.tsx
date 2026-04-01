@@ -57,7 +57,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   const getConvoAv = (cv: Conversation) => {
     if (cv.type === "group") return <div style={{ width: 40, height: 40, borderRadius: 12, background: `${C.gold}20`, display: "flex", alignItems: "center", justifyContent: "center" }}><UsersIcon2 /></div>;
     const other = cv.parts.find((id) => id !== currentUser.id);
-    return <Av ini={userMap[other || ""]?.av || "??"} size={40} />;
+    return <Av ini={userMap[other || ""]?.av || "??"} photo={userMap[other || ""]?.photo} size={40} />;
   };
 
   const filtered = conversations.filter((cv) => getConvoLabel(cv).toLowerCase().includes(search.toLowerCase()));
@@ -228,7 +228,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
               const sender = userMap[m.from];
               return (
                 <div key={m.id} data-testid={`msg-${m.id}`} style={{ display: "flex", gap: 8, alignItems: "flex-end", flexDirection: isMe ? "row-reverse" : "row" }}>
-                  {!isMe && <Av ini={sender?.av || "??"} size={28} />}
+                  {!isMe && <Av ini={sender?.av || "??"} photo={sender?.photo} size={28} />}
                   <div>
                     {!isMe && sender && <div style={{ fontSize: 11, color: C.g400, marginBottom: 3, marginLeft: 4 }}>{sender.name}</div>}
                     <div style={{ maxWidth: 380, padding: "10px 14px", borderRadius: isMe ? "16px 16px 4px 16px" : "4px 16px 16px 16px", background: isMe ? `linear-gradient(135deg,${C.navy},${C.navyL})` : C.g100, color: isMe ? C.w : C.navy, fontSize: 13, lineHeight: 1.5, wordBreak: "break-word" }}>
@@ -293,7 +293,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
               {otherUsers.map((u) => (
                 <label key={u.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 8px", borderRadius: 6, background: newGroupMembers.includes(u.id) ? `${C.gold}10` : "transparent" }}>
                   <input type="checkbox" checked={newGroupMembers.includes(u.id)} onChange={(e) => setNewGroupMembers(e.target.checked ? [...newGroupMembers, u.id] : newGroupMembers.filter((x) => x !== u.id))} />
-                  <Av ini={u.av} size={24} />
+                  <Av ini={u.av} photo={u.photo} size={24} />
                   <span style={{ fontSize: 13, color: C.navy }}>{u.name}</span>
                 </label>
               ))}

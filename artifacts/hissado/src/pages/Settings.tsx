@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { C, Av, Btn, Inp } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -8,6 +8,196 @@ import AdminPanel from "@/pages/AdminPanel";
 interface SettingsProps {
   currentUser: User;
   onUpdateUser: (u: Partial<User>) => void;
+}
+
+// ── Image processing: crop to square and resize to 300×300 JPEG ──
+function processImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (file.size > 5 * 1024 * 1024) {
+      reject(new Error("File too large (max 5 MB)"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const SIZE = 300;
+        const canvas = document.createElement("canvas");
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const ctx = canvas.getContext("2d")!;
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, SIZE, SIZE);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      };
+      img.onerror = () => reject(new Error("Could not load image"));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── PhotoUploader ──
+function PhotoUploader({
+  user,
+  onPhotoChange,
+}: {
+  user: User;
+  onPhotoChange: (photo: string | undefined) => void;
+}) {
+  const { t } = useI18n();
+  const [processing, setProcessing] = useState(false);
+  const [hover, setHover] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = useCallback(async (file: File) => {
+    setError("");
+    setProcessing(true);
+    try {
+      const dataUrl = await processImage(file);
+      onPhotoChange(dataUrl);
+    } catch (err: any) {
+      setError(err.message || "Upload failed");
+    } finally {
+      setProcessing(false);
+    }
+  }, [onPhotoChange]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+    e.target.value = "";
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) handleFile(file);
+  }, [handleFile]);
+
+  const SIZE = 88;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 28 }}>
+      {/* Clickable avatar with camera overlay */}
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <div
+          onClick={() => !processing && inputRef.current?.click()}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          style={{
+            width: SIZE, height: SIZE, borderRadius: "50%",
+            cursor: processing ? "wait" : "pointer",
+            position: "relative", overflow: "hidden",
+            boxShadow: hover ? `0 0 0 3px ${C.gold}60` : `0 2px 10px rgba(0,0,0,0.1)`,
+            transition: "box-shadow 0.2s",
+          }}
+        >
+          <Av ini={user.av} photo={user.photo} size={SIZE} color={C.gold} />
+
+          {/* Overlay */}
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: "50%",
+            background: processing
+              ? "rgba(0,0,0,0.45)"
+              : hover
+              ? "rgba(0,0,0,0.38)"
+              : "transparent",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            transition: "background 0.2s",
+          }}>
+            {processing ? (
+              <div style={{
+                width: 20, height: 20, border: `2.5px solid rgba(255,255,255,.3)`,
+                borderTop: `2.5px solid #fff`, borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+              }} />
+            ) : hover && (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span style={{ color: "#fff", fontSize: 10, fontWeight: 700, marginTop: 3, letterSpacing: ".04em" }}>
+                  {user.photo ? t.set_photo_change : t.set_photo_upload}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Remove button */}
+        {user.photo && !processing && (
+          <button
+            onClick={() => onPhotoChange(undefined)}
+            title={t.set_photo_remove}
+            style={{
+              position: "absolute", top: -4, right: -4,
+              width: 22, height: 22, borderRadius: "50%",
+              background: "#EF4444", border: "2px solid #fff",
+              color: "#fff", fontSize: 12, fontWeight: 800,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              lineHeight: 1, boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+            }}
+          >
+            ×
+          </button>
+        )}
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleChange}
+        />
+      </div>
+
+      {/* Info + actions */}
+      <div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{user.name}</div>
+        <div style={{ fontSize: 13, color: C.g400, marginTop: 2 }}>{user.email}</div>
+        <div style={{ fontSize: 12, color: C.g300, marginTop: 2 }}>{user.dept}</div>
+        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={processing}
+            style={{
+              padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${C.gold}`,
+              background: `${C.gold}12`, color: C.goldD, fontSize: 12, fontWeight: 700,
+              cursor: processing ? "wait" : "pointer", fontFamily: "inherit",
+              transition: "all 0.15s",
+            }}
+          >
+            {processing ? t.set_photo_uploading : user.photo ? t.set_photo_change : t.set_photo_upload}
+          </button>
+          {user.photo && (
+            <button
+              onClick={() => onPhotoChange(undefined)}
+              style={{
+                padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${C.g200}`,
+                background: "transparent", color: C.g500, fontSize: 12, fontWeight: 600,
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              {t.set_photo_remove}
+            </button>
+          )}
+        </div>
+        {error && <div style={{ fontSize: 11, color: "#EF4444", marginTop: 6 }}>{error}</div>}
+        {!error && <div style={{ fontSize: 11, color: C.g300, marginTop: 6 }}>{t.set_photo_hint}</div>}
+      </div>
+
+      {/* Spin keyframe */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 }
 
 export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
@@ -36,6 +226,10 @@ export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
     onUpdateUser({ name });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handlePhotoChange = (photo: string | undefined) => {
+    onUpdateUser({ photo });
   };
 
   const THEME_OPTS = [
@@ -100,14 +294,7 @@ export default function Settings({ currentUser, onUpdateUser }: SettingsProps) {
           {tab === "profile" && (
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: C.navy, marginBottom: 24 }}>{t.set_profile_info}</h3>
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
-                <Av ini={currentUser.av} size={64} />
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{currentUser.name}</div>
-                  <div style={{ fontSize: 13, color: C.g400, marginTop: 2 }}>{currentUser.email}</div>
-                  <div style={{ fontSize: 12, color: C.g300, marginTop: 2 }}>{currentUser.dept}</div>
-                </div>
-              </div>
+              <PhotoUploader user={currentUser} onPhotoChange={handlePhotoChange} />
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, maxWidth: 520 }}>
                 <Inp label={t.set_full_name} value={name} onChange={setName} ph="John Smith" />
                 <Inp label={t.set_email} value={currentUser.email} onChange={() => {}} ph="Email" type="email" />

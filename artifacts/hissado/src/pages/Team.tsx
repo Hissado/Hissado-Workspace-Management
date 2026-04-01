@@ -245,7 +245,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
             >
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
                 <div style={{ position: "relative" }}>
-                  <Av ini={u.av} size={48} />
+                  <Av ini={u.av} photo={u.photo} size={48} />
                   <div style={{
                     position: "absolute", bottom: 1, right: 1,
                     width: 11, height: 11, borderRadius: "50%",
@@ -405,7 +405,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
         <Modal open={!!showProfile} onClose={() => setShowProfile(null)} title={t.team_profile} w={420}>
           <div style={{ textAlign: "center", marginBottom: 28, paddingBottom: 24, borderBottom: `1px solid ${C.g100}` }}>
             <div style={{ display: "inline-block", position: "relative", marginBottom: 14 }}>
-              <Av ini={showProfile.av} size={72} />
+              <Av ini={showProfile.av} photo={showProfile.photo} size={72} />
               <div style={{
                 position: "absolute", bottom: 2, right: 2, width: 14, height: 14, borderRadius: "50%",
                 background: showProfile.status === "active" ? "#10B981" : C.g300, border: `2.5px solid ${C.w}`,

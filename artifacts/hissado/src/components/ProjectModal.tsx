@@ -85,7 +85,7 @@ export default function ProjectModal({ open, onClose, users, currentUser, onSave
             return (
               <label key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, cursor: isOwner ? "default" : "pointer", padding: "6px 8px", borderRadius: 8, background: checked ? `${C.gold}10` : "transparent" }}>
                 <input type="checkbox" checked={checked} disabled={isOwner} onChange={() => toggleMember(u.id)} />
-                <Av ini={u.av} size={26} />
+                <Av ini={u.av} photo={u.photo} size={26} />
                 <div>
                   <div style={{ fontSize: 13, color: C.navy, fontWeight: 500 }}>{u.name}</div>
                   {isOwner && <div style={{ fontSize: 10, color: C.gold }}>{t.pmod_owner}</div>}

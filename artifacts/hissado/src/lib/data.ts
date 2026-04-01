@@ -83,6 +83,7 @@ export type User = {
   email: string;
   role: string;
   av: string;
+  photo?: string;
   status: "active" | "inactive";
   dept: string;
   password?: string;

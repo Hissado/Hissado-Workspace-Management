@@ -208,7 +208,7 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
                   <div style={{ display: "flex" }}>
                     {members.slice(0, 5).map((m, i) => (
                       <div key={m.id} style={{ marginLeft: i > 0 ? -10 : 0, border: `2px solid ${C.w}`, borderRadius: "50%" }}>
-                        <Av ini={m.av} size={28} />
+                        <Av ini={m.av} photo={m.photo} size={28} />
                       </div>
                     ))}
                     {members.length > 5 && (

@@ -168,7 +168,7 @@ function ListView({ tasks, userMap, onTaskClick, t, isMobile }: { tasks: Task[];
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: C.navy, flex: 1, lineHeight: 1.3 }}>{tk.title}</div>
-                {assignee && <Av ini={assignee.av} size={26} />}
+                {assignee && <Av ini={assignee.av} photo={assignee.photo} size={26} />}
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 <StatusBadge status={tk.status} />
@@ -202,7 +202,7 @@ function ListView({ tasks, userMap, onTaskClick, t, isMobile }: { tasks: Task[];
             <div>
               {assignee ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <Av ini={assignee.av} size={22} />
+                  <Av ini={assignee.av} photo={assignee.photo} size={22} />
                   <span style={{ fontSize: 12, color: C.g500 }}>{assignee.name.split(" ")[0]}</span>
                 </div>
               ) : <span style={{ color: C.g300 }}>—</span>}
@@ -244,7 +244,7 @@ function BoardView({ tasks, userMap, onTaskClick, statuses, statusLabels }: {
                     <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, marginBottom: 8 }}>{tk.title}</div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <PriorityBadge pri={tk.pri} />
-                      {assignee && <Av ini={assignee.av} size={22} />}
+                      {assignee && <Av ini={assignee.av} photo={assignee.photo} size={22} />}
                     </div>
                   </div>
                 );

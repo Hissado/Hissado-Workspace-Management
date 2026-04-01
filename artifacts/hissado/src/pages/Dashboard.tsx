@@ -127,7 +127,7 @@ export default function Dashboard({ projects, tasks, users, onTaskClick }: Dashb
                       <div style={{ display: "flex" }}>
                         {members.slice(0, 3).map((m, i) => (
                           <div key={m.id} style={{ marginLeft: i > 0 ? -10 : 0, border: `2px solid ${C.w}`, borderRadius: "50%" }}>
-                            <Av ini={m.av} size={24} />
+                            <Av ini={m.av} photo={m.photo} size={24} />
                           </div>
                         ))}
                         {members.length > 3 && (
@@ -187,7 +187,7 @@ export default function Dashboard({ projects, tasks, users, onTaskClick }: Dashb
                         <td style={{ padding: "12px 12px" }}><PriorityBadge pri={tk.pri} /></td>
                         <td style={{ padding: "12px 12px" }}>
                           {assignee
-                            ? <div style={{ display: "flex", alignItems: "center", gap: 7 }}><Av ini={assignee.av} size={24} /><span style={{ fontSize: 12.5, color: C.g600, fontWeight: 500 }}>{assignee.name.split(" ")[0]}</span></div>
+                            ? <div style={{ display: "flex", alignItems: "center", gap: 7 }}><Av ini={assignee.av} photo={assignee.photo} size={24} /><span style={{ fontSize: 12.5, color: C.g600, fontWeight: 500 }}>{assignee.name.split(" ")[0]}</span></div>
                             : <span style={{ color: C.g300 }}>—</span>}
                         </td>
                         <td style={{ padding: "12px 12px 12px 0", fontSize: 12.5, fontWeight: 500, color: isOverdue ? C.err : C.g500, whiteSpace: "nowrap" }}>

@@ -130,7 +130,7 @@ export default function Calendar({ tasks, users, projects, onTaskClick }: Calend
                     <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tk.title}</div>
                     {p && <div style={{ fontSize: 10, color: p.color, marginTop: 2, fontWeight: 600 }}>{p.name}</div>}
                   </div>
-                  {assignee && <Av ini={assignee.av} size={22} />}
+                  {assignee && <Av ini={assignee.av} photo={assignee.photo} size={22} />}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
                   <StatusBadge status={tk.status} />

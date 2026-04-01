@@ -27,6 +27,7 @@ interface SidebarProps {
   userRole?: string;
   userName?: string;
   userAv?: string;
+  userPhoto?: string;
   unread?: number;
   onProjectClick?: (p: Project) => void;
   permissions?: Set<string>;
@@ -104,7 +105,7 @@ const XIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" 
 
 export default function Sidebar({
   page, onNavigate, projects, collapsed, onToggleCollapse,
-  userRole, userName, userAv, unread = 0, onProjectClick, permissions,
+  userRole, userName, userAv, userPhoto, unread = 0, onProjectClick, permissions,
   mobileOpen = false, onMobileClose,
 }: SidebarProps) {
   const { t, lang, setLang } = useI18n();
@@ -318,7 +319,7 @@ export default function Sidebar({
             background: "rgba(255,255,255,.03)",
             border: "1px solid rgba(255,255,255,.06)",
           }}>
-            <Av ini={userAv || "??"} size={32} color={C.gold} />
+            <Av ini={userAv || "??"} photo={userPhoto} size={32} color={C.gold} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
                 fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,.85)",
@@ -335,7 +336,7 @@ export default function Sidebar({
         {isCollapsed && userAv && (
           <div style={{ display: "flex", justifyContent: "center" }}>
             <div style={{ position: "relative" }}>
-              <Av ini={userAv} size={34} color={C.gold} />
+              <Av ini={userAv} photo={userPhoto} size={34} color={C.gold} />
               <div style={{ position: "absolute", bottom: 0, right: 0, width: 8, height: 8, borderRadius: "50%", background: "#10B981", border: `2px solid ${C.navy}` }} />
             </div>
           </div>
