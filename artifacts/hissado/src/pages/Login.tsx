@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C, SH, Av, Btn, Inp } from "@/components/primitives";
+import { C, SH, Btn, Inp } from "@/components/primitives";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { User } from "@/lib/data";
@@ -41,7 +41,6 @@ export default function Login({ users, onLogin }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [hovered, setHovered] = useState<string | null>(null);
 
   const handleLogin = () => {
     const u = users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
@@ -277,52 +276,6 @@ export default function Login({ users, onLogin }: LoginProps) {
             </Btn>
           </form>
 
-          {/* Divider */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "28px 0 20px" }}>
-            <div style={{ flex: 1, height: 1, background: C.g100 }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: C.g300, letterSpacing: ".08em", textTransform: "uppercase" }}>{t.login_quick}</span>
-            <div style={{ flex: 1, height: 1, background: C.g100 }} />
-          </div>
-
-          {/* Quick login */}
-          <div style={{
-            background: C.g50, borderRadius: 14,
-            border: `1px solid ${C.g100}`,
-            overflow: "hidden",
-          }}>
-            {users.filter((u) => u.status === "active").slice(0, 5).map((u, idx, arr) => (
-              <button
-                key={u.id}
-                onClick={() => onLogin(u)}
-                data-testid={`quick-login-${u.id}`}
-                style={{
-                  width: "100%", padding: "11px 16px",
-                  border: "none",
-                  borderBottom: idx < arr.length - 1 ? `1px solid ${C.g100}` : "none",
-                  background: hovered === u.id ? C.w : "transparent",
-                  cursor: "pointer", display: "flex",
-                  alignItems: "center", gap: 12, fontFamily: "inherit",
-                  transition: "background .12s",
-                  boxShadow: hovered === u.id ? SH.xs : "none",
-                }}
-                onMouseEnter={() => setHovered(u.id)}
-                onMouseLeave={() => setHovered(null)}
-              >
-                <Av ini={u.av} size={34} />
-                <div style={{ textAlign: "left", flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.g800, marginBottom: 1 }}>{u.name}</div>
-                  <div style={{ fontSize: 11, color: C.g400 }}>{u.email}</div>
-                </div>
-                <div style={{
-                  padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700,
-                  background: `${C.navy}08`, color: C.g500,
-                  textTransform: "capitalize", letterSpacing: ".04em",
-                }}>
-                  {u.role}
-                </div>
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>
