@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User, Project, Task, Service, Notification, Conversation, Message, FileItem, Folder, RoleDef, Permission } from "./data";
+import type { User, Project, Task, Service, Client, Notification, Conversation, Message, FileItem, Folder, RoleDef, Permission } from "./data";
 import {
-  SEED_USERS, SEED_PROJECTS, SEED_SERVICES, SEED_TASKS, SEED_NOTIFICATIONS,
+  SEED_USERS, SEED_PROJECTS, SEED_SERVICES, SEED_CLIENTS, SEED_TASKS, SEED_NOTIFICATIONS,
   SEED_CONVERSATIONS, SEED_MESSAGES, SEED_FILES, SEED_FOLDERS,
   SEED_ROLE_DEFS, SEED_ROLE_PERMISSIONS, SEED_DEPARTMENTS,
 } from "./data";
@@ -28,6 +28,7 @@ interface AppState {
   users: User[];
   projects: Project[];
   services: Service[];
+  clients: Client[];
   tasks: Task[];
   notifications: Notification[];
   conversations: Conversation[];
@@ -61,6 +62,10 @@ interface AppState {
   addService: (s: Service) => void;
   updateService: (s: Service) => void;
   deleteService: (id: string) => void;
+
+  addClient: (c: Client) => void;
+  updateClient: (c: Client) => void;
+  deleteClient: (id: string) => void;
 
   addUser: (u: User) => void;
   updateUser: (u: User) => void;
@@ -107,6 +112,7 @@ export const useStore = create<AppState>()(
       users: SEED_USERS,
       projects: SEED_PROJECTS,
       services: SEED_SERVICES,
+      clients: SEED_CLIENTS,
       tasks: SEED_TASKS,
       notifications: SEED_NOTIFICATIONS,
       conversations: SEED_CONVERSATIONS,
@@ -146,6 +152,16 @@ export const useStore = create<AppState>()(
       addService: (sv) => set((s) => ({ services: [...s.services, sv] })),
       updateService: (sv) => set((s) => ({ services: s.services.map((x) => (x.id === sv.id ? sv : x)) })),
       deleteService: (id) => set((s) => ({ services: s.services.filter((x) => x.id !== id) })),
+
+      addClient: (c) => set((s) => ({ clients: [...s.clients, c] })),
+      updateClient: (c) => set((s) => ({ clients: s.clients.map((x) => (x.id === c.id ? c : x)) })),
+      deleteClient: (id) => set((s) => ({
+        clients: s.clients.filter((x) => x.id !== id),
+        // Unlink clientId from all projects, services, and users that belonged to this client
+        projects: s.projects.map((p) => p.clientId === id ? { ...p, clientId: undefined } : p),
+        services: s.services.map((sv) => sv.clientId === id ? { ...sv, clientId: undefined } : sv),
+        users: s.users.map((u) => u.clientId === id ? { ...u, clientId: undefined } : u),
+      })),
 
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
@@ -220,6 +236,7 @@ export const useStore = create<AppState>()(
         users: state.users,
         projects: state.projects,
         services: state.services,
+        clients: state.clients,
         tasks: state.tasks,
         notifications: state.notifications,
         conversations: state.conversations,

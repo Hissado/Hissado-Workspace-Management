@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { C, SH, Av, Btn, PBar } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
-import type { Project, Task, User } from "@/lib/data";
+import type { Project, Task, User, Client } from "@/lib/data";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -13,6 +13,7 @@ interface ProjectsProps {
   projects: Project[];
   tasks: Task[];
   users: User[];
+  clients?: Client[];
   onAdd: () => void;
   onProjectClick: (p: Project) => void;
   canCreate?: boolean;
@@ -26,10 +27,18 @@ const STATUS_STYLES: Record<string, { bg: string; c: string; dot: string }> = {
   completed: { bg: "#EFF6FF", c: "#1E40AF", dot: "#3B82F6" },
 };
 
-export default function Projects({ projects, tasks, users, onAdd, onProjectClick, canCreate, canDelete, onDelete }: ProjectsProps) {
+export default function Projects({ projects, tasks, users, clients, onAdd, onProjectClick, canCreate, canDelete, onDelete }: ProjectsProps) {
   const { t, lang } = useI18n();
   const isMobile = useIsMobile();
   const [confirmDelete, setConfirmDelete] = useState<Project | null>(null);
+  const [clientFilter, setClientFilter] = useState<string>("all");
+
+  const clientMap = Object.fromEntries((clients ?? []).map((c) => [c.id, c]));
+  const filteredProjects = clientFilter === "all"
+    ? projects
+    : clientFilter === "__none__"
+      ? projects.filter((p) => !p.clientId)
+      : projects.filter((p) => p.clientId === clientFilter);
 
   const STATUS_LABELS_LOCAL: Record<string, string> = lang === "fr"
     ? { active: "Actif", "on-hold": "En pause", completed: "Terminé" }
@@ -73,8 +82,43 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
         )}
       </div>
 
+      {/* Client filter */}
+      {clients && clients.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+          <div style={{ display: "flex", background: C.w, border: `1px solid ${C.g100}`, borderRadius: 10, padding: 3, gap: 2, flexWrap: "wrap" }}>
+            <button
+              onClick={() => setClientFilter("all")}
+              style={{
+                padding: "5px 12px", border: "none", borderRadius: 7, cursor: "pointer",
+                fontSize: 12, fontWeight: clientFilter === "all" ? 600 : 400, fontFamily: "inherit",
+                background: clientFilter === "all" ? C.navy : "transparent",
+                color: clientFilter === "all" ? C.w : C.g500, transition: "all .15s",
+              }}
+            >
+              {t.client_filter_all}
+            </button>
+            {clients.map((cl) => (
+              <button
+                key={cl.id}
+                onClick={() => setClientFilter(cl.id)}
+                style={{
+                  padding: "5px 12px", border: "none", borderRadius: 7, cursor: "pointer",
+                  fontSize: 12, fontWeight: clientFilter === cl.id ? 600 : 400, fontFamily: "inherit",
+                  background: clientFilter === cl.id ? cl.color : "transparent",
+                  color: clientFilter === cl.id ? "#fff" : C.g500, transition: "all .15s",
+                  display: "flex", alignItems: "center", gap: 5,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: clientFilter === cl.id ? "#ffffff80" : cl.color, flexShrink: 0 }} />
+                {cl.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
-      {projects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <div style={{
           textAlign: "center", padding: "80px 20px",
           background: C.w, borderRadius: 20, border: `1px solid ${C.g100}`,
@@ -94,7 +138,7 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 20 }}>
-          {projects.map((p) => {
+          {filteredProjects.map((p) => {
             const pTasks = tasks.filter((x) => x.pId === p.id);
             const done = pTasks.filter((x) => x.status === "Done").length;
             const ip = pTasks.filter((x) => x.status === "In Progress").length;
@@ -162,6 +206,23 @@ export default function Projects({ projects, tasks, users, onAdd, onProjectClick
                     )}
                   </div>
                 </div>
+
+                {/* Client badge */}
+                {p.clientId && clientMap[p.clientId] && (
+                  <div style={{ marginBottom: 10 }}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      fontSize: 10.5, fontWeight: 700, padding: "2px 9px", borderRadius: 20,
+                      background: `${clientMap[p.clientId].color}15`,
+                      color: clientMap[p.clientId].color,
+                      border: `1px solid ${clientMap[p.clientId].color}30`,
+                      letterSpacing: ".03em",
+                    }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: clientMap[p.clientId].color, flexShrink: 0 }} />
+                      {clientMap[p.clientId].name}
+                    </span>
+                  </div>
+                )}
 
                 {p.desc && (
                   <p style={{ fontSize: 12.5, color: C.g400, marginBottom: 16, lineHeight: 1.55, margin: "0 0 16px" }}>

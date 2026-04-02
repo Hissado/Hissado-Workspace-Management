@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
-import { ALL_PERMISSIONS, type RoleDef, type BdgVariant } from "@/lib/data";
+import { ALL_PERMISSIONS, type RoleDef, type BdgVariant, type Client, uid, fmt } from "@/lib/data";
 import { C, Bdg, Btn, Inp } from "@/components/primitives";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useI18n } from "@/lib/i18n";
@@ -79,13 +79,56 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   );
 }
 
+const CLIENT_COLORS = [
+  "#5B8DEF", "#6FCF97", "#C9A96E", "#BB6BD9",
+  "#F2994A", "#EB5757", "#14B8A6", "#F59E0B",
+];
+
 export default function AdminPanel() {
   const { t, lang } = useI18n();
   const {
     departments, addDepartment, updateDepartment, deleteDepartment,
     roleDefs, addRoleDef, updateRoleDef, deleteRoleDef,
     rolePermissions, setRolePermissions,
+    clients, addClient, updateClient, deleteClient,
+    projects, services, users,
   } = useStore();
+
+  // ── Clients state ──
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [clientName, setClientName] = useState("");
+  const [clientCompany, setClientCompany] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [clientColor, setClientColor] = useState(CLIENT_COLORS[0]);
+  const [clientStatus, setClientStatus] = useState<Client["status"]>("active");
+  const [confirmClientId, setConfirmClientId] = useState<string | null>(null);
+
+  function openCreateClient() {
+    setEditingClient(null);
+    setClientName(""); setClientCompany(""); setClientEmail("");
+    setClientColor(CLIENT_COLORS[0]); setClientStatus("active");
+    setShowClientModal(true);
+  }
+
+  function openEditClient(c: Client) {
+    setEditingClient(c);
+    setClientName(c.name); setClientCompany(c.company); setClientEmail(c.contactEmail);
+    setClientColor(c.color); setClientStatus(c.status);
+    setShowClientModal(true);
+  }
+
+  function saveClient() {
+    if (!clientName.trim()) return;
+    if (editingClient) {
+      updateClient({ ...editingClient, name: clientName.trim(), company: clientCompany.trim(), contactEmail: clientEmail.trim(), color: clientColor, status: clientStatus });
+    } else {
+      addClient({ id: uid(), name: clientName.trim(), company: clientCompany.trim(), contactEmail: clientEmail.trim(), color: clientColor, status: clientStatus, created: fmt(new Date()) });
+    }
+    setShowClientModal(false);
+  }
+
+  const confirmDeleteClient = clients.find((c) => c.id === confirmClientId) ?? null;
 
   // ── Departments state ──
   const [deptInput, setDeptInput] = useState("");
@@ -163,6 +206,157 @@ export default function AdminPanel() {
 
   return (
     <div>
+      {/* ── CLIENTS ── */}
+      <div style={{ marginBottom: 40 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <p style={{ ...SECTION_HDR, marginBottom: 0 }}>{t.client_section}</p>
+          <button
+            onClick={openCreateClient}
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              background: `${C.gold}15`, border: `1px solid ${C.gold}40`,
+              borderRadius: 8, padding: "5px 12px",
+              fontSize: 12, fontWeight: 600, color: C.gold,
+              cursor: "pointer", transition: "all .15s", fontFamily: "'DM Sans',sans-serif",
+            }}
+          >
+            <PlusIcon /> {t.client_new}
+          </button>
+        </div>
+
+        {clients.length === 0 ? (
+          <p style={{ fontSize: 13, color: C.g400, fontStyle: "italic" }}>{t.client_no_clients}</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {clients.map((cl) => {
+              const projCount = projects.filter((p) => p.clientId === cl.id).length;
+              const svcCount = services.filter((s) => s.clientId === cl.id).length;
+              const userCount = users.filter((u) => u.clientId === cl.id).length;
+              return (
+                <div
+                  key={cl.id}
+                  style={{
+                    background: C.w, border: `1px solid ${C.g100}`, borderRadius: 12,
+                    padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
+                    borderLeft: `4px solid ${cl.color}`,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{cl.name}</span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: ".06em",
+                        textTransform: "uppercase",
+                        color: cl.status === "active" ? "#065F46" : C.g400,
+                        background: cl.status === "active" ? "#D1FAE5" : C.bg,
+                        borderRadius: 5, padding: "1px 7px",
+                      }}>
+                        {cl.status === "active" ? t.client_status_active : t.client_status_inactive}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: C.g500 }}>{cl.company} · {cl.contactEmail}</div>
+                    <div style={{ fontSize: 11, color: C.g400, marginTop: 3, display: "flex", gap: 12 }}>
+                      <span>{t.client_projects_count(projCount)}</span>
+                      <span>{t.client_services_count(svcCount)}</span>
+                      <span>{t.client_users_count(userCount)}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => openEditClient(cl)} style={ICON_BTN()} title={t.client_edit}>
+                      <EditIcon />
+                    </button>
+                    <button onClick={() => setConfirmClientId(cl.id)} style={ICON_BTN(true)} title={t.admin_delete}>
+                      <TrashIcon />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Client create/edit modal */}
+        {showClientModal && (
+          <div
+            style={{
+              position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
+              zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowClientModal(false); }}
+          >
+            <div
+              style={{
+                background: C.w, borderRadius: 16, padding: 28,
+                width: 460, maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)",
+              }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.navy, marginBottom: 20, fontFamily: "'Playfair Display',serif" }}>
+                {editingClient ? t.client_edit : t.client_new}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <Inp label={t.client_name_label} value={clientName} onChange={setClientName} ph={t.client_name_ph} />
+                <Inp label={t.client_company_label} value={clientCompany} onChange={setClientCompany} ph={t.client_company_ph} />
+                <Inp label={t.client_email_label} value={clientEmail} onChange={setClientEmail} ph={t.client_email_ph} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.g600, marginBottom: 8 }}>{t.client_color_label}</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {CLIENT_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setClientColor(c)}
+                        style={{
+                          width: 28, height: 28, borderRadius: "50%", background: c, border: "none",
+                          cursor: "pointer", outline: clientColor === c ? `3px solid ${C.navy}` : "2px solid transparent",
+                          outlineOffset: 2, transition: "outline .15s",
+                        }}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      value={clientColor}
+                      onChange={(e) => setClientColor(e.target.value)}
+                      style={{ width: 28, height: 28, borderRadius: "50%", border: "none", cursor: "pointer", padding: 0, background: "none" }}
+                      title="Custom color"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.g600, marginBottom: 8 }}>{t.client_status_label}</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {(["active", "inactive"] as Client["status"][]).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setClientStatus(s)}
+                        style={{
+                          padding: "6px 16px", borderRadius: 8, border: "none", cursor: "pointer",
+                          fontFamily: "inherit", fontSize: 13, fontWeight: 500,
+                          background: clientStatus === s ? C.navy : C.bg,
+                          color: clientStatus === s ? C.w : C.g500,
+                          transition: "all .15s",
+                        }}
+                      >
+                        {s === "active" ? t.client_status_active : t.client_status_inactive}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 24, justifyContent: "flex-end" }}>
+                <Btn
+                  onClick={() => setShowClientModal(false)}
+                  style={{ background: C.g100, color: C.navy, boxShadow: "none" }}
+                >
+                  {t.admin_cancel}
+                </Btn>
+                <Btn onClick={saveClient} disabled={!clientName.trim()}>
+                  {editingClient ? t.client_save : t.client_create}
+                </Btn>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── DEPARTMENTS ── */}
       <div style={{ marginBottom: 40 }}>
         <p style={SECTION_HDR}>{t.admin_dept_section}</p>
@@ -430,6 +624,20 @@ export default function AdminPanel() {
           })}
         </div>
       </div>
+
+      {/* Client delete confirm */}
+      <ConfirmDialog
+        open={!!confirmDeleteClient}
+        title={t.client_delete_title}
+        message={confirmDeleteClient ? t.client_delete_msg(confirmDeleteClient.name) : ""}
+        confirmLabel={t.admin_delete}
+        cancelLabel={t.admin_cancel}
+        onConfirm={() => {
+          if (confirmClientId) deleteClient(confirmClientId);
+          setConfirmClientId(null);
+        }}
+        onCancel={() => setConfirmClientId(null)}
+      />
 
       {/* Confirm dialogs */}
       <ConfirmDialog

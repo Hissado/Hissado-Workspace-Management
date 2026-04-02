@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C, Av, Btn, Inp, Modal } from "./primitives";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { Project, User } from "@/lib/data";
+import type { Project, User, Client } from "@/lib/data";
 import { uid, fmt } from "@/lib/data";
 
 const COLORS = ["#C8A45C", "#3B82F6", "#22C55E", "#8B5CF6", "#EC4899", "#F97316", "#EF4444", "#14B8A6", "#F59E0B", "#6366F1"];
@@ -12,10 +12,11 @@ interface ProjectModalProps {
   onClose: () => void;
   users: User[];
   currentUser: User;
+  clients?: Client[];
   onSave: (p: Project) => void;
 }
 
-export default function ProjectModal({ open, onClose, users, currentUser, onSave }: ProjectModalProps) {
+export default function ProjectModal({ open, onClose, users, currentUser, clients, onSave }: ProjectModalProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
 
@@ -30,6 +31,7 @@ export default function ProjectModal({ open, onClose, users, currentUser, onSave
   const [color, setColor] = useState(COLORS[0]);
   const [status, setStatus] = useState<Project["status"]>("active");
   const [members, setMembers] = useState<string[]>([currentUser.id]);
+  const [clientId, setClientId] = useState<string>(currentUser.clientId ?? "");
 
   const create = () => {
     if (!name.trim()) return;
@@ -37,10 +39,11 @@ export default function ProjectModal({ open, onClose, users, currentUser, onSave
       id: uid(), name: name.trim(), desc, color, status,
       members,
       owner: currentUser.id,
+      clientId: clientId || undefined,
       created: fmt(new Date()),
     };
     onSave(p);
-    setName(""); setDesc(""); setColor(COLORS[0]); setStatus("active"); setMembers([currentUser.id]);
+    setName(""); setDesc(""); setColor(COLORS[0]); setStatus("active"); setMembers([currentUser.id]); setClientId(currentUser.clientId ?? "");
   };
 
   const toggleMember = (id: string) => {
@@ -75,6 +78,26 @@ export default function ProjectModal({ open, onClose, users, currentUser, onSave
           </div>
         </div>
       </div>
+
+      {/* Client assignment */}
+      {clients && clients.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.client_assign_label}</label>
+          <select
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            style={{
+              width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 8,
+              fontSize: 13, fontFamily: "inherit", outline: "none", background: C.w, color: C.navy,
+            }}
+          >
+            <option value="">{t.client_assign_ph}</option>
+            {clients.map((cl) => (
+              <option key={cl.id} value={cl.id}>{cl.name} — {cl.company}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 8 }}>{t.pmod_members}</label>

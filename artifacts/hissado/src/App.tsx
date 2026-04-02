@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import {
   accessibleProjects, accessibleTasks, accessibleConversations,
   accessibleTeamMembers, accessibleFiles, accessibleFolders,
-  canCreateProject,
+  accessibleServices, canCreateProject,
 } from "@/lib/access";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
@@ -34,7 +34,7 @@ export default function App() {
     currentUser, page, collapsed, searchQuery,
     selectedProject, selectedTask, showTaskModal, showProjectModal,
     users, projects, services, tasks, notifications, conversations, messages, files, folders,
-    departments, roleDefs, rolePermissions,
+    departments, roleDefs, rolePermissions, clients,
     setCurrentUser, setPage, setCollapsed, setSearchQuery,
     setSelectedProject, setSelectedTask, setShowTaskModal, setShowProjectModal,
     addTask, updateTask, deleteTask,
@@ -82,11 +82,7 @@ export default function App() {
   );
 
   const myServices = useMemo(
-    () => currentUser
-      ? (currentUser.role === "admin" || currentUser.role === "manager"
-          ? services
-          : services.filter((s) => s.members.includes(currentUser.id)))
-      : [],
+    () => currentUser ? accessibleServices(currentUser, services) : [],
     [currentUser, services]
   );
   const myFiles = useMemo(
@@ -285,6 +281,7 @@ export default function App() {
             <Services
               services={myServices}
               users={myTeam}
+              clients={clients}
               currentUser={currentUser}
               canManage={isAdmin}
               onAdd={addService}
@@ -297,6 +294,7 @@ export default function App() {
               projects={myProjects}
               tasks={myTasks}
               users={myTeam}
+              clients={clients}
               onAdd={() => setShowProjectModal(true)}
               onProjectClick={openProjectDetail}
               canCreate={canCreateProject(currentUser)}
@@ -395,6 +393,7 @@ export default function App() {
         onClose={() => setShowProjectModal(false)}
         users={users}
         currentUser={currentUser}
+        clients={clients}
         onSave={(p) => { addProject(p); setShowProjectModal(false); }}
       />
     </div>

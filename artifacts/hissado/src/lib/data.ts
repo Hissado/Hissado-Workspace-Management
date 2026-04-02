@@ -77,6 +77,16 @@ export const SEED_DEPARTMENTS: string[] = [
   "Operations", "Sales", "Executive", "External",
 ];
 
+export type Client = {
+  id: string;
+  name: string;
+  company: string;
+  color: string;
+  contactEmail: string;
+  status: "active" | "inactive";
+  created: string;
+};
+
 export type User = {
   id: string;
   name: string;
@@ -86,6 +96,7 @@ export type User = {
   photo?: string;
   status: "active" | "inactive";
   dept: string;
+  clientId?: string;
   password?: string;
   mustChangePassword?: boolean;
   invitedAt?: string;
@@ -100,6 +111,7 @@ export type Project = {
   owner: string;
   members: string[];
   status: "active" | "on-hold" | "completed";
+  clientId?: string;
   created: string;
 };
 
@@ -114,6 +126,7 @@ export type Service = {
   members: string[];
   owner: string;
   status: "active" | "paused" | "completed";
+  clientId?: string;
   created: string;
 };
 
@@ -209,27 +222,32 @@ export const FILE_TYPES: Record<string, { c: string; l: string }> = {
 };
 
 // ── Seed Data ──
+export const SEED_CLIENTS: Client[] = [
+  { id: "cl1", name: "Acme Corporation", company: "Acme Corp", color: "#5B8DEF", contactEmail: "contact@acme.com", status: "active", created: fmt(addD(now, -90)) },
+  { id: "cl2", name: "Atlas Solutions", company: "Atlas Solutions Inc.", color: "#6FCF97", contactEmail: "hello@atlas.com", status: "active", created: fmt(addD(now, -60)) },
+];
+
 export const SEED_USERS: User[] = [
   { id: "u1", name: "Issa Daouda", email: "issa@hissado.com", role: "admin", av: "ID", status: "active", dept: "Executive", password: "admin123", mustChangePassword: false },
   { id: "u2", name: "Sarah Mitchell", email: "sarah@hissado.com", role: "manager", av: "SM", status: "active", dept: "Engineering", password: "manager123", mustChangePassword: false },
   { id: "u3", name: "James Chen", email: "james@hissado.com", role: "member", av: "JC", status: "active", dept: "Engineering", password: "member123", mustChangePassword: false },
   { id: "u4", name: "Amara Diallo", email: "amara@hissado.com", role: "member", av: "AD", status: "active", dept: "Design", password: "member123", mustChangePassword: false },
-  { id: "u5", name: "Client Portal", email: "client@external.com", role: "client", av: "CP", status: "active", dept: "External", password: "client123", mustChangePassword: false },
+  { id: "u5", name: "Client Portal", email: "client@external.com", role: "client", av: "CP", status: "active", dept: "External", clientId: "cl1", password: "client123", mustChangePassword: false },
 ];
 
 export const SEED_PROJECTS: Project[] = [
-  { id: "p1", name: "Website Redesign", desc: "Complete redesign of corporate website", color: "#C8A45C", owner: "u2", members: ["u1", "u2", "u3", "u4"], status: "active", created: fmt(addD(now, -30)) },
-  { id: "p2", name: "Mobile App Launch", desc: "Native mobile app for iOS and Android", color: "#5B8DEF", owner: "u2", members: ["u2", "u3"], status: "active", created: fmt(addD(now, -20)) },
-  { id: "p3", name: "Q2 Marketing", desc: "Strategic marketing initiatives for Q2", color: "#6FCF97", owner: "u1", members: ["u1", "u4"], status: "active", created: fmt(addD(now, -15)) },
+  { id: "p1", name: "Website Redesign", desc: "Complete redesign of corporate website", color: "#C8A45C", owner: "u2", members: ["u1", "u2", "u3", "u4", "u5"], clientId: "cl1", status: "active", created: fmt(addD(now, -30)) },
+  { id: "p2", name: "Mobile App Launch", desc: "Native mobile app for iOS and Android", color: "#5B8DEF", owner: "u2", members: ["u2", "u3"], clientId: "cl2", status: "active", created: fmt(addD(now, -20)) },
+  { id: "p3", name: "Q2 Marketing", desc: "Strategic marketing initiatives for Q2", color: "#6FCF97", owner: "u1", members: ["u1", "u4"], clientId: "cl1", status: "active", created: fmt(addD(now, -15)) },
   { id: "p4", name: "Data Migration", desc: "Legacy data migration to cloud", color: "#F2994A", owner: "u2", members: ["u2", "u3"], status: "on-hold", created: fmt(addD(now, -45)) },
 ];
 
 export const SEED_SERVICES: Service[] = [
-  { id: "sv1", name: "Monthly Reporting", desc: "Prepare and deliver monthly performance reports and analytics dashboards for all clients", color: "#5B8DEF", cadence: "monthly", members: ["u1", "u2"], owner: "u1", status: "active", created: fmt(addD(now, -60)) },
-  { id: "sv2", name: "Social Media Management", desc: "Weekly content creation, scheduling, community management and performance tracking", color: "#6FCF97", cadence: "weekly", members: ["u1", "u4"], owner: "u1", status: "active", created: fmt(addD(now, -45)) },
-  { id: "sv3", name: "Quarterly Strategy Review", desc: "In-depth quarterly business reviews, strategic planning sessions and roadmap alignment", color: "#C9A96E", cadence: "quarterly", members: ["u1", "u2", "u3"], owner: "u1", status: "active", created: fmt(addD(now, -90)) },
+  { id: "sv1", name: "Monthly Reporting", desc: "Prepare and deliver monthly performance reports and analytics dashboards for all clients", color: "#5B8DEF", cadence: "monthly", members: ["u1", "u2"], owner: "u1", clientId: "cl1", status: "active", created: fmt(addD(now, -60)) },
+  { id: "sv2", name: "Social Media Management", desc: "Weekly content creation, scheduling, community management and performance tracking", color: "#6FCF97", cadence: "weekly", members: ["u1", "u4"], owner: "u1", clientId: "cl1", status: "active", created: fmt(addD(now, -45)) },
+  { id: "sv3", name: "Quarterly Strategy Review", desc: "In-depth quarterly business reviews, strategic planning sessions and roadmap alignment", color: "#C9A96E", cadence: "quarterly", members: ["u1", "u2", "u3"], owner: "u1", clientId: "cl2", status: "active", created: fmt(addD(now, -90)) },
   { id: "sv4", name: "Annual Brand Audit", desc: "Comprehensive annual brand audit, competitive analysis and identity refresh recommendations", color: "#BB6BD9", cadence: "annual", members: ["u1", "u4"], owner: "u1", status: "active", created: fmt(addD(now, -120)) },
-  { id: "sv5", name: "Weekly Development Sprints", desc: "Ongoing agile development sprints with weekly deliverables, demos and client feedback loops", color: "#F2994A", cadence: "weekly", members: ["u2", "u3"], owner: "u2", status: "active", created: fmt(addD(now, -30)) },
+  { id: "sv5", name: "Weekly Development Sprints", desc: "Ongoing agile development sprints with weekly deliverables, demos and client feedback loops", color: "#F2994A", cadence: "weekly", members: ["u2", "u3"], owner: "u2", clientId: "cl2", status: "active", created: fmt(addD(now, -30)) },
 ];
 
 export const SEED_TASKS: Task[] = [

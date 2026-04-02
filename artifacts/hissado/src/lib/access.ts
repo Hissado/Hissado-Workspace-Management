@@ -1,4 +1,4 @@
-import type { User, Project, Task, Conversation, FileItem, Folder, Permission } from "./data";
+import type { User, Project, Task, Service, Conversation, FileItem, Folder, Permission } from "./data";
 
 /**
  * Check if a user has a specific feature permission based on the stored permission config.
@@ -14,10 +14,15 @@ export function hasPermission(
 
 /**
  * Returns true if the user has access to the given project.
- * Admins and managers see all projects.
+ * - Admins and managers see all projects.
+ * - Client users (with clientId) see all projects matching their clientId (no member restriction).
+ * - Internal members see only projects they're assigned to.
  */
 export function canAccessProject(user: User, project: Project): boolean {
-  if (user.role === "admin") return true;
+  if (user.role === "admin" || user.role === "manager") return true;
+  if (user.clientId) {
+    return project.clientId === user.clientId;
+  }
   return project.members.includes(user.id);
 }
 
@@ -25,8 +30,29 @@ export function canAccessProject(user: User, project: Project): boolean {
  * Filter a list of projects to only those the user can access.
  */
 export function accessibleProjects(user: User, projects: Project[]): Project[] {
-  if (user.role === "admin") return projects;
+  if (user.role === "admin" || user.role === "manager") return projects;
+  // Client portal users see all projects belonging to their client (no member restriction)
+  if (user.clientId) {
+    return projects.filter((p) => p.clientId === user.clientId);
+  }
+  // Internal users see only projects they are assigned to
   return projects.filter((p) => p.members.includes(user.id));
+}
+
+/**
+ * Filter services to only those the user can access.
+ * - Admins and managers see all services.
+ * - Client users see only services for their client AND where they're a member.
+ * - Internal members see only services they're assigned to.
+ */
+export function accessibleServices(user: User, services: Service[]): Service[] {
+  if (user.role === "admin" || user.role === "manager") return services;
+  // Client portal users see all services belonging to their client (no member restriction)
+  if (user.clientId) {
+    return services.filter((s) => s.clientId === user.clientId);
+  }
+  // Internal users see only services where they are a member
+  return services.filter((s) => s.members.includes(user.id));
 }
 
 /**
@@ -48,16 +74,13 @@ export function accessibleConversations(
 ): Conversation[] {
   if (user.role === "admin") return conversations;
 
-  // Set of user IDs that share at least one project with current user
   const myProjects = accessibleProjects(user, projects);
   const teamMateIds = new Set<string>();
   teamMateIds.add(user.id);
   myProjects.forEach((p) => p.members.forEach((id) => teamMateIds.add(id)));
 
   return conversations.filter((cv) => {
-    // Must be a participant
     if (!cv.parts.includes(user.id)) return false;
-    // All other participants must be teammates
     return cv.parts.every((pid) => teamMateIds.has(pid));
   });
 }
@@ -71,7 +94,7 @@ export function accessibleTeamMembers(
   users: User[],
   projects: Project[]
 ): User[] {
-  if (user.role === "admin") return users;
+  if (user.role === "admin" || user.role === "manager") return users;
 
   const myProjects = accessibleProjects(user, projects);
   const teamMateIds = new Set<string>();
@@ -89,7 +112,7 @@ export function accessibleFiles(
   files: FileItem[],
   projects: Project[]
 ): FileItem[] {
-  if (user.role === "admin") return files;
+  if (user.role === "admin" || user.role === "manager") return files;
   const projIds = new Set(accessibleProjects(user, projects).map((p) => p.id));
   return files.filter((f) => projIds.has(f.pId));
 }
@@ -102,7 +125,7 @@ export function accessibleFolders(
   folders: Folder[],
   projects: Project[]
 ): Folder[] {
-  if (user.role === "admin") return folders;
+  if (user.role === "admin" || user.role === "manager") return folders;
   const projIds = new Set(accessibleProjects(user, projects).map((p) => p.id));
   return folders.filter((f) => projIds.has(f.pId));
 }

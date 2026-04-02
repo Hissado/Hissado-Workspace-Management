@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C, SH, Av, Btn, Modal, Inp, Empty } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { Service, ServiceCadence, User } from "@/lib/data";
+import type { Service, ServiceCadence, User, Client } from "@/lib/data";
 import { uid, fmt } from "@/lib/data";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
@@ -34,6 +34,7 @@ const STATUS_DOT: Record<string, string> = {
 interface ServicesProps {
   services: Service[];
   users: User[];
+  clients?: Client[];
   currentUser: User;
   canManage?: boolean;
   onAdd: (s: Service) => void;
@@ -41,12 +42,13 @@ interface ServicesProps {
   onDelete: (id: string) => void;
 }
 
-export default function Services({ services, users, currentUser, canManage, onAdd, onUpdate, onDelete }: ServicesProps) {
+export default function Services({ services, users, clients, currentUser, canManage, onAdd, onUpdate, onDelete }: ServicesProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
 
   const [cadenceFilter, setCadenceFilter] = useState<"all" | ServiceCadence>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused" | "completed">("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
@@ -58,6 +60,9 @@ export default function Services({ services, users, currentUser, canManage, onAd
   const [status, setStatus] = useState<Service["status"]>("active");
   const [color, setColor] = useState(PALETTE[0]);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+
+  const clientMap = Object.fromEntries((clients ?? []).map((c) => [c.id, c]));
 
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
@@ -80,6 +85,10 @@ export default function Services({ services, users, currentUser, canManage, onAd
   const filtered = services.filter((s) => {
     if (cadenceFilter !== "all" && s.cadence !== cadenceFilter) return false;
     if (statusFilter !== "all" && s.status !== statusFilter) return false;
+    if (clientFilter !== "all") {
+      if (clientFilter === "__none__" && s.clientId) return false;
+      if (clientFilter !== "__none__" && s.clientId !== clientFilter) return false;
+    }
     return true;
   });
 
@@ -88,6 +97,7 @@ export default function Services({ services, users, currentUser, canManage, onAd
     setName(""); setDesc(""); setCadence("monthly"); setStatus("active");
     setColor(PALETTE[Math.floor(Math.random() * PALETTE.length)]);
     setSelectedMembers([currentUser.id]);
+    setSelectedClientId(currentUser.clientId ?? "");
     setShowModal(true);
   };
 
@@ -96,18 +106,20 @@ export default function Services({ services, users, currentUser, canManage, onAd
     setName(sv.name); setDesc(sv.desc);
     setCadence(sv.cadence); setStatus(sv.status);
     setColor(sv.color); setSelectedMembers(sv.members);
+    setSelectedClientId(sv.clientId ?? "");
     setShowModal(true);
   };
 
   const save = () => {
     if (!name.trim()) return;
+    const clientId = selectedClientId || undefined;
     if (editing) {
-      onUpdate({ ...editing, name: name.trim(), desc, cadence, status, color, members: selectedMembers });
+      onUpdate({ ...editing, name: name.trim(), desc, cadence, status, color, members: selectedMembers, clientId });
     } else {
       onAdd({
         id: uid(), name: name.trim(), desc, cadence, status, color,
         members: selectedMembers.length > 0 ? selectedMembers : [currentUser.id],
-        owner: currentUser.id, created: fmt(new Date()),
+        owner: currentUser.id, clientId, created: fmt(new Date()),
       });
     }
     setShowModal(false);
@@ -136,6 +148,38 @@ export default function Services({ services, users, currentUser, canManage, onAd
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+        {/* Client filter */}
+        {clients && clients.length > 0 && (
+          <div style={{ display: "flex", background: C.w, border: `1px solid ${C.g100}`, borderRadius: 10, padding: 3, gap: 2, flexWrap: "wrap" }}>
+            <button
+              onClick={() => setClientFilter("all")}
+              style={{
+                padding: "5px 12px", border: "none", borderRadius: 7, cursor: "pointer",
+                fontSize: 12, fontWeight: clientFilter === "all" ? 600 : 400, fontFamily: "inherit",
+                background: clientFilter === "all" ? C.navy : "transparent",
+                color: clientFilter === "all" ? C.w : C.g500, transition: "all .15s",
+              }}
+            >
+              {t.client_filter_all}
+            </button>
+            {clients.map((cl) => (
+              <button
+                key={cl.id}
+                onClick={() => setClientFilter(cl.id)}
+                style={{
+                  padding: "5px 12px", border: "none", borderRadius: 7, cursor: "pointer",
+                  fontSize: 12, fontWeight: clientFilter === cl.id ? 600 : 400, fontFamily: "inherit",
+                  background: clientFilter === cl.id ? cl.color : "transparent",
+                  color: clientFilter === cl.id ? "#fff" : C.g500, transition: "all .15s",
+                  display: "flex", alignItems: "center", gap: 5,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: clientFilter === cl.id ? "#ffffff80" : cl.color, flexShrink: 0 }} />
+                {cl.name}
+              </button>
+            ))}
+          </div>
+        )}
         {/* Cadence filter */}
         <div style={{ display: "flex", background: C.w, border: `1px solid ${C.g100}`, borderRadius: 10, padding: 3, gap: 2 }}>
           {cadenceFilters.map((f) => (
@@ -267,6 +311,23 @@ export default function Services({ services, users, currentUser, canManage, onAd
                     )}
                   </div>
 
+                  {/* Client badge */}
+                  {sv.clientId && clientMap[sv.clientId] && (
+                    <div style={{ marginBottom: 8 }}>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        fontSize: 10.5, fontWeight: 700, padding: "2px 9px", borderRadius: 20,
+                        background: `${clientMap[sv.clientId].color}15`,
+                        color: clientMap[sv.clientId].color,
+                        border: `1px solid ${clientMap[sv.clientId].color}30`,
+                        letterSpacing: ".03em",
+                      }}>
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: clientMap[sv.clientId].color, flexShrink: 0 }} />
+                        {clientMap[sv.clientId].name}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Description */}
                   {sv.desc && (
                     <p style={{ margin: "0 0 16px", fontSize: 13, color: "#7A849B", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -397,6 +458,26 @@ export default function Services({ services, users, currentUser, canManage, onAd
               ))}
             </div>
           </div>
+
+          {/* Client assignment */}
+          {clients && clients.length > 0 && (
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 8 }}>{t.client_assign_label}</label>
+              <select
+                value={selectedClientId}
+                onChange={(e) => setSelectedClientId(e.target.value)}
+                style={{
+                  width: "100%", padding: "10px 12px", border: `1px solid ${C.g200}`, borderRadius: 10,
+                  fontSize: 13, fontFamily: "inherit", outline: "none", background: C.w, color: C.navy,
+                }}
+              >
+                <option value="">{t.client_assign_ph}</option>
+                {clients.map((cl) => (
+                  <option key={cl.id} value={cl.id}>{cl.name} — {cl.company}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Color picker */}
           <div>
