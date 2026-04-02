@@ -119,15 +119,14 @@ export default function Sidebar({
 
   const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number; adminOnly?: boolean }[] = [
     { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
+    { k: "clients", icon: <BuildingIcon />, l: t.nav_clients, adminOnly: true },
     { k: "services", icon: <ServiceIcon />, l: t.nav_services },
     { k: "projects", icon: <FolderIcon />, l: t.nav_projects },
     { k: "chat", icon: <ChatIcon />, l: t.nav_chat, badge: unread },
-    { k: "tasks", icon: <CheckIcon />, l: t.nav_tasks },
     { k: "files", icon: <FileIcon2 />, l: t.nav_files },
     { k: "calendar", icon: <CalIcon />, l: t.nav_calendar },
     { k: "reports", icon: <ChartIcon />, l: t.nav_reports },
     { k: "team", icon: <UsersIcon />, l: t.nav_team },
-    { k: "clients", icon: <BuildingIcon />, l: t.nav_clients, adminOnly: true },
   ];
 
   const NAV_ITEMS = ALL_NAV.filter((n) => {
