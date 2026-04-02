@@ -1,14 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User, Project, Task, Notification, Conversation, Message, FileItem, Folder, RoleDef, Permission } from "./data";
+import type { User, Project, Task, Service, Notification, Conversation, Message, FileItem, Folder, RoleDef, Permission } from "./data";
 import {
-  SEED_USERS, SEED_PROJECTS, SEED_TASKS, SEED_NOTIFICATIONS,
+  SEED_USERS, SEED_PROJECTS, SEED_SERVICES, SEED_TASKS, SEED_NOTIFICATIONS,
   SEED_CONVERSATIONS, SEED_MESSAGES, SEED_FILES, SEED_FOLDERS,
   SEED_ROLE_DEFS, SEED_ROLE_PERMISSIONS, SEED_DEPARTMENTS,
 } from "./data";
 
 export type Page =
-  | "dashboard" | "projects" | "pdetail" | "tasks"
+  | "dashboard" | "services" | "projects" | "pdetail" | "tasks"
   | "chat" | "files" | "calendar" | "reports"
   | "team" | "settings";
 
@@ -27,6 +27,7 @@ interface AppState {
 
   users: User[];
   projects: Project[];
+  services: Service[];
   tasks: Task[];
   notifications: Notification[];
   conversations: Conversation[];
@@ -56,6 +57,10 @@ interface AppState {
   addProject: (p: Project) => void;
   updateProject: (p: Project) => void;
   deleteProject: (id: string) => void;
+
+  addService: (s: Service) => void;
+  updateService: (s: Service) => void;
+  deleteService: (id: string) => void;
 
   addUser: (u: User) => void;
   updateUser: (u: User) => void;
@@ -101,6 +106,7 @@ export const useStore = create<AppState>()(
 
       users: SEED_USERS,
       projects: SEED_PROJECTS,
+      services: SEED_SERVICES,
       tasks: SEED_TASKS,
       notifications: SEED_NOTIFICATIONS,
       conversations: SEED_CONVERSATIONS,
@@ -136,6 +142,10 @@ export const useStore = create<AppState>()(
         folders: s.folders.filter((f) => f.pId !== id),
         conversations: s.conversations.filter((c) => c.pId !== id),
       })),
+
+      addService: (sv) => set((s) => ({ services: [...s.services, sv] })),
+      updateService: (sv) => set((s) => ({ services: s.services.map((x) => (x.id === sv.id ? sv : x)) })),
+      deleteService: (id) => set((s) => ({ services: s.services.filter((x) => x.id !== id) })),
 
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
@@ -209,6 +219,7 @@ export const useStore = create<AppState>()(
         currentUser: state.currentUser,
         users: state.users,
         projects: state.projects,
+        services: state.services,
         tasks: state.tasks,
         notifications: state.notifications,
         conversations: state.conversations,

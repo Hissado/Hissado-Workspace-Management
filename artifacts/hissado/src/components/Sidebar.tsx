@@ -6,6 +6,7 @@ import { useI18n, type Lang } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const HomeIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
+const ServiceIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>;
 const FolderIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>;
 const CheckIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>;
 const UsersIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
@@ -99,6 +100,7 @@ const NAV_PERM: Partial<Record<Page, string>> = {
   calendar: "view_calendar",
   reports: "view_reports",
   team: "view_team",
+  services: undefined,
 };
 
 const XIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
@@ -116,9 +118,10 @@ export default function Sidebar({
 
   const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number }[] = [
     { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
+    { k: "services", icon: <ServiceIcon />, l: t.nav_services },
     { k: "projects", icon: <FolderIcon />, l: t.nav_projects },
-    { k: "tasks", icon: <CheckIcon />, l: t.nav_tasks },
     { k: "chat", icon: <ChatIcon />, l: t.nav_chat, badge: unread },
+    { k: "tasks", icon: <CheckIcon />, l: t.nav_tasks },
     { k: "files", icon: <FileIcon2 />, l: t.nav_files },
     { k: "calendar", icon: <CalIcon />, l: t.nav_calendar },
     { k: "reports", icon: <ChartIcon />, l: t.nav_reports },

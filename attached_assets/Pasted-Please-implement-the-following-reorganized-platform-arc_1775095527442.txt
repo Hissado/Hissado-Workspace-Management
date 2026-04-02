@@ -1,0 +1,83 @@
+Please implement the following reorganized platform architecture and interface structure, using a client-first model and a more intuitive functional hierarchy.
+
+The goal is to make the platform more professional, better organized, and easier to use, while ensuring access, workflows, and navigation are structured around each client.
+
+1. Core architecture: client-first structure
+
+Please restructure the platform so that the Client becomes the top-level entity in the system architecture.
+	•	Each client should have a dedicated environment or workspace
+	•	All platform access should be controlled based on client attribution
+	•	Users should only be able to view and interact with the projects, services, files, and features assigned to their specific client
+	•	Permissions should be managed so that access is restricted according to the relevant client profile, role, and assignment
+
+2. Navigation and functional tabs
+
+Please improve the platform navigation by organizing it around two main working areas:
+
+Services
+
+This tab should appear before the Project tab in the navigation.
+	•	Place Services as a primary tab and position it before Projects
+	•	This section should be used to manage ongoing and recurring client work
+	•	Support recurring workflows such as:
+	•	weekly
+	•	monthly
+	•	quarterly
+	•	annual
+	•	Include full task management functionality inside Services, similar to Projects:
+	•	subtasks
+	•	sections
+	•	deadlines
+	•	assignees
+	•	status tracking
+	•	team collaboration
+
+Projects
+
+This tab should continue to manage one-time, milestone-based, or deliverable-driven work
+	•	Keep the existing project workflow structure
+	•	Ensure it remains clearly separated from recurring Services work
+	•	Make both tabs consistent in quality, design, and usability
+
+3. Communication module
+
+Please prioritize and upgrade the messaging system so it feels modern, professional, and internationally usable.
+
+Messaging requirements
+	•	Move the Messaging area to a highly visible position in the interface for easier and faster access
+	•	Support automatic translation for:
+	•	French
+	•	English
+	•	Chinese and other language if possible 
+	•	Add voice-to-text functionality for easier communication
+	•	Add support for handwritten input if feasible
+	•	Display messages in reverse chronological order, with the newest messages first, similar to modern chat platforms like WhatsApp or WeChat
+	•	Make the messaging experience smooth, responsive, and business-ready
+
+4. Dashboard and file organization
+
+Please restructure the dashboard and file organization system to make it more intuitive and easier to manage.
+
+File and workflow structure
+	•	Each Service or Project should function as a main organizational folder
+	•	Related tasks, activities, and work items should be organized into subfolders or nested levels
+	•	Add a tree-view or hierarchical navigation structure so users can easily browse and manage multiple workflows
+	•	Make the organization clear, visual, and scalable for professional use
+
+5. Dashboard personalization
+
+Please add a personalized greeting on the dashboard, such as:
+
+Good morning, Issa
+	•	The greeting should feel warm, professional, and polished
+	•	It would be ideal if it could adapt based on the time of day
+
+Goal
+
+The final result should feel like a professional, client-centered, enterprise-grade platform with:
+	•	a clear client-first structure
+	•	better navigation and workflow separation
+	•	Services placed before Projects
+	•	a stronger messaging experience
+	•	more intuitive file and dashboard organization
+	•	a more personalized and polished dashboard interface

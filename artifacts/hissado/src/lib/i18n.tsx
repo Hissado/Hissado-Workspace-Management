@@ -7,6 +7,7 @@ const T = {
   en: {
     // Nav
     nav_dashboard: "Dashboard",
+    nav_services: "Services",
     nav_projects: "Projects",
     nav_tasks: "My Tasks",
     nav_chat: "Messages",
@@ -34,6 +35,10 @@ const T = {
     pw_set_btn: "Set Password & Continue",
 
     // Dashboard
+    dash_greeting_morning: "Good morning",
+    dash_greeting_afternoon: "Good afternoon",
+    dash_greeting_evening: "Good evening",
+    dash_greeting_sub: "Here's what's happening across your workspace today.",
     dash_active_projects: "Active Projects",
     dash_completed: "Tasks Completed",
     dash_in_progress: "In Progress",
@@ -50,6 +55,37 @@ const T = {
     dash_priority: "Priority",
     dash_assignee: "Assignee",
     dash_due: "Due",
+
+    // Services
+    svc_title: "Services",
+    svc_desc: "Manage recurring client engagements and ongoing work",
+    svc_new: "New Service",
+    svc_edit: "Edit Service",
+    svc_delete: "Delete Service",
+    svc_confirm_delete: "Are you sure you want to delete this service?",
+    svc_weekly: "Weekly",
+    svc_monthly: "Monthly",
+    svc_quarterly: "Quarterly",
+    svc_annual: "Annual",
+    svc_active: "Active",
+    svc_paused: "Paused",
+    svc_completed: "Completed",
+    svc_name: "Service Name",
+    svc_name_ph: "e.g. Monthly Reporting",
+    svc_cadence: "Cadence",
+    svc_status_label: "Status",
+    svc_members_label: "Team Members",
+    svc_owner_label: "Owner",
+    svc_created_label: "Created",
+    svc_empty: "No services yet",
+    svc_empty_desc: "Create your first recurring service engagement to get started",
+    svc_filter_all: "All",
+    svc_tasks_label: "tasks",
+    svc_members_count: "members",
+    svc_save: "Save Service",
+    svc_color: "Color",
+    svc_desc_label: "Description",
+    svc_desc_ph: "Describe the scope and deliverables of this service",
 
     // Projects
     proj_title: "All Projects",
@@ -341,6 +377,7 @@ const T = {
   fr: {
     // Nav
     nav_dashboard: "Tableau de bord",
+    nav_services: "Services",
     nav_projects: "Projets",
     nav_tasks: "Mes tâches",
     nav_chat: "Messagerie",
@@ -368,6 +405,10 @@ const T = {
     pw_set_btn: "Définir le mot de passe et continuer",
 
     // Dashboard
+    dash_greeting_morning: "Bonjour",
+    dash_greeting_afternoon: "Bon après-midi",
+    dash_greeting_evening: "Bonsoir",
+    dash_greeting_sub: "Voici ce qui se passe dans votre espace de travail aujourd'hui.",
     dash_active_projects: "Projets actifs",
     dash_completed: "Tâches terminées",
     dash_in_progress: "En cours",
@@ -384,6 +425,37 @@ const T = {
     dash_priority: "Priorité",
     dash_assignee: "Responsable",
     dash_due: "Échéance",
+
+    // Services
+    svc_title: "Services",
+    svc_desc: "Gérer les engagements clients récurrents et les travaux en cours",
+    svc_new: "Nouveau service",
+    svc_edit: "Modifier le service",
+    svc_delete: "Supprimer le service",
+    svc_confirm_delete: "Êtes-vous sûr de vouloir supprimer ce service ?",
+    svc_weekly: "Hebdomadaire",
+    svc_monthly: "Mensuel",
+    svc_quarterly: "Trimestriel",
+    svc_annual: "Annuel",
+    svc_active: "Actif",
+    svc_paused: "En pause",
+    svc_completed: "Terminé",
+    svc_name: "Nom du service",
+    svc_name_ph: "ex. Rapport mensuel",
+    svc_cadence: "Fréquence",
+    svc_status_label: "Statut",
+    svc_members_label: "Membres de l'équipe",
+    svc_owner_label: "Responsable",
+    svc_created_label: "Créé le",
+    svc_empty: "Aucun service pour le moment",
+    svc_empty_desc: "Créez votre premier engagement de service récurrent pour commencer",
+    svc_filter_all: "Tous",
+    svc_tasks_label: "tâches",
+    svc_members_count: "membres",
+    svc_save: "Enregistrer le service",
+    svc_color: "Couleur",
+    svc_desc_label: "Description",
+    svc_desc_ph: "Décrivez le périmètre et les livrables de ce service",
 
     // Projects
     proj_title: "Tous les projets",

@@ -48,10 +48,13 @@ The application is built as a pnpm workspace monorepo using TypeScript.
 - **Email Service**: Integrates with Resend for sending branded HTML email invitations.
 
 ### Core Features
+- **Services Tab**: A new "Services" page (`src/pages/Services.tsx`) positioned in the sidebar before Projects. Services are recurring engagement types with cadences: weekly, monthly, quarterly, annual. Each service has a name, description, color, cadence, status (active/paused/completed), owner, and team members. Admin/manager users see a "New Service" button and can create, edit, and delete services. Services use the `Service` type in `data.ts` with 5 seed entries. The service store actions (`addService`, `updateService`, `deleteService`) are fully implemented in `store.ts`. Access control: admin/manager see all services; member/client only see services they're members of. Fully bilingual with i18n keys `svc_*`.
+- **Navigation Order**: Dashboard → Services → Projects → Messages (Chat) → My Tasks → Files → Calendar → Reports → Team. Chat was moved up to position 4 (after Projects) for higher visibility.
+- **Personalized Dashboard Greeting**: Dashboard shows a time-based greeting at the top: "Good morning/afternoon/evening, [FirstName]." with a subtitle. Time ranges: 5:00–11:59 = morning, 12:00–17:59 = afternoon, 18:00+ = evening. Implemented via a `useGreeting()` helper function. Rendered in Playfair Display serif font. The `Dashboard` component now accepts a `currentUser?: User | null` prop passed from `App.tsx`. Bilingual: `dash_greeting_morning/afternoon/evening` + `dash_greeting_sub` in both EN and FR.
 - **Project Management**: CRUD operations for projects, tasks, and sub-tasks. Tasks include `pri` (priority), `assignee`, `pId`, `due`, `created`, `prog`, `subs`, `cmts` fields.
 - **User & Permissions**: User roles are dynamic strings (admin, manager, member, client). Admin controls for departments, roles, and permissions are available. Users can be invited via email, with temporary passwords and forced password resets.
 - **File & Folder Management**: Hierarchical file and folder organization with `FileItem.fId` linking files to folders.
-- **Communication**: Chat functionality with direct and group conversations.
+- **Communication**: Chat functionality with direct and group conversations. Auto-scroll to bottom on new messages via `useEffect` watching `msgs.length` and `selected` conversation.
 - **Reporting**: Dashboards and analytics charts for project status, priority, progress, and workload.
 - **Authentication**: Login with email/password, temporary passwords for invited users, and a forced password change flow with strength meter.
 - **Admin Controls**: Cascading delete functionality for projects, conversations, folders, and files.

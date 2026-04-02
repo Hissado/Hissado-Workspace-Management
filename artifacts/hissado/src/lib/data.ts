@@ -103,6 +103,20 @@ export type Project = {
   created: string;
 };
 
+export type ServiceCadence = "weekly" | "monthly" | "quarterly" | "annual";
+
+export type Service = {
+  id: string;
+  name: string;
+  desc: string;
+  color: string;
+  cadence: ServiceCadence;
+  members: string[];
+  owner: string;
+  status: "active" | "paused" | "completed";
+  created: string;
+};
+
 export type SubTask = { id: string; t: string; done: boolean };
 export type Comment = { id: string; uid: string; text: string; date: string };
 
@@ -208,6 +222,14 @@ export const SEED_PROJECTS: Project[] = [
   { id: "p2", name: "Mobile App Launch", desc: "Native mobile app for iOS and Android", color: "#5B8DEF", owner: "u2", members: ["u2", "u3"], status: "active", created: fmt(addD(now, -20)) },
   { id: "p3", name: "Q2 Marketing", desc: "Strategic marketing initiatives for Q2", color: "#6FCF97", owner: "u1", members: ["u1", "u4"], status: "active", created: fmt(addD(now, -15)) },
   { id: "p4", name: "Data Migration", desc: "Legacy data migration to cloud", color: "#F2994A", owner: "u2", members: ["u2", "u3"], status: "on-hold", created: fmt(addD(now, -45)) },
+];
+
+export const SEED_SERVICES: Service[] = [
+  { id: "sv1", name: "Monthly Reporting", desc: "Prepare and deliver monthly performance reports and analytics dashboards for all clients", color: "#5B8DEF", cadence: "monthly", members: ["u1", "u2"], owner: "u1", status: "active", created: fmt(addD(now, -60)) },
+  { id: "sv2", name: "Social Media Management", desc: "Weekly content creation, scheduling, community management and performance tracking", color: "#6FCF97", cadence: "weekly", members: ["u1", "u4"], owner: "u1", status: "active", created: fmt(addD(now, -45)) },
+  { id: "sv3", name: "Quarterly Strategy Review", desc: "In-depth quarterly business reviews, strategic planning sessions and roadmap alignment", color: "#C9A96E", cadence: "quarterly", members: ["u1", "u2", "u3"], owner: "u1", status: "active", created: fmt(addD(now, -90)) },
+  { id: "sv4", name: "Annual Brand Audit", desc: "Comprehensive annual brand audit, competitive analysis and identity refresh recommendations", color: "#BB6BD9", cadence: "annual", members: ["u1", "u4"], owner: "u1", status: "active", created: fmt(addD(now, -120)) },
+  { id: "sv5", name: "Weekly Development Sprints", desc: "Ongoing agile development sprints with weekly deliverables, demos and client feedback loops", color: "#F2994A", cadence: "weekly", members: ["u2", "u3"], owner: "u2", status: "active", created: fmt(addD(now, -30)) },
 ];
 
 export const SEED_TASKS: Task[] = [

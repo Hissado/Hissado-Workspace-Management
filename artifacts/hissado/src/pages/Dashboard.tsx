@@ -8,6 +8,7 @@ interface DashboardProps {
   projects: Project[];
   tasks: Task[];
   users: User[];
+  currentUser?: User | null;
   onTaskClick?: (t: Task) => void;
 }
 
@@ -22,9 +23,17 @@ const statIcons = [
   <svg key="od" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>,
 ];
 
-export default function Dashboard({ projects, tasks, users, onTaskClick }: DashboardProps) {
+function useGreeting(t: ReturnType<typeof useI18n>["t"]) {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return t.dash_greeting_morning;
+  if (h >= 12 && h < 18) return t.dash_greeting_afternoon;
+  return t.dash_greeting_evening;
+}
+
+export default function Dashboard({ projects, tasks, users, currentUser, onTaskClick }: DashboardProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
+  const greeting = useGreeting(t);
 
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((x) => x.status === "Done").length;
@@ -64,8 +73,34 @@ export default function Dashboard({ projects, tasks, users, onTaskClick }: Dashb
     },
   ];
 
+  const firstName = currentUser?.name?.split(" ")[0] || "";
+
   return (
     <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
+      {/* Personalized Greeting */}
+      {currentUser && (
+        <div className="fade-in" style={{ marginBottom: isMobile ? 20 : 32 }}>
+          <h1 style={{
+            margin: 0, padding: 0,
+            fontSize: isMobile ? 22 : 30,
+            fontWeight: 700,
+            fontFamily: "'Playfair Display', serif",
+            color: C.navy,
+            lineHeight: 1.2,
+            letterSpacing: "-0.02em",
+          }}>
+            {greeting}, {firstName}.
+          </h1>
+          <p style={{
+            margin: "6px 0 0",
+            fontSize: isMobile ? 13 : 14,
+            color: "#7A849B",
+            fontWeight: 400,
+          }}>
+            {t.dash_greeting_sub}
+          </p>
+        </div>
+      )}
       {/* Stats Row */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? 12 : 20, marginBottom: isMobile ? 16 : 28 }}>
         {stats.map((s, i) => (
