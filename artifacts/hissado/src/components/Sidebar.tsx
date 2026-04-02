@@ -104,6 +104,7 @@ const NAV_PERM: Partial<Record<Page, string>> = {
 };
 
 const XIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
+const BuildingIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="12" width="6" height="9"/><circle cx="5" cy="20" r="0"/><path d="M9 22v-6h6v6"/><path d="M21 22H3"/><path d="M9 12h6"/></svg>;
 
 export default function Sidebar({
   page, onNavigate, projects, collapsed, onToggleCollapse,
@@ -116,7 +117,7 @@ export default function Sidebar({
   const isAdmin = userRole === "admin" || userRole === "manager";
   const isCollapsed = !isMobile && collapsed;
 
-  const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number }[] = [
+  const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number; adminOnly?: boolean }[] = [
     { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
     { k: "services", icon: <ServiceIcon />, l: t.nav_services },
     { k: "projects", icon: <FolderIcon />, l: t.nav_projects },
@@ -126,14 +127,15 @@ export default function Sidebar({
     { k: "calendar", icon: <CalIcon />, l: t.nav_calendar },
     { k: "reports", icon: <ChartIcon />, l: t.nav_reports },
     { k: "team", icon: <UsersIcon />, l: t.nav_team },
+    { k: "clients", icon: <BuildingIcon />, l: t.nav_clients, adminOnly: true },
   ];
 
-  const NAV_ITEMS = permissions
-    ? ALL_NAV.filter((n) => {
-        const perm = NAV_PERM[n.k];
-        return !perm || permissions.has(perm);
-      })
-    : ALL_NAV;
+  const NAV_ITEMS = ALL_NAV.filter((n) => {
+    if (n.adminOnly && !isAdmin) return false;
+    if (!permissions) return true;
+    const perm = NAV_PERM[n.k as keyof typeof NAV_PERM];
+    return !perm || permissions.has(perm);
+  });
 
   const nextLang: Lang = lang === "en" ? "fr" : "en";
 
@@ -209,7 +211,9 @@ export default function Sidebar({
       {/* Nav items */}
       <nav style={{ padding: isCollapsed ? "12px 8px" : "12px 10px", flex: 1, position: "relative" }}>
         {NAV_ITEMS.map((n) => {
-          const active = page === n.k || (n.k === "projects" && page === "pdetail");
+          const active = page === n.k
+            || (n.k === "projects" && page === "pdetail")
+            || (n.k === "services" && page === "sdetail");
           return (
             <NavItem
               key={n.k}

@@ -136,6 +136,7 @@ export type Comment = { id: string; uid: string; text: string; date: string };
 export type Task = {
   id: string;
   pId: string;
+  sId?: string;
   title: string;
   desc: string;
   status: "To Do" | "In Progress" | "In Review" | "Done";
@@ -146,6 +147,7 @@ export type Task = {
   subs: SubTask[];
   cmts: Comment[];
   prog: number;
+  section?: string;
 };
 
 export type Notification = {
@@ -251,6 +253,7 @@ export const SEED_SERVICES: Service[] = [
 ];
 
 export const SEED_TASKS: Task[] = [
+  // Project tasks
   { id: "t1", pId: "p1", title: "Design system audit", desc: "Audit design tokens", status: "Done", pri: "High", assignee: "u4", due: fmt(addD(now, -5)), created: fmt(addD(now, -28)), subs: [{ id: "s1", t: "Color review", done: true }, { id: "s2", t: "Typography", done: true }], cmts: [{ id: "c1", uid: "u4", text: "Completed audit. 23 inconsistencies found.", date: fmt(addD(now, -6)) }], prog: 100 },
   { id: "t2", pId: "p1", title: "Wireframe homepage", desc: "Create wireframes", status: "In Review", pri: "High", assignee: "u4", due: fmt(addD(now, 2)), created: fmt(addD(now, -20)), subs: [{ id: "s3", t: "Desktop", done: true }, { id: "s4", t: "Mobile", done: true }, { id: "s5", t: "Tablet", done: false }], cmts: [], prog: 75 },
   { id: "t3", pId: "p1", title: "Frontend development", desc: "Implement new design in React", status: "In Progress", pri: "Medium", assignee: "u3", due: fmt(addD(now, 10)), created: fmt(addD(now, -15)), subs: [{ id: "s6", t: "Header", done: true }, { id: "s7", t: "Hero", done: false }], cmts: [{ id: "c2", uid: "u3", text: "Started component library setup.", date: fmt(addD(now, -3)) }], prog: 35 },
@@ -261,6 +264,22 @@ export const SEED_TASKS: Task[] = [
   { id: "t8", pId: "p2", title: "Push notifications", desc: "Push notification service", status: "To Do", pri: "Medium", assignee: "u2", due: fmt(addD(now, 14)), created: fmt(addD(now, -5)), subs: [], cmts: [], prog: 0 },
   { id: "t9", pId: "p3", title: "Campaign strategy", desc: "Q2 campaign planning", status: "Done", pri: "High", assignee: "u1", due: fmt(addD(now, -3)), created: fmt(addD(now, -14)), subs: [], cmts: [], prog: 100 },
   { id: "t10", pId: "p3", title: "Social media content", desc: "Social calendar + content", status: "In Progress", pri: "Medium", assignee: "u4", due: fmt(addD(now, 5)), created: fmt(addD(now, -9)), subs: [], cmts: [], prog: 60 },
+  // Service tasks — sv1 (Monthly Reporting)
+  { id: "st1", pId: "", sId: "sv1", section: "Data Collection", title: "Gather analytics data", desc: "Pull data from GA4, Mixpanel and CRM for the month", status: "Done", pri: "High", assignee: "u1", due: fmt(addD(now, -8)), created: fmt(addD(now, -20)), subs: [{ id: "ss1", t: "GA4 export", done: true }, { id: "ss2", t: "CRM export", done: true }], cmts: [{ id: "sc1", uid: "u1", text: "All data pulled and validated.", date: fmt(addD(now, -9)) }], prog: 100 },
+  { id: "st2", pId: "", sId: "sv1", section: "Data Collection", title: "Validate KPI metrics", desc: "Cross-check all KPIs against source systems", status: "Done", pri: "Medium", assignee: "u2", due: fmt(addD(now, -6)), created: fmt(addD(now, -18)), subs: [], cmts: [], prog: 100 },
+  { id: "st3", pId: "", sId: "sv1", section: "Report Production", title: "Build dashboard report", desc: "Create interactive dashboard with all monthly metrics", status: "In Progress", pri: "High", assignee: "u1", due: fmt(addD(now, 3)), created: fmt(addD(now, -14)), subs: [{ id: "ss3", t: "Revenue section", done: true }, { id: "ss4", t: "Traffic section", done: false }, { id: "ss5", t: "Conversion section", done: false }], cmts: [], prog: 40 },
+  { id: "st4", pId: "", sId: "sv1", section: "Report Production", title: "Write executive summary", desc: "Draft the executive narrative for the report", status: "To Do", pri: "Medium", assignee: "u2", due: fmt(addD(now, 5)), created: fmt(addD(now, -10)), subs: [], cmts: [], prog: 0 },
+  { id: "st5", pId: "", sId: "sv1", section: "Delivery", title: "Client review session", desc: "Present and discuss findings with client stakeholders", status: "To Do", pri: "High", assignee: "u1", due: fmt(addD(now, 8)), created: fmt(addD(now, -8)), subs: [], cmts: [], prog: 0 },
+  // Service tasks — sv2 (Social Media Management)
+  { id: "st6", pId: "", sId: "sv2", section: "Content Planning", title: "Weekly content calendar", desc: "Plan and schedule content for the week across all channels", status: "Done", pri: "High", assignee: "u4", due: fmt(addD(now, -2)), created: fmt(addD(now, -10)), subs: [{ id: "ss6", t: "LinkedIn posts", done: true }, { id: "ss7", t: "Instagram stories", done: true }], cmts: [], prog: 100 },
+  { id: "st7", pId: "", sId: "sv2", section: "Content Planning", title: "Graphic assets creation", desc: "Design all visual assets for scheduled content", status: "In Progress", pri: "Medium", assignee: "u4", due: fmt(addD(now, 2)), created: fmt(addD(now, -7)), subs: [], cmts: [{ id: "sc2", uid: "u4", text: "Working on carousel graphics.", date: fmt(addD(now, -1)) }], prog: 60 },
+  { id: "st8", pId: "", sId: "sv2", section: "Community", title: "Community engagement monitoring", desc: "Respond to comments, messages and mentions", status: "In Progress", pri: "Medium", assignee: "u1", due: fmt(addD(now, 1)), created: fmt(addD(now, -5)), subs: [], cmts: [], prog: 50 },
+  { id: "st9", pId: "", sId: "sv2", section: "Reporting", title: "Weekly performance report", desc: "Compile and send weekly social performance summary", status: "To Do", pri: "Low", assignee: "u4", due: fmt(addD(now, 5)), created: fmt(addD(now, -3)), subs: [], cmts: [], prog: 0 },
+  // Service tasks — sv3 (Quarterly Strategy Review)
+  { id: "st10", pId: "", sId: "sv3", section: "Preparation", title: "Gather Q2 performance data", desc: "Compile all relevant metrics and business outcomes from Q2", status: "Done", pri: "Urgent", assignee: "u1", due: fmt(addD(now, -15)), created: fmt(addD(now, -30)), subs: [], cmts: [], prog: 100 },
+  { id: "st11", pId: "", sId: "sv3", section: "Preparation", title: "Competitive landscape analysis", desc: "Research and document competitive positioning updates", status: "In Review", pri: "High", assignee: "u2", due: fmt(addD(now, -5)), created: fmt(addD(now, -25)), subs: [{ id: "ss8", t: "Market share analysis", done: true }, { id: "ss9", t: "Competitor pricing", done: true }, { id: "ss10", t: "SWOT update", done: true }], cmts: [], prog: 90 },
+  { id: "st12", pId: "", sId: "sv3", section: "Review Session", title: "Prepare strategy deck", desc: "Create the presentation for the quarterly business review", status: "In Progress", pri: "High", assignee: "u1", due: fmt(addD(now, 10)), created: fmt(addD(now, -12)), subs: [], cmts: [], prog: 45 },
+  { id: "st13", pId: "", sId: "sv3", section: "Planning", title: "Q3 roadmap alignment", desc: "Align on priorities and objectives for Q3", status: "To Do", pri: "Urgent", assignee: "u3", due: fmt(addD(now, 20)), created: fmt(addD(now, -5)), subs: [], cmts: [], prog: 0 },
 ];
 
 export const SEED_NOTIFICATIONS: Notification[] = [

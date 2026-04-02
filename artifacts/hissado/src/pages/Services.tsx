@@ -40,9 +40,10 @@ interface ServicesProps {
   onAdd: (s: Service) => void;
   onUpdate: (s: Service) => void;
   onDelete: (id: string) => void;
+  onServiceClick?: (s: Service) => void;
 }
 
-export default function Services({ services, users, clients, currentUser, canManage, onAdd, onUpdate, onDelete }: ServicesProps) {
+export default function Services({ services, users, clients, currentUser, canManage, onAdd, onUpdate, onDelete, onServiceClick }: ServicesProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
 
@@ -246,10 +247,11 @@ export default function Services({ services, users, clients, currentUser, canMan
                   boxShadow: SH.sm,
                   overflow: "hidden",
                   transition: "box-shadow .2s, transform .2s",
-                  cursor: "default",
+                  cursor: onServiceClick ? "pointer" : "default",
                   display: "flex",
                   flexDirection: "column",
                 }}
+                onClick={() => onServiceClick?.(sv)}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = SH.md; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = SH.sm; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
               >
@@ -284,7 +286,7 @@ export default function Services({ services, users, clients, currentUser, canMan
                     {canManage && (
                       <div style={{ display: "flex", gap: 4, flexShrink: 0, marginLeft: 8 }}>
                         <button
-                          onClick={() => openEdit(sv)}
+                          onClick={(e) => { e.stopPropagation(); openEdit(sv); }}
                           style={{
                             width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center",
                             border: `1px solid ${C.g200}`, borderRadius: 8, background: C.w, cursor: "pointer",
@@ -296,7 +298,7 @@ export default function Services({ services, users, clients, currentUser, canMan
                           <EditIcon />
                         </button>
                         <button
-                          onClick={() => setConfirmDelete(sv)}
+                          onClick={(e) => { e.stopPropagation(); setConfirmDelete(sv); }}
                           style={{
                             width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center",
                             border: `1px solid ${C.g200}`, borderRadius: 8, background: C.w, cursor: "pointer",

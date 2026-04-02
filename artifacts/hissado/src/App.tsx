@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/lib/store";
 import type { Page } from "@/lib/store";
-import type { Task, Project, Message } from "@/lib/data";
+import type { Task, Project, Service, Message } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
 import {
   accessibleProjects, accessibleTasks, accessibleConversations,
@@ -17,6 +17,7 @@ import Login from "@/pages/Login";
 import PasswordChange from "@/pages/PasswordChange";
 import Dashboard from "@/pages/Dashboard";
 import Services from "@/pages/Services";
+import ServiceDetail from "@/pages/ServiceDetail";
 import Projects from "@/pages/Projects";
 import ProjectDetail from "@/pages/ProjectDetail";
 import MyTasks from "@/pages/MyTasks";
@@ -25,6 +26,7 @@ import Files from "@/pages/Files";
 import Calendar from "@/pages/Calendar";
 import Reports from "@/pages/Reports";
 import Team from "@/pages/Team";
+import ClientsPage from "@/pages/ClientsPage";
 import Settings from "@/pages/Settings";
 import { C } from "@/components/primitives";
 
@@ -32,15 +34,16 @@ export default function App() {
   const { t } = useI18n();
   const {
     currentUser, page, collapsed, searchQuery,
-    selectedProject, selectedTask, showTaskModal, showProjectModal,
+    selectedProject, selectedService, selectedTask, showTaskModal, showProjectModal,
     users, projects, services, tasks, notifications, conversations, messages, files, folders,
     departments, roleDefs, rolePermissions, clients,
     setCurrentUser, setPage, setCollapsed, setSearchQuery,
-    setSelectedProject, setSelectedTask, setShowTaskModal, setShowProjectModal,
+    setSelectedProject, setSelectedService, setSelectedTask, setShowTaskModal, setShowProjectModal,
     addTask, updateTask, deleteTask,
     addProject, updateProject, deleteProject,
     addService, updateService, deleteService,
     addUser, updateUser, deleteUser,
+    addClient, updateClient, deleteClient,
     addNotification, markAllNotifsRead,
     addConversation, deleteConversation, addMessage,
     addFile, deleteFile, addFolder, deleteFolder,
@@ -69,8 +72,8 @@ export default function App() {
     [currentUser, projects]
   );
   const myTasks = useMemo(
-    () => currentUser ? accessibleTasks(currentUser, tasks, projects) : [],
-    [currentUser, tasks, projects]
+    () => currentUser ? accessibleTasks(currentUser, tasks, projects, services) : [],
+    [currentUser, tasks, projects, services]
   );
   const myConversations = useMemo(
     () => currentUser ? accessibleConversations(currentUser, conversations, projects) : [],
@@ -105,6 +108,7 @@ export default function App() {
   const PAGE_TITLES = useMemo<Record<Page, string>>(() => ({
     dashboard: t.nav_dashboard,
     services: t.nav_services,
+    sdetail: selectedService?.name || t.nav_services,
     projects: t.nav_projects,
     pdetail: selectedProject?.name || t.nav_projects,
     tasks: t.nav_tasks,
@@ -113,8 +117,9 @@ export default function App() {
     calendar: t.nav_calendar,
     reports: t.nav_reports,
     team: t.nav_team,
+    clients: t.nav_clients,
     settings: t.nav_settings,
-  }), [t, selectedProject?.name]);
+  }), [t, selectedProject?.name, selectedService?.name]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -131,6 +136,11 @@ export default function App() {
     setSelectedProject(p);
     setPage("pdetail");
   }, [setSelectedProject, setPage]);
+
+  const openServiceDetail = useCallback((sv: Service) => {
+    setSelectedService(sv);
+    setPage("sdetail");
+  }, [setSelectedService, setPage]);
 
   const openTask = useCallback((task: Task) => {
     setSelectedTask(task);
@@ -275,7 +285,16 @@ export default function App() {
 
         <main style={{ flex: 1, overflow: "auto" }}>
           {page === "dashboard" && (
-            <Dashboard projects={myProjects} tasks={myTasks} users={myTeam} currentUser={currentUser} onTaskClick={openTask} />
+            <Dashboard
+              projects={myProjects}
+              tasks={myTasks}
+              users={myTeam}
+              clients={clients}
+              services={myServices}
+              currentUser={currentUser}
+              onTaskClick={openTask}
+              onNavigateToClients={() => navigate("clients")}
+            />
           )}
           {page === "services" && (
             <Services
@@ -287,6 +306,21 @@ export default function App() {
               onAdd={addService}
               onUpdate={updateService}
               onDelete={deleteService}
+              onServiceClick={openServiceDetail}
+            />
+          )}
+          {page === "sdetail" && selectedService && (
+            <ServiceDetail
+              service={selectedService}
+              tasks={myTasks}
+              users={myTeam}
+              clients={clients}
+              currentUser={currentUser}
+              canManage={isAdmin || currentUser.role === "manager"}
+              onAddTask={() => openAddTask()}
+              onTaskClick={openTask}
+              onTaskUpdate={(t) => updateTask(t)}
+              onBack={() => setPage("services")}
             />
           )}
           {page === "projects" && (
@@ -361,6 +395,20 @@ export default function App() {
               onDeleteUser={deleteUser}
               deptList={departments}
               roleDefs={roleDefs}
+            />
+          )}
+          {page === "clients" && (
+            <ClientsPage
+              clients={clients}
+              users={users}
+              projects={projects}
+              services={services}
+              currentUser={currentUser}
+              canManage={isAdmin || currentUser.role === "manager"}
+              onAdd={addClient}
+              onUpdate={updateClient}
+              onDelete={deleteClient}
+              onAddUser={addUser}
             />
           )}
           {page === "settings" && (

@@ -1,15 +1,18 @@
 import { C, SH, Av, PBar, StatusBadge, PriorityBadge, Card, SectionHeader } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { Project, Task, User } from "@/lib/data";
+import type { Project, Task, User, Client, Service } from "@/lib/data";
 import { fmt, fmtT } from "@/lib/data";
 
 interface DashboardProps {
   projects: Project[];
   tasks: Task[];
   users: User[];
+  clients?: Client[];
+  services?: Service[];
   currentUser?: User | null;
   onTaskClick?: (t: Task) => void;
+  onNavigateToClients?: () => void;
 }
 
 const statIcons = [
@@ -30,7 +33,7 @@ function useGreeting(t: ReturnType<typeof useI18n>["t"]) {
   return t.dash_greeting_evening;
 }
 
-export default function Dashboard({ projects, tasks, users, currentUser, onTaskClick }: DashboardProps) {
+export default function Dashboard({ projects, tasks, users, clients, services, currentUser, onTaskClick, onNavigateToClients }: DashboardProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
   const greeting = useGreeting(t);
@@ -238,8 +241,64 @@ export default function Dashboard({ projects, tasks, users, currentUser, onTaskC
           </Card>
         </div>
 
-        {/* Upcoming sidebar */}
-        <div>
+        {/* Upcoming + clients sidebar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* Active Clients widget (admin/manager only) */}
+          {clients && clients.length > 0 && (currentUser?.role === "admin" || currentUser?.role === "manager") && (
+            <Card style={{ padding: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: 0 }}>{t.dash_clients_title}</h3>
+                {onNavigateToClients && (
+                  <button
+                    onClick={onNavigateToClients}
+                    style={{
+                      fontSize: 11, color: C.gold, background: "none", border: "none",
+                      cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                    }}
+                  >
+                    {t.dash_clients_view_all} →
+                  </button>
+                )}
+              </div>
+              {clients.filter((c) => c.status === "active").length === 0 ? (
+                <div style={{ textAlign: "center", padding: "20px 0", color: C.g400, fontSize: 12 }}>{t.dash_clients_empty}</div>
+              ) : clients.filter((c) => c.status === "active").slice(0, 5).map((cl, idx, arr) => {
+                const clProjects = projects.filter((p) => p.clientId === cl.id).length;
+                const clServices = (services || []).filter((s) => s.clientId === cl.id).length;
+                return (
+                  <div
+                    key={cl.id}
+                    style={{
+                      padding: "10px 0",
+                      borderBottom: idx < arr.length - 1 ? `1px solid ${C.g50}` : "none",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                        background: `${cl.color}18`, border: `1.5px solid ${cl.color}30`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: cl.color }}>{cl.name.charAt(0)}</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cl.name}</div>
+                        <div style={{ fontSize: 11, color: C.g400 }}>
+                          {t.dash_clients_projects_fn(clProjects)} · {t.dash_clients_services_fn(clServices)}
+                        </div>
+                      </div>
+                      <div style={{
+                        width: 7, height: 7, borderRadius: "50%",
+                        background: cl.color, flexShrink: 0,
+                        boxShadow: `0 0 6px ${cl.color}80`,
+                      }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </Card>
+          )}
+
           <Card style={{ padding: 24 }}>
             <SectionHeader title={t.dash_upcoming} />
             {upcoming.length === 0 ? (

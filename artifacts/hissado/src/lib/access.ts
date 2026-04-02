@@ -56,11 +56,16 @@ export function accessibleServices(user: User, services: Service[]): Service[] {
 }
 
 /**
- * Filter tasks to only those in accessible projects.
+ * Filter tasks to only those in accessible projects OR accessible services.
  */
-export function accessibleTasks(user: User, tasks: Task[], projects: Project[]): Task[] {
+export function accessibleTasks(user: User, tasks: Task[], projects: Project[], services?: Service[]): Task[] {
   const projIds = new Set(accessibleProjects(user, projects).map((p) => p.id));
-  return tasks.filter((t) => projIds.has(t.pId));
+  const accessibleSvcs = services ? accessibleServices(user, services) : [];
+  const svcIds = new Set(accessibleSvcs.map((s) => s.id));
+  return tasks.filter((t) => {
+    if (t.sId) return svcIds.has(t.sId);
+    return projIds.has(t.pId);
+  });
 }
 
 /**

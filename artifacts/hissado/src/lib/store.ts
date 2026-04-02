@@ -8,9 +8,9 @@ import {
 } from "./data";
 
 export type Page =
-  | "dashboard" | "services" | "projects" | "pdetail" | "tasks"
+  | "dashboard" | "services" | "sdetail" | "projects" | "pdetail" | "tasks"
   | "chat" | "files" | "calendar" | "reports"
-  | "team" | "settings";
+  | "team" | "clients" | "settings";
 
 interface AppState {
   currentUser: User | null;
@@ -18,6 +18,7 @@ interface AppState {
   collapsed: boolean;
   searchQuery: string;
   selectedProject: Project | null;
+  selectedService: Service | null;
   selectedTask: Task | null;
   showTaskModal: boolean;
   showProjectModal: boolean;
@@ -44,6 +45,7 @@ interface AppState {
   setCollapsed: (v: boolean) => void;
   setSearchQuery: (q: string) => void;
   setSelectedProject: (p: Project | null) => void;
+  setSelectedService: (s: Service | null) => void;
   setSelectedTask: (t: Task | null) => void;
   setShowTaskModal: (v: boolean) => void;
   setShowProjectModal: (v: boolean) => void;
@@ -102,6 +104,7 @@ export const useStore = create<AppState>()(
       collapsed: false,
       searchQuery: "",
       selectedProject: null,
+      selectedService: null,
       selectedTask: null,
       showTaskModal: false,
       showProjectModal: false,
@@ -128,6 +131,7 @@ export const useStore = create<AppState>()(
       setCollapsed: (v) => set({ collapsed: v }),
       setSearchQuery: (q) => set({ searchQuery: q }),
       setSelectedProject: (p) => set({ selectedProject: p }),
+      setSelectedService: (s) => set({ selectedService: s }),
       setSelectedTask: (t) => set({ selectedTask: t }),
       setShowTaskModal: (v) => set({ showTaskModal: v }),
       setShowProjectModal: (v) => set({ showProjectModal: v }),
@@ -151,7 +155,10 @@ export const useStore = create<AppState>()(
 
       addService: (sv) => set((s) => ({ services: [...s.services, sv] })),
       updateService: (sv) => set((s) => ({ services: s.services.map((x) => (x.id === sv.id ? sv : x)) })),
-      deleteService: (id) => set((s) => ({ services: s.services.filter((x) => x.id !== id) })),
+      deleteService: (id) => set((s) => ({
+        services: s.services.filter((x) => x.id !== id),
+        tasks: s.tasks.filter((t) => t.sId !== id),
+      })),
 
       addClient: (c) => set((s) => ({ clients: [...s.clients, c] })),
       updateClient: (c) => set((s) => ({ clients: s.clients.map((x) => (x.id === c.id ? c : x)) })),
