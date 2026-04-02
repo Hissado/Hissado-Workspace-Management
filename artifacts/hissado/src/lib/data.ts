@@ -181,6 +181,7 @@ export type FileItem = {
   type: string;
   size: string;
   pId: string;
+  sId?: string;
   fId: string;
   by: string;
   at: string;
@@ -191,6 +192,7 @@ export type Folder = {
   id: string;
   name: string;
   pId: string;
+  sId?: string;
 };
 
 export const STATUSES = ["To Do", "In Progress", "In Review", "Done"] as const;
@@ -333,4 +335,9 @@ export const SEED_FOLDERS: Folder[] = [
   { id: "fl4", name: "Design", pId: "p2" },
   { id: "fl5", name: "Campaign Materials", pId: "p3" },
   { id: "fl6", name: "Migration Docs", pId: "p4" },
+  { id: "fl7", name: "Monthly Reports", pId: "", sId: "sv1" },
+  { id: "fl8", name: "Client Deliverables", pId: "", sId: "sv1" },
+  { id: "fl9", name: "Social Content", pId: "", sId: "sv2" },
+  { id: "fl10", name: "SEO Reports", pId: "", sId: "sv3" },
+  { id: "fl11", name: "Audit Docs", pId: "", sId: "sv3" },
 ];

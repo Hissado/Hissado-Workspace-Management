@@ -228,6 +228,14 @@ const T = {
     files_file_ph: "e.g., Project Brief",
     files_file_type: "File Type",
     files_upload_btn: "Upload File",
+    files_all_files: "All Files",
+    files_projects_section: "Projects",
+    files_services_section: "Services",
+    files_new_folder_in: "New Folder in",
+    files_select_folder: "Select Folder",
+    files_no_selection: "Select a project, service, or folder from the tree",
+    files_upload_to: "Upload to",
+    files_modified: "Modified",
 
     // Calendar
     cal_title: "Calendar",
@@ -719,6 +727,14 @@ const T = {
     files_file_ph: "ex. : Cahier des charges",
     files_file_type: "Type de fichier",
     files_upload_btn: "Déposer le fichier",
+    files_all_files: "Tous les fichiers",
+    files_projects_section: "Projets",
+    files_services_section: "Services",
+    files_new_folder_in: "Nouveau dossier dans",
+    files_select_folder: "Choisir un dossier",
+    files_no_selection: "Sélectionnez un projet, service ou dossier dans l'arborescence",
+    files_upload_to: "Déposer dans",
+    files_modified: "Modifié",
 
     // Calendar
     cal_title: "Calendrier",

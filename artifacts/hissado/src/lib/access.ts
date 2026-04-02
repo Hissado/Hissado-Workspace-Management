@@ -132,7 +132,7 @@ export function accessibleFolders(
 ): Folder[] {
   if (user.role === "admin" || user.role === "manager") return folders;
   const projIds = new Set(accessibleProjects(user, projects).map((p) => p.id));
-  return folders.filter((f) => projIds.has(f.pId));
+  return folders.filter((f) => (f.sId ? true : projIds.has(f.pId)));
 }
 
 /**

@@ -375,6 +375,8 @@ export default function App() {
               files={myFiles}
               folders={myFolders}
               users={myTeam}
+              projects={myProjects}
+              services={myServices}
               onAddFile={addFile}
               onAddFolder={addFolder}
               onDeleteFile={isAdmin ? deleteFile : undefined}
