@@ -1,0 +1,49 @@
+Please investigate and resolve the synchronization, visibility, refresh, and deployment continuity issues across the platform.
+
+1. Team member sync and access issue
+
+We are currently experiencing a sync issue when adding a new team member.
+
+When a team member is added, they are not able to see the services, projects, tasks, or clients assigned to them
+Please review the assignment and synchronization logic to ensure that all assigned items appear correctly and immediately for the user
+Make sure permissions, assignments, and visibility rules are syncing properly across the app
+2. Team member communication visibility
+
+Please ensure that all internal team members, regardless of their role or permission level, are able to:
+
+see other team members
+chat with all team members internally
+
+This open visibility should apply to internal staff users only.
+
+3. Client visibility restriction
+
+The only exception should be clients.
+
+A client should only be able to see the staff members assigned to them
+Clients should not have visibility into all team members across the platform
+Client access should remain restricted to their own assigned space, projects, services, files, and conversations
+4. Refresh and page persistence issue
+
+We are also experiencing a refresh/navigation issue.
+
+When the page is refreshed, the app always returns to the dashboard
+Instead, it should remain on the same page or section the user was actively working on
+Please make sure the app preserves the current route, context, or working page after refresh whenever appropriate
+5. App updates and republication continuity
+
+Please make sure that when the app is updated and republished, the new version is applied correctly to all users without affecting their existing access or information.
+
+Updates should propagate to all users properly
+Republishing the app should not reset user credentials
+Republishing the app should not erase or disrupt user data
+Existing accounts, assignments, permissions, files, and history should remain fully intact after deployment updates
+Goal
+
+The goal is to make the platform more reliable and enterprise-ready by ensuring:
+
+assigned items sync correctly for new team members
+internal team communication works across all staff users
+clients remain properly restricted
+page refresh does not interrupt the user’s workflow
+app updates are deployed safely without affecting user credentials or stored data

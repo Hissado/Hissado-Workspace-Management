@@ -15,62 +15,77 @@ export function hasPermission(
 /**
  * Returns true if the user has access to the given project.
  * - Admins and managers see all projects.
- * - Client users (with clientId) see all projects matching their clientId (no member restriction).
- * - Internal members see only projects they're assigned to.
+ * - Client users see all projects matching their clientId.
+ * - Internal members see projects they are assigned to.
  */
 export function canAccessProject(user: User, project: Project): boolean {
   if (user.role === "admin" || user.role === "manager") return true;
-  if (user.clientId) {
-    return project.clientId === user.clientId;
-  }
+  if (user.clientId) return project.clientId === user.clientId;
   return project.members.includes(user.id);
 }
 
 /**
- * Filter a list of projects to only those the user can access.
+ * Filter projects the user can access.
+ * Internal members: projects they are listed as a member of.
+ * Clients: projects belonging to their client account.
+ * Admins / managers: all projects.
  */
 export function accessibleProjects(user: User, projects: Project[]): Project[] {
   if (user.role === "admin" || user.role === "manager") return projects;
-  // Client portal users see all projects belonging to their client (no member restriction)
-  if (user.clientId) {
-    return projects.filter((p) => p.clientId === user.clientId);
-  }
-  // Internal users see only projects they are assigned to
+  if (user.clientId) return projects.filter((p) => p.clientId === user.clientId);
   return projects.filter((p) => p.members.includes(user.id));
 }
 
 /**
- * Filter services to only those the user can access.
- * - Admins and managers see all services.
- * - Client users see only services for their client AND where they're a member.
- * - Internal members see only services they're assigned to.
+ * Filter services the user can access.
+ * Internal members: services they are listed as a member of.
+ * Clients: services belonging to their client account.
+ * Admins / managers: all services.
  */
 export function accessibleServices(user: User, services: Service[]): Service[] {
   if (user.role === "admin" || user.role === "manager") return services;
-  // Client portal users see all services belonging to their client (no member restriction)
-  if (user.clientId) {
-    return services.filter((s) => s.clientId === user.clientId);
-  }
-  // Internal users see only services where they are a member
+  if (user.clientId) return services.filter((s) => s.clientId === user.clientId);
   return services.filter((s) => s.members.includes(user.id));
 }
 
 /**
- * Filter tasks to only those in accessible projects OR accessible services.
+ * Filter tasks the user can access.
+ * - Admins / managers: all tasks.
+ * - Any user: tasks directly assigned to them (regardless of project membership).
+ * - Otherwise: tasks belonging to accessible projects / services.
  */
-export function accessibleTasks(user: User, tasks: Task[], projects: Project[], services?: Service[]): Task[] {
+export function accessibleTasks(
+  user: User,
+  tasks: Task[],
+  projects: Project[],
+  services?: Service[]
+): Task[] {
+  if (user.role === "admin" || user.role === "manager") return tasks;
+
   const projIds = new Set(accessibleProjects(user, projects).map((p) => p.id));
-  const accessibleSvcs = services ? accessibleServices(user, services) : [];
-  const svcIds = new Set(accessibleSvcs.map((s) => s.id));
+  const svcIds  = new Set(
+    (services ? accessibleServices(user, services) : []).map((s) => s.id)
+  );
+
   return tasks.filter((t) => {
+    // Always surface tasks directly assigned to this user — even if they haven't
+    // been added to the project's member list yet.
+    if (t.assignee === user.id) return true;
+    // Otherwise gate on project / service access.
     if (t.sId) return svcIds.has(t.sId);
     return projIds.has(t.pId);
   });
 }
 
 /**
- * Filter conversations to only those the user is a participant of,
- * AND where the other participants share a project with the user.
+ * Filter conversations the user can access.
+ *
+ * Admins: all conversations.
+ * Internal staff (no clientId): all conversations they are a participant of.
+ *   → No project-based restriction: internal team members should be able to
+ *     chat with any other internal colleague.
+ * Clients: only conversations where every other participant belongs to their
+ *   project team (no other clients visible).
  */
 export function accessibleConversations(
   user: User,
@@ -79,20 +94,30 @@ export function accessibleConversations(
 ): Conversation[] {
   if (user.role === "admin") return conversations;
 
-  const myProjects = accessibleProjects(user, projects);
-  const teamMateIds = new Set<string>();
-  teamMateIds.add(user.id);
-  myProjects.forEach((p) => p.members.forEach((id) => teamMateIds.add(id)));
+  // Internal staff — open access to all their own threads
+  if (!user.clientId) {
+    return conversations.filter((cv) => cv.parts.includes(user.id));
+  }
+
+  // Client users — restricted to conversations that only involve their project team
+  const myProjects   = accessibleProjects(user, projects);
+  const allowedIds   = new Set<string>();
+  allowedIds.add(user.id);
+  myProjects.forEach((p) => p.members.forEach((id) => allowedIds.add(id)));
 
   return conversations.filter((cv) => {
     if (!cv.parts.includes(user.id)) return false;
-    return cv.parts.every((pid) => teamMateIds.has(pid));
+    return cv.parts.every((pid) => allowedIds.has(pid));
   });
 }
 
 /**
- * Filter team members to only those who share at least one project with the current user.
- * Admins see everyone.
+ * Filter visible team members.
+ *
+ * Admins / managers: everyone.
+ * Internal staff (no clientId): all other internal users (no clientId).
+ *   → Any employee can see and initiate a DM with any other employee.
+ * Clients: only internal staff assigned to their projects, never other clients.
  */
 export function accessibleTeamMembers(
   user: User,
@@ -101,12 +126,23 @@ export function accessibleTeamMembers(
 ): User[] {
   if (user.role === "admin" || user.role === "manager") return users;
 
-  const myProjects = accessibleProjects(user, projects);
-  const teamMateIds = new Set<string>();
-  teamMateIds.add(user.id);
-  myProjects.forEach((p) => p.members.forEach((id) => teamMateIds.add(id)));
+  // Internal staff — see all other internal users (anyone without a clientId)
+  if (!user.clientId) {
+    return users.filter((u) => !u.clientId);
+  }
 
-  return users.filter((u) => teamMateIds.has(u.id));
+  // Client users — see only internal staff assigned to their projects
+  const myProjects = accessibleProjects(user, projects);
+  const staffIds   = new Set<string>();
+  myProjects.forEach((p) =>
+    p.members.forEach((id) => staffIds.add(id))
+  );
+
+  return users.filter((u) => {
+    if (u.id === user.id) return true;            // always include self
+    if (u.clientId) return false;                 // never show other clients
+    return staffIds.has(u.id);                    // only assigned staff
+  });
 }
 
 /**

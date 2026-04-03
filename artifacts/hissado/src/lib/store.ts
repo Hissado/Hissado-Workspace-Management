@@ -134,7 +134,10 @@ export const useStore = create<AppState>()(
       roleDefs: SEED_ROLE_DEFS,
       rolePermissions: SEED_ROLE_PERMISSIONS,
 
-      setCurrentUser: (u) => set({ currentUser: u }),
+      /* Always navigate to dashboard on login or logout so the user starts
+         fresh, but page is persisted so a plain browser refresh keeps the
+         current page intact.                                                */
+      setCurrentUser: (u) => set({ currentUser: u, page: "dashboard" }),
       setPage: (p) => set({ page: p }),
       setCollapsed: (v) => set({ collapsed: v }),
       setSearchQuery: (q) => set({ searchQuery: q }),
@@ -181,18 +184,16 @@ export const useStore = create<AppState>()(
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
       mergeServerUsers: (serverUsers) => set((s) => {
-        const serverById = new Map(serverUsers.map((u) => [u.id, u]));
-        /* Update existing local users with fresh server data (keep local password if server omitted it) */
-        const merged = s.users.map((local) => {
-          const srv = serverById.get(local.id);
-          if (!srv) return local;
-          return { ...local, ...srv, password: srv.password ?? local.password };
-        });
-        /* Add server users that don't yet exist locally */
-        for (const srv of serverUsers) {
-          if (!merged.find((u) => u.id === srv.id)) merged.push(srv);
-        }
-        return { users: merged };
+        /* LOCAL DATA WINS — never overwrite local user changes with server data.
+           This ensures that:
+           • Admin-made role / password changes survive a server restart.
+           • Republishing the app does not reset user credentials.
+           We only add server users whose ID is not already known locally
+           (e.g. a user registered on another device via email invite).     */
+        const localIds = new Set(s.users.map((u) => u.id));
+        const newFromServer = serverUsers.filter((srv) => !localIds.has(srv.id));
+        if (newFromServer.length === 0) return {};           // nothing to add
+        return { users: [...s.users, ...newFromServer] };
       }),
       deleteUser: (id) => set((s) => {
         // Find all 1-on-1 conversations involving this user so we can purge their messages too
@@ -293,19 +294,25 @@ export const useStore = create<AppState>()(
     {
       name: "hissado-pm-v3",
       partialize: (state) => ({
-        currentUser: state.currentUser,
-        users: state.users,
-        projects: state.projects,
-        services: state.services,
-        clients: state.clients,
-        tasks: state.tasks,
-        notifications: state.notifications,
-        conversations: state.conversations,
-        messages: state.messages,
-        files: state.files,
-        folders: state.folders,
-        departments: state.departments,
-        roleDefs: state.roleDefs,
+        currentUser:     state.currentUser,
+        /* Persist the active page + detail context so a browser refresh
+           (F5) lands the user back on exactly where they were working,
+           rather than always resetting to the dashboard.                */
+        page:            state.page,
+        selectedProject: state.selectedProject,
+        selectedService: state.selectedService,
+        users:           state.users,
+        projects:        state.projects,
+        services:        state.services,
+        clients:         state.clients,
+        tasks:           state.tasks,
+        notifications:   state.notifications,
+        conversations:   state.conversations,
+        messages:        state.messages,
+        files:           state.files,
+        folders:         state.folders,
+        departments:     state.departments,
+        roleDefs:        state.roleDefs,
         rolePermissions: state.rolePermissions,
       }),
     }
