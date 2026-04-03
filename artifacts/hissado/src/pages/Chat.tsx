@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { C, Av, Btn, Modal, Inp } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { Conversation, Message, User, Notification } from "@/lib/data";
+import type { Conversation, Message, User, Notification, Attachment } from "@/lib/data";
 import { uid, fmtT } from "@/lib/data";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
@@ -20,6 +20,10 @@ const PenIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none
 const TranslateIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 8l6 6" /><path d="M4 14l6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" /><path d="M22 22l-5-10-5 10" /><path d="M14 18h6" /></svg>;
 const ChevronIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>;
 const WhatsAppIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>;
+const PaperclipIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>;
+const FileIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><polyline points="13 2 13 9 20 9" /></svg>;
+const DownloadIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>;
+const XSmIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
 
 /* ─── Translation API ────────────────────────────────────── */
 const LANG_CODES: Record<string, string> = {
@@ -246,6 +250,36 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   /* drawing */
   const [showDrawPad, setShowDrawPad] = useState(false);
 
+  /* file attachment */
+  const [pendingFile, setPendingFile] = useState<Attachment | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError(`File too large. Maximum size is 5 MB.`);
+      setTimeout(() => setFileError(null), 4000);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = ev.target?.result as string;
+      setPendingFile({ name: file.name, type: file.type, size: file.size, data });
+    };
+    reader.readAsDataURL(file);
+  };
+
   /* translation */
   const [autoTransLang, setAutoTransLang] = useState<string>("off");
   const [translations, setTranslations] = useState<Record<string, string>>({});
@@ -343,13 +377,19 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     setTransLoading((s) => { const n = new Set(s); n.delete(key); return n; });
   }, []);
 
-  /* send text message */
+  /* send text message (or attachment-only) */
   const sendMessage = () => {
-    if (!input.trim() || !selected) return;
-    const msg: Message = { id: uid(), cId: selected, from: currentUser.id, text: input.trim(), ts: new Date().toISOString() };
+    if (!selected) return;
+    if (!input.trim() && !pendingFile) return;
+    const msg: Message = {
+      id: uid(), cId: selected, from: currentUser.id,
+      text: input.trim(), ts: new Date().toISOString(),
+      ...(pendingFile ? { attachment: pendingFile } : {}),
+    };
     onSendMessage(selected, msg);
     onAddNotification({ id: uid(), type: "message", text: `New message in ${getConvoLabel(convo!)}`, read: false, date: fmtT(msg.ts) });
     setInput("");
+    setPendingFile(null);
   };
 
   /* send drawing */
@@ -698,7 +738,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
 
                     {/* Bubble */}
                     <div style={{
-                      padding: isImage ? "4px" : "10px 14px",
+                      padding: (isImage && !m.attachment) ? "4px" : "10px 14px",
                       borderRadius: isMe ? "18px 18px 4px 18px" : "4px 18px 18px 18px",
                       background: isMe
                         ? `linear-gradient(135deg,${C.navy} 0%,${C.navyL} 100%)`
@@ -712,8 +752,80 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                         <div style={{ background: "#ffffff", borderRadius: 8, overflow: "hidden", display: "inline-block" }}>
                           <img src={m.text} alt="Drawing" style={{ maxWidth: 280, maxHeight: 180, display: "block", verticalAlign: "top" }} />
                         </div>
-                      ) : (
-                        m.text
+                      ) : m.text ? (
+                        <span>{m.text}</span>
+                      ) : null}
+
+                      {/* File / image attachment */}
+                      {m.attachment && (
+                        <div style={{ marginTop: m.text ? 8 : 0 }}>
+                          {m.attachment.type.startsWith("image/") ? (
+                            <div style={{ borderRadius: 10, overflow: "hidden", maxWidth: 280 }}>
+                              <img
+                                src={m.attachment.data}
+                                alt={m.attachment.name}
+                                style={{ width: "100%", display: "block", maxHeight: 240, objectFit: "cover" }}
+                              />
+                              <div style={{
+                                display: "flex", alignItems: "center", justifyContent: "space-between",
+                                padding: "5px 8px",
+                                background: isMe ? "rgba(0,0,0,.25)" : "rgba(0,0,0,.04)",
+                                fontSize: 11,
+                              }}>
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>{m.attachment.name}</span>
+                                <a
+                                  href={m.attachment.data}
+                                  download={m.attachment.name}
+                                  style={{ color: isMe ? "rgba(255,255,255,.7)" : C.gold, marginLeft: 8, flexShrink: 0 }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <DownloadIcon />
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{
+                              display: "flex", alignItems: "center", gap: 10,
+                              padding: "10px 12px", borderRadius: 10,
+                              background: isMe ? "rgba(255,255,255,.08)" : `${C.gold}10`,
+                              border: `1px solid ${isMe ? "rgba(255,255,255,.12)" : `${C.gold}25`}`,
+                              minWidth: 160, maxWidth: 260,
+                            }}>
+                              <div style={{
+                                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                                background: isMe ? "rgba(255,255,255,.12)" : `${C.gold}20`,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                color: isMe ? "rgba(255,255,255,.8)" : C.gold,
+                              }}>
+                                <FileIcon />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: 12, fontWeight: 600,
+                                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                  color: isMe ? "rgba(255,255,255,.9)" : C.navy,
+                                }}>{m.attachment.name}</div>
+                                <div style={{ fontSize: 11, color: isMe ? "rgba(255,255,255,.45)" : C.g400, marginTop: 1 }}>
+                                  {formatFileSize(m.attachment.size)}
+                                </div>
+                              </div>
+                              <a
+                                href={m.attachment.data}
+                                download={m.attachment.name}
+                                style={{
+                                  width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                                  background: isMe ? "rgba(255,255,255,.12)" : `${C.gold}18`,
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: isMe ? "rgba(255,255,255,.8)" : C.gold,
+                                  textDecoration: "none",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <DownloadIcon />
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -769,8 +881,74 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             </div>
           )}
 
+          {/* File too large error */}
+          {fileError && (
+            <div style={{ margin: "0 20px 8px", padding: "8px 14px", background: "#FEF2F2", borderRadius: 8, fontSize: 12, color: C.err, border: `1px solid #FECACA` }}>
+              {fileError}
+            </div>
+          )}
+
+          {/* Pending file preview strip */}
+          {pendingFile && (
+            <div style={{
+              margin: "0 20px 8px", padding: "8px 12px", borderRadius: 10,
+              background: `${C.gold}0c`, border: `1px solid ${C.gold}30`,
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: 7, flexShrink: 0,
+                background: `${C.gold}20`, display: "flex", alignItems: "center",
+                justifyContent: "center", color: C.gold,
+              }}>
+                {pendingFile.type.startsWith("image/") ? (
+                  <img src={pendingFile.data} alt="" style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 7 }} />
+                ) : <FileIcon />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {pendingFile.name}
+                </div>
+                <div style={{ fontSize: 11, color: C.g400 }}>{formatFileSize(pendingFile.size)}</div>
+              </div>
+              <button
+                onClick={() => setPendingFile(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: C.g400, padding: 4, display: "flex", alignItems: "center", justifyContent: "center" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = C.err; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = C.g400; }}
+              >
+                <XSmIcon />
+              </button>
+            </div>
+          )}
+
           {/* Input bar */}
           <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.g100}`, background: C.w, display: "flex", gap: 8, alignItems: "center" }}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="*/*"
+              style={{ display: "none" }}
+              onChange={handleFileSelect}
+            />
+
+            {/* Attach file button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach file"
+              data-testid="attach-file-btn"
+              style={{
+                width: 38, height: 38, border: `1px solid ${pendingFile ? C.gold : C.g200}`, borderRadius: 10,
+                background: pendingFile ? `${C.gold}10` : C.w, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: pendingFile ? C.gold : C.g400, flexShrink: 0, transition: "all .15s",
+              }}
+              onMouseEnter={(e) => { if (!pendingFile) { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; } }}
+              onMouseLeave={(e) => { if (!pendingFile) { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g400; } }}
+            >
+              <PaperclipIcon />
+            </button>
+
             {/* Draw button */}
             <button
               onClick={() => setShowDrawPad(true)}

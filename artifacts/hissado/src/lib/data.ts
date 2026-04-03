@@ -169,12 +169,20 @@ export type Conversation = {
   created: string;
 };
 
+export type Attachment = {
+  name: string;
+  type: string;
+  size: number;
+  data: string;
+};
+
 export type Message = {
   id: string;
   cId: string;
   from: string;
   text: string;
   ts: string;
+  attachment?: Attachment;
 };
 
 export type FileItem = {

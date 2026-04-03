@@ -61,6 +61,21 @@ const GlobeIcon = () => (
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
   </svg>
 );
+const ScreenShareIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="3" width="20" height="14" rx="2" />
+    <path d="M8 21h8M12 17v4" />
+    <polyline points="10 8 12 6 14 8" />
+    <line x1="12" y1="6" x2="12" y2="13" />
+  </svg>
+);
+const ScreenShareOffIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 3H2l10 14V3" />
+    <path d="M1 1l22 22" />
+    <path d="M8 21h8M12 17v4" />
+  </svg>
+);
 
 /* ─── Props ──────────────────────────────────────────────────── */
 export interface VideoRoomProps {
@@ -82,7 +97,9 @@ export default function VideoRoom({
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialLoadDoneRef = useRef(false);   /* true after the first iframe load */
   const leavingRef = useRef(false);           /* guards against double-calls to onLeave */
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [frameLoaded, setFrameLoaded] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [showCaptions, setShowCaptions] = useState(false);
   const [captionsActive, setCaptionsActive] = useState(false);
   const [inputLang, setInputLang] = useState("en");
@@ -154,6 +171,48 @@ export default function VideoRoom({
     ].join("&");
     return `https://meet.jit.si/${room}#${params}`;
   })();
+
+  /* ─── Screen sharing ────────────────────────────────────────── */
+  /* Jitsi handles the actual screen share inside the iframe.     */
+  /* We toggle state and send the command via postMessage.        */
+  const handleScreenShare = useCallback(async () => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+
+    /* Toggle off — send stop command */
+    if (isScreenSharing) {
+      iframe.contentWindow.postMessage({ type: "toolbar_button_clicked", id: "screenshare" }, "*");
+      try {
+        iframe.contentWindow.postMessage(
+          JSON.stringify({ action: "execute-command", command: "toggleShareScreen" }),
+          "https://meet.jit.si"
+        );
+      } catch { /* ignore */ }
+      setIsScreenSharing(false);
+      return;
+    }
+
+    /* Request display capture permission first — browser shows the picker */
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      /* If the user picked a screen, stop the local stream (Jitsi manages its own) */
+      stream.getTracks().forEach((t) => t.stop());
+    } catch {
+      /* User cancelled — don't activate */
+      return;
+    }
+
+    /* Send the command to the Jitsi iframe to start sharing */
+    iframe.contentWindow.postMessage({ type: "toolbar_button_clicked", id: "screenshare" }, "*");
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ action: "execute-command", command: "toggleShareScreen" }),
+        "https://meet.jit.si"
+      );
+    } catch { /* ignore */ }
+
+    setIsScreenSharing(true);
+  }, [isScreenSharing]);
 
   /* ─── Auto-hide controls ─── */
   const resetControlsTimer = useCallback(() => {
@@ -264,6 +323,7 @@ export default function VideoRoom({
       {/* ── Jitsi iframe (direct embed — permissions scoped to meet.jit.si) ── */}
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
         <iframe
+          ref={iframeRef}
           src={jitsiUrl}
           allow="camera *; microphone *; fullscreen *; display-capture *; autoplay *"
           allowFullScreen
@@ -328,6 +388,32 @@ export default function VideoRoom({
 
           {/* Controls */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Screen Share */}
+            <button
+              onClick={handleScreenShare}
+              title={isScreenSharing ? "Stop sharing" : "Share your screen"}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "6px 12px",
+                border: `1px solid ${isScreenSharing ? "#22C55E" : "rgba(255,255,255,.25)"}`,
+                borderRadius: 20,
+                background: isScreenSharing ? "#22C55E22" : "rgba(255,255,255,.1)",
+                cursor: "pointer",
+                color: isScreenSharing ? "#22C55E" : "rgba(255,255,255,.85)",
+                fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 600,
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              {isScreenSharing ? <ScreenShareOffIcon /> : <ScreenShareIcon />}
+              <span style={{ display: window.innerWidth < 480 ? "none" : "inline" }}>
+                {isScreenSharing ? "Stop Share" : "Share Screen"}
+              </span>
+              {isScreenSharing && (
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 5px #22C55E" }} />
+              )}
+            </button>
+
+            {/* Live Captions */}
             <button
               onClick={() => setShowCaptions((v) => !v)}
               style={{
@@ -345,6 +431,8 @@ export default function VideoRoom({
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 5px #22C55E" }} />
               )}
             </button>
+
+            {/* Leave */}
             <button
               onClick={safeLeave}
               style={{

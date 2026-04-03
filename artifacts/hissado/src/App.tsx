@@ -144,6 +144,8 @@ export default function App() {
       setCallState(null);
     },
     onNewMessage: (signal: MessageSignal) => {
+      /* Guard: never show a notification to the sender for their own message */
+      if (!currentUser || signal.fromId === currentUser.id) return;
       pushToast({
         type: "message",
         title: signal.fromName,
