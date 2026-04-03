@@ -28,6 +28,8 @@ import Reports from "@/pages/Reports";
 import Team from "@/pages/Team";
 import ClientsPage from "@/pages/ClientsPage";
 import Settings from "@/pages/Settings";
+import Meetings from "@/pages/Meetings";
+import VideoRoom from "@/components/VideoRoom";
 import { C } from "@/components/primitives";
 
 // Client portal: auto-detected from the custom domain OR a ?portal=client URL param (fallback for dev/testing)
@@ -36,7 +38,7 @@ const IS_CLIENT_PORTAL =
   new URLSearchParams(window.location.search).get("portal") === "client";
 
 export default function App() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const {
     currentUser, page, collapsed, searchQuery,
     selectedProject, selectedService, selectedTask, showTaskModal, showProjectModal,
@@ -57,6 +59,7 @@ export default function App() {
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [taskDefaultProject, setTaskDefaultProject] = useState<string | undefined>();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [activeRoom, setActiveRoom] = useState<{ roomName: string; title: string; videoEnabled: boolean } | null>(null);
   const isMobile = useIsMobile();
 
   // ── ALL hooks must come before any conditional returns ──
@@ -124,6 +127,7 @@ export default function App() {
     team: t.nav_team,
     clients: t.nav_clients,
     settings: t.nav_settings,
+    meetings: t.nav_meetings,
   }), [t, selectedProject?.name, selectedService?.name]);
 
   const unreadCount = useMemo(
@@ -136,6 +140,10 @@ export default function App() {
     setShowNotifPanel(false);
     setMobileNavOpen(false);
   }, [setPage]);
+
+  const handleStartCall = useCallback((roomName: string, title: string, videoEnabled: boolean) => {
+    setActiveRoom({ roomName, title, videoEnabled });
+  }, []);
 
   const openProjectDetail = useCallback((p: Project) => {
     setSelectedProject(p);
@@ -373,6 +381,7 @@ export default function App() {
               onCreateConvo={addConversation}
               onAddNotification={addNotification}
               onDeleteConversation={isAdmin ? deleteConversation : undefined}
+              onStartCall={handleStartCall}
             />
           )}
           {page === "files" && (
@@ -429,8 +438,27 @@ export default function App() {
               }}
             />
           )}
+          {page === "meetings" && (
+            <Meetings
+              currentUser={currentUser}
+              teamMembers={myTeam}
+              onStartCall={handleStartCall}
+            />
+          )}
         </main>
       </div>
+
+      {/* ── Video Room overlay ── */}
+      {activeRoom && (
+        <VideoRoom
+          roomName={activeRoom.roomName}
+          displayName={currentUser.name}
+          roomTitle={activeRoom.title}
+          startWithVideoMuted={!activeRoom.videoEnabled}
+          defaultLang={lang}
+          onLeave={() => setActiveRoom(null)}
+        />
+      )}
 
       <TaskModal
         open={showTaskModal}

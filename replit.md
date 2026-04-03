@@ -2,7 +2,7 @@
 
 ## Overview
 
-Hissado is a full-featured project management web application designed to streamline project workflows. It provides a comprehensive suite of tools for task management, team collaboration, file sharing, and reporting. The application aims to enhance productivity and organization for teams of various sizes, offering robust access control and a premium user experience.
+Hissado is a comprehensive project management web application designed to optimize project workflows for teams of all sizes. It offers robust tools for task management, team collaboration, file sharing, and reporting, aiming to boost productivity and organization through a premium user experience and strong access controls.
 
 ## User Preferences
 
@@ -27,71 +27,61 @@ Hissado is a full-featured project management web application designed to stream
 
 ## System Architecture
 
-The application is built as a pnpm workspace monorepo using TypeScript.
+The application is a pnpm workspace monorepo built with TypeScript.
 
 ### Frontend
 - **Framework**: React with Vite
-- **State Management**: Zustand, with state persisted to `localStorage` under the key `hissado-pm-v3`.
-- **Internationalization**: Complete English/French (EN/FR) support managed via `src/lib/i18n.tsx` context. All UI strings, labels, error messages, success messages, validation text, admin panel (badge colors in French: Rouge/Or/Bleu/Vert/Orange/Marine/Gris, permission group names in French), Team page invite flow, profile modal, status labels ("Actif"/"Inactif"), Files delete dialogs, and API email invitation templates are fully bilingual. `ALL_PERMISSIONS` items have `groupFr` field for French group headers. The invite API route (`/api/invite`) accepts a `lang` parameter and generates bilingual email templates.
-- **Access Control**: Project-based Role-Based Access Control (RBAC) implemented in `src/lib/access.ts`, supporting roles: admin, manager, member, client.
-- **Styling**: Utilizes DM Sans and Playfair Display fonts. A premium theme with `C.navy=#070D1A`, `C.gold=#C9A96E`, and `C.bg=#EFF2F8` is applied.
-- **Design System**: A custom design system in `primitives.tsx` defines color (`C`) and shadow (`SH`) constants, and reusable components like `Av`, `Btn`, `Inp`, `Modal`, `PBar`, `StatusBadge`, `PriorityBadge`, `Bdg`, `Card`, `SectionHeader`, `Empty`, and `FileIcon`.
-- **Mobile Responsiveness**: Achieved using a `768px` breakpoint with the `useIsMobile()` hook. UI elements like login, sidebar, dashboard grids, settings tabs, chat, modals, and content page padding adapt dynamically.
-- **Profile Photos**: Users can upload, replace, and remove their profile photo from Settings → Profile. Photos are processed client-side using the Canvas API — cropped to a square from center and resized to 300×300px JPEG (≈20–40 KB). Stored as a base64 data URL in `user.photo` field in the Zustand store / localStorage. Displayed wherever user avatars appear: sidebar, team cards, profile modal, chat conversation list, chat message bubbles, group chat member picker, dashboard project members & task assignees, project cards, My Tasks assignees, calendar events, project detail kanban & list views, and project member selection modal. The `Av` component in `primitives.tsx` checks for `photo` first, falls back to initials if absent. Uploading also updates `currentUser` immediately via `setCurrentUser` so the sidebar reflects the change without re-login. Supports drag-and-drop. File size limit: 5 MB. Fully bilingual (EN/FR) via i18n keys `set_photo_*`.
-- **PWA (Progressive Web App)**: Full PWA support implemented. Manifest at `public/manifest.json` (name: "Hissado Project", theme: navy #070D1A, display: standalone). Service worker at `public/sw.js` with network-first caching for navigation, stale-while-revalidate for assets, and push notification event handlers. App icons at `public/icon-192.svg`, `public/icon-512.svg`, `public/apple-touch-icon.svg`. Install page at `src/pages/Install.tsx` accessible at `/install` (no auth required), auto-detects iOS/Android/desktop, shows platform-specific step-by-step instructions (iOS: Share→Add to Home Screen; Android: menu→Install), Android native install button via `beforeinstallprompt` event, bilingual EN/FR with browser language auto-detection, QR code on desktop. Service worker registered in `src/main.tsx`. Install link/button included in invitation emails.
+- **State Management**: Zustand, with state persisted to `localStorage`.
+- **Internationalization**: Complete English/French (EN/FR) support for all UI strings, labels, messages, and administrative content. The invite API generates bilingual email templates.
+- **Access Control**: Project-based Role-Based Access Control (RBAC) supporting admin, manager, member, and client roles. Service tasks are filtered based on user access.
+- **Styling**: Uses DM Sans and Playfair Display fonts with a premium theme (`C.navy=#070D1A`, `C.gold=#C9A96E`, `C.bg=#EFF2F8`).
+- **Design System**: Custom components (`Av`, `Btn`, `Inp`, `Modal`, `PBar`, `StatusBadge`, `PriorityBadge`, `Bdg`, `Card`, `SectionHeader`, `Empty`, `FileIcon`) and constants (`C`, `SH`) for consistent UI.
+- **Mobile Responsiveness**: Adaptive UI across devices using a `768px` breakpoint and `useIsMobile()` hook.
+- **Profile Photos**: Client-side processing (crop, resize to 300x300px JPEG) and storage as base64 data URLs. Supports drag-and-drop, with a 5 MB file size limit.
+- **PWA (Progressive Web App)**: Full PWA support including manifest, service worker for caching (network-first, stale-while-revalidate), push notifications, and platform-specific installation instructions (iOS, Android, desktop).
 
 ### Backend
 - **API Framework**: Express 5.
 - **Database**: PostgreSQL, managed with Drizzle ORM.
-- **Validation**: Zod is used for schema validation, integrated with `drizzle-zod`.
-- **API Codegen**: Orval generates API client and Zod schemas from an OpenAPI specification.
+- **Validation**: Zod for schema validation, integrated with `drizzle-zod`.
+- **API Codegen**: Orval generates API client and Zod schemas from OpenAPI.
 - **Email Service**: Integrates with Resend for sending branded HTML email invitations.
 
 ### Core Features
-- **Services Tab**: A new "Services" page (`src/pages/Services.tsx`) positioned in the sidebar before Projects. Services are recurring engagement types with cadences: weekly, monthly, quarterly, annual. Each service has a name, description, color, cadence, status (active/paused/completed), owner, and team members. Admin/manager users see a "New Service" button and can create, edit, and delete services. Services use the `Service` type in `data.ts` with 5 seed entries. The service store actions (`addService`, `updateService`, `deleteService`) are fully implemented in `store.ts`. Access control: admin/manager see all services; member/client only see services they're members of. Fully bilingual with i18n keys `svc_*`.
-- **Navigation Order (admin/manager)**: Dashboard → Messages → Clients → Services → Projects → Files → Calendar → Reports → Team → Settings. Messages is position 2 immediately under Dashboard for maximum visibility. My Tasks removed from sidebar. For non-admin: Dashboard → Messages → Services → Projects → Files → Calendar → Reports → Team → Settings.
-- **Upgraded Messaging System** (Chat.tsx fully rewritten):
-  - **Conversation list sorted newest-first** — conversations sorted by most recent message timestamp, most active at top
-  - **Voice-to-text input** — microphone button in input bar uses Web Speech API (chrome/edge); adapts to browser language; start/stop toggle with visual indicator; graceful fallback if unsupported
-  - **Auto-translation** — globe icon in chat header opens language picker (Off / English / French / Chinese / Spanish / German / Arabic / Portuguese / Japanese); when a language is selected, all incoming messages are automatically translated via MyMemory API and shown below the original with a gold accent border; translations are cached per-session
-  - **Per-message translate** — when auto-translate is Off, a small "Translate" button appears below each received message for on-demand translation to English
-  - **Handwriting / Drawing canvas** — pen icon in input bar opens "Draw a Message" modal with a white canvas; user draws with mouse or touch; "Send Drawing" sends the drawing as a PNG image message; drawings render as `<img>` in the chat bubble
-  - **Modern bubble design** — grouped messages by sender (avatar only on first in run), improved border radii, box shadows, subtle background (#F8F9FC), active conversation gold left-border accent, "You:" preview in gold
-  - **Image message support** — messages starting with `data:image` are rendered as images, not text; show "🖊 Drawing" as preview in conversation list
-- **Clients Page** (`src/pages/ClientsPage.tsx`): Full client management page with client cards showing stats (projects, services, portal users), global stats row, search/filter bar, "New Client" modal, and per-card edit/delete/invite actions. Only visible to admin/manager roles. Accessible via the "Clients" nav item in sidebar. Invite modal creates a client portal user with `mustChangePassword: true` and calls the `/api/invite` endpoint for email delivery. Fully bilingual with i18n keys `cp_*`.
-- **ServiceDetail Page** (`src/pages/ServiceDetail.tsx`): Full service detail view with List and Board view modes. List view groups tasks by section. Board view shows Kanban columns (To Do, In Progress, In Review, Done). Each task row is expandable showing subtasks (with checkboxes), comments (with add comment inline), and progress bar. Stats row shows Total/Done/In Progress/Progress. Sidebar panel shows service overview info (cadence, created, client) and team members. Activated by clicking any service card on the Services page. "Back to Services" button navigates back.
-- **Services → ServiceDetail navigation**: Service cards in `Services.tsx` now have `onClick` → `onServiceClick(sv)` handler (admin edit/delete buttons use `e.stopPropagation()`). App.tsx wires `onServiceClick={openServiceDetail}` which calls `setSelectedService` + `setPage("sdetail")`. Sidebar highlights Services as active when on sdetail page.
-- **Access Control — Service Tasks**: `accessibleTasks()` in `access.ts` now accepts an optional `services` param. Tasks with `sId` are filtered against accessible services; tasks with `pId` against accessible projects. App.tsx passes `services` to `accessibleTasks`.
-- **Dashboard Clients Widget**: Admin/manager users see an "Active Clients" sidebar widget on the Dashboard showing up to 5 active clients with project/service counts. Has "View all clients" link navigating to the Clients page. Bilingual keys `dash_clients_*`.
-- **Personalized Dashboard Greeting**: Dashboard shows a time-based greeting at the top: "Good morning/afternoon/evening, [FirstName]." with a subtitle. Time ranges: 5:00–11:59 = morning, 12:00–17:59 = afternoon, 18:00+ = evening. Implemented via a `useGreeting()` helper function. Rendered in Playfair Display serif font. The `Dashboard` component now accepts a `currentUser?: User | null` prop passed from `App.tsx`. Bilingual: `dash_greeting_morning/afternoon/evening` + `dash_greeting_sub` in both EN and FR.
-- **Project Management**: CRUD operations for projects, tasks, and sub-tasks. Tasks include `pri` (priority), `assignee`, `pId`, `due`, `created`, `prog`, `subs`, `cmts` fields.
-- **User & Permissions**: User roles are dynamic strings (admin, manager, member, client). Admin controls for departments, roles, and permissions are available. Users can be invited via email, with temporary passwords and forced password resets. Admins can edit ANY team member's profile (including other admins) via the "Edit Profile" button in the Team profile modal — fields: name, email, phone, role, department, status. `onUpdateUser` prop wired through App.tsx → Team → store.updateUser.
-- **File & Folder Management**: Full hierarchical tree-view file browser. Projects and Services are first-class organizational roots; folders are nested under them; files are inside folders. Two-panel layout: left tree navigator (268px) + right content area. `FileItem.fId` links files to folders; `Folder.sId?` links folders to services (pId="" for service folders). Seed service folders added for sv1/sv2/sv3.
-- **Communication**: Chat functionality with direct and group conversations. Auto-scroll to bottom on new messages via `useEffect` watching `msgs.length` and `selected` conversation. WhatsApp button (green, `data-testid="whatsapp-btn"`) appears in the input bar between the mic button and send button for direct conversations where the other party has a `phone` field set; clicking opens `https://wa.me/{digits}` in a new tab.
-- **WhatsApp Integration**: User `phone` field drives WhatsApp deep-links. Phone stored on both `User` and `Client` models. WhatsApp button appears in chat only for direct convos with a known phone number.
-- **Reporting**: Dashboards and analytics charts for project status, priority, progress, and workload.
-- **Authentication**: Login with email/password, temporary passwords for invited users, and a forced password change flow with strength meter.
-- **Admin Controls**: Cascading delete functionality for projects, conversations, folders, and files.
-
-### Critical Type Definitions
-- Task priority values: `"Urgent" | "High" | "Medium" | "Low"`.
-- Task status values: `"To Do" | "In Progress" | "In Review" | "Done"`.
-- Project status values: `"active" | "on-hold" | "completed"`.
-- `fmt(d: Date)` accepts Date objects. `fmtT(d: string | Date)` accepts string or Date.
+- **Services Management**: Dedicated "Services" page for managing recurring engagement types (weekly, monthly, quarterly, annual) with status, owner, and team members. Admin/manager roles can create, edit, delete services.
+- **Navigation**: Optimized sidebar navigation order with "Messages" prominently placed.
+- **Upgraded Messaging System**:
+    - Conversations sorted by most recent message.
+    - Voice-to-text input using Web Speech API with language adaptation.
+    - Auto-translation of incoming messages via MyMemory API with language selection.
+    - On-demand per-message translation.
+    - Handwriting/drawing canvas for sending image messages.
+    - Modern chat bubble design with grouped messages and visual accents.
+    - Support for image messages (e.g., drawings).
+- **Clients Page**: Client management with cards showing stats, search/filter, and actions (edit, delete, invite portal users). Available to admin/manager roles.
+- **Service Detail Page**: Detailed view of services with List and Kanban Board task views, task expansion for subtasks and comments, progress tracking, and sidebar for service overview and team members.
+- **Dashboard Enhancements**: "Active Clients" widget for admin/managers and personalized time-based greetings (Good morning/afternoon/evening, [FirstName]).
+- **Project Management**: CRUD operations for projects, tasks (with priority, assignee, due date, progress), and sub-tasks.
+- **User & Permissions**: Dynamic roles (admin, manager, member, client). Admin controls for departments, roles, and permissions. Invitation system with temporary passwords and forced password resets. Admins can edit any team member's profile.
+- **File & Folder Management**: Hierarchical tree-view file browser with projects and services as root organizational units.
+- **Communication**: Chat functionality with direct and group conversations. Includes WhatsApp integration for direct conversations when a phone number is available.
+- **Reporting**: Dashboards and analytics for project status, priority, progress, and workload.
+- **Authentication**: Standard email/password login, temporary passwords for invited users, and a forced password change flow with strength meter.
+- **Admin Controls**: Cascading delete functionality for core entities.
 
 ## External Dependencies
 
-- **pnpm workspaces**: Monorepo management.
-- **TypeScript**: Version 5.9.
-- **Node.js**: Version 24.
-- **React**: Frontend library.
-- **Vite**: Frontend build tool.
-- **Zustand**: State management library.
-- **Resend**: Email API for sending invitations.
-- **Express**: Node.js web application framework.
-- **PostgreSQL**: Relational database.
-- **Drizzle ORM**: TypeScript ORM for PostgreSQL.
-- **Zod**: Schema validation library.
-- **drizzle-zod**: Integration between Drizzle ORM and Zod.
-- **Orval**: OpenAPI client code generator.
-- **React Query**: Data fetching and caching library for React.
+- **pnpm workspaces**
+- **TypeScript**
+- **Node.js**
+- **React**
+- **Vite**
+- **Zustand**
+- **Resend** (for email services)
+- **Express**
+- **PostgreSQL**
+- **Drizzle ORM**
+- **Zod**
+- **drizzle-zod**
+- **Orval**
+- **React Query**

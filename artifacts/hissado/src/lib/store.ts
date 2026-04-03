@@ -10,7 +10,7 @@ import {
 export type Page =
   | "dashboard" | "services" | "sdetail" | "projects" | "pdetail" | "tasks"
   | "chat" | "files" | "calendar" | "reports"
-  | "team" | "clients" | "settings";
+  | "team" | "clients" | "settings" | "meetings";
 
 interface AppState {
   currentUser: User | null;

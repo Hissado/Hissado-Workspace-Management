@@ -105,6 +105,7 @@ const NAV_PERM: Partial<Record<Page, string>> = {
 
 const XIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
 const BuildingIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="12" width="6" height="9"/><circle cx="5" cy="20" r="0"/><path d="M9 22v-6h6v6"/><path d="M21 22H3"/><path d="M9 12h6"/></svg>;
+const MeetingsIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>;
 const ExternalIcon = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>;
 
 export default function Sidebar({
@@ -121,6 +122,7 @@ export default function Sidebar({
   const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number; adminOnly?: boolean }[] = useMemo(() => [
     { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
     { k: "chat", icon: <ChatIcon />, l: t.nav_chat, badge: unread },
+    { k: "meetings", icon: <MeetingsIcon />, l: t.nav_meetings },
     { k: "clients", icon: <BuildingIcon />, l: t.nav_clients, adminOnly: true },
     { k: "services", icon: <ServiceIcon />, l: t.nav_services },
     { k: "projects", icon: <FolderIcon />, l: t.nav_projects },

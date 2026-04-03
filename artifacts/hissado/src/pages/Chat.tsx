@@ -156,6 +156,10 @@ const LANGS = [
   { code: "ja", labelKey: "chat_lang_ja" },
 ];
 
+/* ─── Call icons ──────────────────────────────────────────── */
+const PhoneCallIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.26h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.81-1.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
+const VideoCallIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>;
+
 /* ─── Props ──────────────────────────────────────────────── */
 interface ChatProps {
   conversations: Conversation[];
@@ -166,10 +170,11 @@ interface ChatProps {
   onCreateConvo: (cv: Conversation) => void;
   onAddNotification: (n: Notification) => void;
   onDeleteConversation?: (id: string) => void;
+  onStartCall?: (roomName: string, title: string, videoEnabled: boolean) => void;
 }
 
 /* ─── Main component ─────────────────────────────────────── */
-export default function Chat({ conversations, messages, users, currentUser, onSendMessage, onCreateConvo, onAddNotification, onDeleteConversation }: ChatProps) {
+export default function Chat({ conversations, messages, users, currentUser, onSendMessage, onCreateConvo, onAddNotification, onDeleteConversation, onStartCall }: ChatProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
 
@@ -525,6 +530,44 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                 </div>
               )}
             </div>
+
+            {/* Audio / Video call buttons */}
+            {onStartCall && (() => {
+              const roomName = convo.type === "direct"
+                ? [...convo.parts].sort().join("-")
+                : convo.id;
+              const title = getConvoLabel(convo);
+              return (
+                <>
+                  <button
+                    onClick={() => onStartCall(roomName, title, false)}
+                    title="Audio call"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: 32, height: 32, border: `1px solid ${C.g200}`,
+                      borderRadius: 8, background: C.w, cursor: "pointer", color: "#16A34A",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#F0FDF4"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = C.w; }}
+                  >
+                    <PhoneCallIcon />
+                  </button>
+                  <button
+                    onClick={() => onStartCall(roomName, title, true)}
+                    title="Video call"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: 32, height: 32, border: `1px solid ${C.g200}`,
+                      borderRadius: 8, background: C.w, cursor: "pointer", color: C.gold,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = `${C.gold}10`; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = C.w; }}
+                  >
+                    <VideoCallIcon />
+                  </button>
+                </>
+              );
+            })()}
 
             {onDeleteConversation && (
               <button
