@@ -60,7 +60,8 @@ export default function App() {
     addUser, updateUser, deleteUser, mergeServerUsers,
     addClient, updateClient, deleteClient,
     addNotification, markAllNotifsRead,
-    addConversation, deleteConversation, addMessage,
+    addConversation, deleteConversation, addMessage, updateMessage, deleteMessage, addReaction, markMessagesRead,
+    chatOpenConvoId, setChatOpenConvoId,
     addFile, deleteFile, addFolder, deleteFolder,
   } = useStore();
 
@@ -151,6 +152,10 @@ export default function App() {
         title: signal.fromName,
         body: signal.text,
         color: undefined,
+        onPress: () => {
+          setPage("chat");
+          setChatOpenConvoId(signal.conversationId);
+        },
       });
       desktopNotify(signal.fromName, signal.text, { tag: `msg-${signal.conversationId}` });
     },
@@ -570,6 +575,12 @@ export default function App() {
               onAddNotification={addNotification}
               onDeleteConversation={isAdmin ? deleteConversation : undefined}
               onStartCall={handleStartCall}
+              onUpdateMessage={updateMessage}
+              onDeleteMessage={deleteMessage}
+              onReact={addReaction}
+              onMarkRead={markMessagesRead}
+              initialConvoId={chatOpenConvoId}
+              onConvoOpened={() => setChatOpenConvoId(null)}
             />
           )}
           {page === "files" && (

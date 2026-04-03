@@ -1,0 +1,69 @@
+Please investigate and resolve the messaging and calling issues in the communication module, and enhance the chat experience with more advanced editing and messaging features similar to WhatsApp.
+
+1. Message delivery issue
+
+Please review the message routing functionality in the chat area.
+
+When a message is sent to a team member, it should be delivered to the intended recipient
+Currently, the message appears to come back to the sender instead
+The sender also receives the notification, which suggests the message or notification routing is incorrect
+Please fix this so messages are sent to the correct user and notifications are delivered to the proper recipient
+2. Notification and message visibility issue
+
+Please also investigate the issue where:
+
+the notification is received
+but the actual message cannot be located in the conversation
+
+This means the alert may be triggering, but the message is either:
+
+not being stored correctly
+not being displayed in the right conversation
+or not syncing properly in the interface
+
+Please review the full messaging flow, including:
+
+message delivery
+conversation mapping
+notification logic
+storage and retrieval
+real-time sync behavior
+3. Calling issue
+
+Please investigate the same type of issue for calls as well.
+
+If a call is placed to another user, it should reach the correct recipient
+Please confirm that call notifications, call routing, and incoming call display are all working correctly
+If a call notification appears but the related call activity cannot be found or handled properly, please fix that as well
+4. Message editing after sending
+
+Please add the ability for users to edit a message even after it has been sent, similar to WhatsApp.
+
+Users should be able to update the content of a sent message
+The edited message should remain clean and easy to read in the conversation
+If needed, an “edited” indicator can appear in a subtle and professional way
+5. Additional WhatsApp-like features
+
+Please also consider adding other useful communication features inspired by WhatsApp, where appropriate, to make the messaging experience more modern and user-friendly.
+
+Examples may include:
+
+message editing
+reply to a specific message
+message reactions
+file and image attachments
+voice notes
+read receipts
+delivered/sent status indicators
+message search
+forwarded message support
+better conversation organization
+Goal
+
+The goal is to make the communication system fully reliable, intuitive, and professional by:
+
+fixing message and call routing issues
+ensuring notifications match the correct conversations
+making messages easy to find after alerts are received
+adding message editing
+and improving the overall chat experience with modern features similar to WhatsApp

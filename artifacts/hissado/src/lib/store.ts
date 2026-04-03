@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User, Project, Task, Service, Client, Notification, Conversation, Message, FileItem, Folder, RoleDef, Permission } from "./data";
+import type { User, Project, Task, Service, Client, Notification, Conversation, Message, Reaction, FileItem, Folder, RoleDef, Permission } from "./data";
 import {
   SEED_USERS, SEED_PROJECTS, SEED_SERVICES, SEED_CLIENTS, SEED_TASKS, SEED_NOTIFICATIONS,
   SEED_CONVERSATIONS, SEED_MESSAGES, SEED_FILES, SEED_FOLDERS,
@@ -77,9 +77,16 @@ interface AppState {
   addNotification: (n: Notification) => void;
   markAllNotifsRead: () => void;
 
+  chatOpenConvoId: string | null;
+  setChatOpenConvoId: (id: string | null) => void;
+
   addConversation: (c: Conversation) => void;
   deleteConversation: (id: string) => void;
   addMessage: (m: Message) => void;
+  updateMessage: (id: string, updates: Partial<Message>) => void;
+  deleteMessage: (id: string) => void;
+  addReaction: (msgId: string, emoji: string, userId: string) => void;
+  markMessagesRead: (cId: string, userId: string) => void;
 
   addFile: (f: FileItem) => void;
   deleteFile: (id: string) => void;
@@ -212,12 +219,44 @@ export const useStore = create<AppState>()(
       addNotification: (n) => set((s) => ({ notifications: [n, ...s.notifications] })),
       markAllNotifsRead: () => set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) })),
 
+      chatOpenConvoId: null,
+      setChatOpenConvoId: (id) => set({ chatOpenConvoId: id }),
+
       addConversation: (c) => set((s) => ({ conversations: [...s.conversations, c] })),
       deleteConversation: (id) => set((s) => ({
         conversations: s.conversations.filter((c) => c.id !== id),
         messages: s.messages.filter((m) => m.cId !== id),
       })),
       addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
+      updateMessage: (id, updates) => set((s) => ({
+        messages: s.messages.map((m) => m.id === id ? { ...m, ...updates } : m),
+      })),
+      deleteMessage: (id) => set((s) => ({
+        messages: s.messages.filter((m) => m.id !== id),
+      })),
+      addReaction: (msgId, emoji, userId) => set((s) => ({
+        messages: s.messages.map((m) => {
+          if (m.id !== msgId) return m;
+          const reactions: Reaction[] = m.reactions ? [...m.reactions] : [];
+          const existing = reactions.find((r) => r.emoji === emoji);
+          if (existing) {
+            if (existing.userIds.includes(userId)) {
+              const updated = existing.userIds.filter((id) => id !== userId);
+              if (updated.length === 0) return { ...m, reactions: reactions.filter((r) => r.emoji !== emoji) };
+              return { ...m, reactions: reactions.map((r) => r.emoji === emoji ? { ...r, userIds: updated } : r) };
+            }
+            return { ...m, reactions: reactions.map((r) => r.emoji === emoji ? { ...r, userIds: [...r.userIds, userId] } : r) };
+          }
+          return { ...m, reactions: [...reactions, { emoji, userIds: [userId] }] };
+        }),
+      })),
+      markMessagesRead: (cId, userId) => set((s) => ({
+        messages: s.messages.map((m) => {
+          if (m.cId !== cId || m.from === userId) return m;
+          if (m.readBy?.includes(userId)) return m;
+          return { ...m, readBy: [...(m.readBy || []), userId] };
+        }),
+      })),
 
       addFile: (f) => set((s) => ({ files: [...s.files, f] })),
       deleteFile: (id) => set((s) => ({ files: s.files.filter((f) => f.id !== id) })),

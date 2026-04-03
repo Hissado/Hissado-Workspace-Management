@@ -24,6 +24,16 @@ const PaperclipIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill
 const FileIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><polyline points="13 2 13 9 20 9" /></svg>;
 const DownloadIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>;
 const XSmIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
+const EditIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>;
+const ReplyIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" /></svg>;
+const SmileIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" /></svg>;
+const CheckIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>;
+const CheckCheckIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="17 6 9 17 5 13" /><polyline points="22 6 14 17" /></svg>;
+const SearchMsgIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
+const CloseIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
+
+/* ─── Emoji reactions set ────────────────────────────────── */
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 /* ─── Translation API ────────────────────────────────────── */
 const LANG_CODES: Record<string, string> = {
@@ -77,7 +87,6 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const [hasDrawn, setHasDrawn] = useState(false);
 
-  /* Initialize canvas with solid white background so exports always have white bg */
   const initWhite = (canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -90,7 +99,6 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
     if (canvas) initWhite(canvas);
   }, []);
 
-  /* Enter key confirms / sends the drawing */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -138,14 +146,12 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
   };
   const endDraw = () => { drawing.current = false; lastPos.current = null; };
 
-  /* Clear: re-fill with white (not transparent clearRect) */
   const clearCanvas = () => {
     const canvas = canvasRef.current; if (!canvas) return;
     initWhite(canvas);
     setHasDrawn(false);
   };
 
-  /* Export: canvas already has white background, no compositing needed */
   const sendDrawing = () => {
     const canvas = canvasRef.current; if (!canvas) return;
     const dataUrl = canvas.toDataURL("image/png");
@@ -216,10 +222,30 @@ interface ChatProps {
   onAddNotification: (n: Notification) => void;
   onDeleteConversation?: (id: string) => void;
   onStartCall?: (roomName: string, title: string, videoEnabled: boolean, target?: { id: string; name: string; color?: string }) => void;
+  onUpdateMessage?: (id: string, updates: Partial<Message>) => void;
+  onDeleteMessage?: (id: string) => void;
+  onReact?: (msgId: string, emoji: string, userId: string) => void;
+  onMarkRead?: (cId: string, userId: string) => void;
+  initialConvoId?: string | null;
+  onConvoOpened?: () => void;
+}
+
+/* ─── Highlight helper ───────────────────────────────────── */
+function highlight(text: string, query: string): React.ReactNode {
+  if (!query) return text;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx < 0) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark style={{ background: "#FDE68A", borderRadius: 2, padding: "0 1px" }}>{text.slice(idx, idx + query.length)}</mark>
+      {text.slice(idx + query.length)}
+    </>
+  );
 }
 
 /* ─── Main component ─────────────────────────────────────── */
-export default function Chat({ conversations, messages, users, currentUser, onSendMessage, onCreateConvo, onAddNotification, onDeleteConversation, onStartCall }: ChatProps) {
+export default function Chat({ conversations, messages, users, currentUser, onSendMessage, onCreateConvo, onAddNotification, onDeleteConversation, onStartCall, onUpdateMessage, onDeleteMessage, onReact, onMarkRead, initialConvoId, onConvoOpened }: ChatProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
 
@@ -254,31 +280,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   const [pendingFile, setPendingFile] = useState<Attachment | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
-    if (file.size > MAX_FILE_SIZE) {
-      setFileError(`File too large. Maximum size is 5 MB.`);
-      setTimeout(() => setFileError(null), 4000);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const data = ev.target?.result as string;
-      setPendingFile({ name: file.name, type: file.type, size: file.size, data });
-    };
-    reader.readAsDataURL(file);
-  };
+  const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
   /* translation */
   const [autoTransLang, setAutoTransLang] = useState<string>("off");
@@ -288,16 +290,37 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   const [showLangPicker, setShowLangPicker] = useState(false);
   const langPickerRef = useRef<HTMLDivElement>(null);
 
+  /* ── NEW: WhatsApp features state ── */
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [emojiPickerMsgId, setEmojiPickerMsgId] = useState<string | null>(null);
+  const [showMsgSearch, setShowMsgSearch] = useState(false);
+  const [msgSearch, setMsgSearch] = useState("");
+  const [confirmDeleteMsg, setConfirmDeleteMsg] = useState<Message | null>(null);
+
   /* scroll */
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   /* derived */
   const convo = conversations.find((c) => c.id === selected);
-  const msgs = selected ? (messages[selected] || []) : [];
+  const allMsgs = selected ? (messages[selected] || []) : [];
+  const msgs = msgSearch
+    ? allMsgs.filter((m) => m.text.toLowerCase().includes(msgSearch.toLowerCase()))
+    : allMsgs;
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
   const otherUsers = users.filter((u) => u.id !== currentUser.id);
 
-  /* whatsapp — only for direct conversations with a phone number */
+  /* format file size */
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  /* whatsapp */
   const whatsappUrl = (() => {
     if (!convo || convo.type !== "direct") return null;
     const otherId = convo.parts.find((id) => id !== currentUser.id);
@@ -310,7 +333,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   const showList = !isMobile || !mobileShowChat || !selected;
   const showChat = !isMobile || (mobileShowChat && !!selected);
 
-  /* sort conversations by most recent message (newest first in list) */
+  /* sort conversations */
   const sortedConversations = [...conversations].sort((a, b) => {
     const aTs = (messages[a.id] || []).at(-1)?.ts || a.created;
     const bTs = (messages[b.id] || []).at(-1)?.ts || b.created;
@@ -335,6 +358,24 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     return <Av ini={userMap[other || ""]?.av || "??"} photo={userMap[other || ""]?.photo} size={42} />;
   }
 
+  /* ── Navigate here from notification ── */
+  useEffect(() => {
+    if (!initialConvoId) return;
+    const exists = conversations.find((c) => c.id === initialConvoId);
+    if (exists) {
+      setSelected(initialConvoId);
+      if (isMobile) setMobileShowChat(true);
+      onConvoOpened?.();
+    }
+  }, [initialConvoId]);
+
+  /* ── Mark messages as read when entering a conversation ── */
+  useEffect(() => {
+    if (selected && onMarkRead) {
+      onMarkRead(selected, currentUser.id);
+    }
+  }, [selected]);
+
   /* auto-scroll to newest message */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -351,7 +392,32 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  /* auto-translate new messages when autoTransLang is set */
+  /* close emoji picker on outside click */
+  useEffect(() => {
+    if (!emojiPickerMsgId) return;
+    const handler = (e: MouseEvent) => {
+      const el = document.getElementById(`emoji-picker-${emojiPickerMsgId}`);
+      if (el && !el.contains(e.target as Node)) setEmojiPickerMsgId(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [emojiPickerMsgId]);
+
+  /* Escape key: cancel edit / reply / close search */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (editingMsgId) { setEditingMsgId(null); setEditText(""); setInput(""); }
+        else if (replyToId) setReplyToId(null);
+        else if (showMsgSearch) { setShowMsgSearch(false); setMsgSearch(""); }
+        else if (emojiPickerMsgId) setEmojiPickerMsgId(null);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [editingMsgId, replyToId, showMsgSearch, emojiPickerMsgId]);
+
+  /* auto-translate new messages */
   useEffect(() => {
     if (autoTransLang === "off") return;
     msgs.forEach((m) => {
@@ -377,19 +443,52 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     setTransLoading((s) => { const n = new Set(s); n.delete(key); return n; });
   }, []);
 
-  /* send text message (or attachment-only) */
+  /* file selection */
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError("File too large. Maximum size is 5 MB.");
+      setTimeout(() => setFileError(null), 4000);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = ev.target?.result as string;
+      setPendingFile({ name: file.name, type: file.type, size: file.size, data });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /* ── Send / edit message ── */
   const sendMessage = () => {
     if (!selected) return;
+
+    /* Edit mode: update existing message */
+    if (editingMsgId) {
+      const trimmed = input.trim();
+      if (!trimmed) return;
+      onUpdateMessage?.(editingMsgId, { text: trimmed, edited: true });
+      setEditingMsgId(null);
+      setEditText("");
+      setInput("");
+      return;
+    }
+
     if (!input.trim() && !pendingFile) return;
+
     const msg: Message = {
       id: uid(), cId: selected, from: currentUser.id,
       text: input.trim(), ts: new Date().toISOString(),
       ...(pendingFile ? { attachment: pendingFile } : {}),
+      ...(replyToId ? { replyTo: replyToId } : {}),
     };
     onSendMessage(selected, msg);
     onAddNotification({ id: uid(), type: "message", text: `New message in ${getConvoLabel(convo!)}`, read: false, date: fmtT(msg.ts) });
     setInput("");
     setPendingFile(null);
+    setReplyToId(null);
   };
 
   /* send drawing */
@@ -399,67 +498,75 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     onSendMessage(selected, msg);
   };
 
-  /* voice input — continuous mode with real-time interim display */
+  /* voice input */
   const startVoice = () => {
     if (!SR) { setVoiceUnsupported(true); setTimeout(() => setVoiceUnsupported(false), 3000); return; }
     const rec = new SR();
-    /* language: empty string lets the browser auto-detect from the microphone */
     rec.lang = "";
     rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 3;
-
-    /* Seed finalTranscriptRef with whatever is already typed */
     finalTranscriptRef.current = input.trimEnd();
-
     rec.onresult = (e) => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
         const best = r[0].transcript.trim();
         if (r.isFinal) {
-          finalTranscriptRef.current = finalTranscriptRef.current
-            ? finalTranscriptRef.current + " " + best
-            : best;
+          finalTranscriptRef.current = finalTranscriptRef.current ? finalTranscriptRef.current + " " + best : best;
         } else {
           interim = best;
         }
       }
-      /* Show confirmed text + live interim together in the input */
       setInterimText(interim);
-      const display = interim
-        ? (finalTranscriptRef.current ? finalTranscriptRef.current + " " + interim : interim)
-        : finalTranscriptRef.current;
+      const display = interim ? (finalTranscriptRef.current ? finalTranscriptRef.current + " " + interim : interim) : finalTranscriptRef.current;
       setInput(display);
     };
-
     rec.onerror = (e) => {
-      /* Ignore non-fatal errors like "no-speech" — recognition continues */
-      if (e.error === "aborted" || e.error === "not-allowed") {
-        setIsRecording(false);
-        setInterimText("");
-      }
+      if (e.error === "aborted" || e.error === "not-allowed") { setIsRecording(false); setInterimText(""); }
     };
-
-    rec.onend = () => {
-      /* Commit the final transcript and clear interim */
-      setInput(finalTranscriptRef.current);
-      setInterimText("");
-      setIsRecording(false);
-    };
-
+    rec.onend = () => { setInput(finalTranscriptRef.current); setInterimText(""); setIsRecording(false); };
     rec.start();
     recognitionRef.current = rec;
     setIsRecording(true);
   };
+  const stopVoice = () => { recognitionRef.current?.stop(); recognitionRef.current = null; };
+  const toggleVoice = () => isRecording ? stopVoice() : startVoice();
 
-  const stopVoice = () => {
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
-    /* onend fires after stop(), which commits the final text */
+  /* ── Edit / delete / react handlers ── */
+  const startEdit = (m: Message) => {
+    setEditingMsgId(m.id);
+    setEditText(m.text);
+    setInput(m.text);
+    setReplyToId(null);
+    setHoveredMsgId(null);
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  const toggleVoice = () => isRecording ? stopVoice() : startVoice();
+  const cancelEdit = () => {
+    setEditingMsgId(null);
+    setEditText("");
+    setInput("");
+  };
+
+  const handleDeleteMsg = () => {
+    if (confirmDeleteMsg) {
+      onDeleteMessage?.(confirmDeleteMsg.id);
+      setConfirmDeleteMsg(null);
+    }
+  };
+
+  const startReply = (m: Message) => {
+    setReplyToId(m.id);
+    setEditingMsgId(null);
+    setHoveredMsgId(null);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const handleReact = (msgId: string, emoji: string) => {
+    onReact?.(msgId, emoji, currentUser.id);
+    setEmojiPickerMsgId(null);
+  };
 
   /* create conversation */
   const createConvo = () => {
@@ -522,7 +629,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             </div>
           </div>
 
-          {/* list (sorted newest-first by last message) */}
+          {/* list */}
           <div style={{ flex: 1, overflow: "auto" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: 24, textAlign: "center", color: C.g400, fontSize: 13 }}>{t.chat_no_convos}</div>
@@ -530,6 +637,10 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
               const lastMsg = (messages[cv.id] || []).at(-1);
               const isActive = selected === cv.id;
               const isImage = lastMsg?.text?.startsWith("data:image");
+              /* unread count: messages not from me with readBy not including me */
+              const unread = (messages[cv.id] || []).filter(
+                (m) => m.from !== currentUser.id && !(m.readBy?.includes(currentUser.id))
+              ).length;
               return (
                 <div key={cv.id} style={{ position: "relative" }}>
                   <div
@@ -549,13 +660,18 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                     {getConvoAv(cv)}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getConvoLabel(cv)}</span>
-                        {lastMsg && <span style={{ fontSize: 10, color: C.g400, flexShrink: 0, marginLeft: 6 }}>{fmtT(lastMsg.ts)}</span>}
+                        <span style={{ fontSize: 13, fontWeight: unread > 0 ? 700 : 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getConvoLabel(cv)}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, marginLeft: 6 }}>
+                          {lastMsg && <span style={{ fontSize: 10, color: C.g400 }}>{fmtT(lastMsg.ts)}</span>}
+                          {unread > 0 && (
+                            <span style={{ background: C.gold, color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 10, padding: "1px 6px", minWidth: 18, textAlign: "center" }}>{unread}</span>
+                          )}
+                        </div>
                       </div>
                       {lastMsg && (
-                        <div style={{ fontSize: 12, color: C.g400, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: 12, color: unread > 0 ? C.navy : C.g400, fontWeight: unread > 0 ? 600 : 400, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {lastMsg.from === currentUser.id ? <span style={{ color: C.gold, fontSize: 11 }}>{t.chat_you}</span> : ""}
-                          {isImage ? "🖊 Drawing" : lastMsg.text}
+                          {isImage ? "🖊 Drawing" : (lastMsg.attachment && !lastMsg.text ? `📎 ${lastMsg.attachment.name}` : lastMsg.text)}
                         </div>
                       )}
                       {cv.type === "group" && (
@@ -606,6 +722,20 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
               <div style={{ fontSize: 11, color: "#22C55E", fontWeight: 600 }}>{t.chat_online}</div>
             </div>
 
+            {/* Message search toggle */}
+            <button
+              onClick={() => { setShowMsgSearch((v) => !v); if (showMsgSearch) setMsgSearch(""); }}
+              title="Search messages"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 32, height: 32, border: `1px solid ${showMsgSearch ? C.gold : C.g200}`,
+                borderRadius: 8, background: showMsgSearch ? `${C.gold}12` : C.w,
+                cursor: "pointer", color: showMsgSearch ? C.gold : C.g400,
+              }}
+            >
+              <SearchMsgIcon />
+            </button>
+
             {/* Auto-translate language picker */}
             <div ref={langPickerRef} style={{ position: "relative" }}>
               <button
@@ -654,45 +784,23 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
 
             {/* Audio / Video call buttons */}
             {onStartCall && (() => {
-              const roomName = convo.type === "direct"
-                ? [...convo.parts].sort().join("-")
-                : convo.id;
+              const roomName = convo.type === "direct" ? [...convo.parts].sort().join("-") : convo.id;
               const title = getConvoLabel(convo);
-              const otherUserId = convo.type === "direct"
-                ? convo.parts.find((p) => p !== currentUser.id)
-                : undefined;
+              const otherUserId = convo.type === "direct" ? convo.parts.find((p) => p !== currentUser.id) : undefined;
               const targetUser = otherUserId ? userMap[otherUserId] : undefined;
-              const target = targetUser
-                ? { id: targetUser.id, name: targetUser.name, color: targetUser.color }
-                : undefined;
+              const target = targetUser ? { id: targetUser.id, name: targetUser.name, color: targetUser.color } : undefined;
               return (
                 <>
-                  <button
-                    onClick={() => onStartCall(roomName, title, false, target)}
-                    title="Audio call"
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 32, height: 32, border: `1px solid ${C.g200}`,
-                      borderRadius: 8, background: C.w, cursor: "pointer", color: "#16A34A",
-                    }}
+                  <button onClick={() => onStartCall(roomName, title, false, target)} title="Audio call"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, border: `1px solid ${C.g200}`, borderRadius: 8, background: C.w, cursor: "pointer", color: "#16A34A" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "#F0FDF4"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = C.w; }}
-                  >
-                    <PhoneCallIcon />
-                  </button>
-                  <button
-                    onClick={() => onStartCall(roomName, title, true, target)}
-                    title="Video call"
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 32, height: 32, border: `1px solid ${C.g200}`,
-                      borderRadius: 8, background: C.w, cursor: "pointer", color: C.gold,
-                    }}
+                  ><PhoneCallIcon /></button>
+                  <button onClick={() => onStartCall(roomName, title, true, target)} title="Video call"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, border: `1px solid ${C.g200}`, borderRadius: 8, background: C.w, cursor: "pointer", color: C.gold }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = `${C.gold}10`; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = C.w; }}
-                  >
-                    <VideoCallIcon />
-                  </button>
+                  ><VideoCallIcon /></button>
                 </>
               );
             })()}
@@ -711,10 +819,42 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             )}
           </div>
 
-          {/* Messages area — oldest at top, newest at bottom (auto-scrolls down) */}
+          {/* ── Message search bar ── */}
+          {showMsgSearch && (
+            <div style={{
+              padding: "8px 20px", borderBottom: `1px solid ${C.g100}`,
+              background: `${C.gold}08`, display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <SearchMsgIcon />
+              <input
+                autoFocus
+                value={msgSearch}
+                onChange={(e) => setMsgSearch(e.target.value)}
+                placeholder="Search messages…"
+                style={{
+                  flex: 1, border: "none", background: "none", outline: "none",
+                  fontSize: 13, fontFamily: "inherit", color: C.navy,
+                }}
+              />
+              {msgSearch && (
+                <button onClick={() => setMsgSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: C.g400, display: "flex" }}>
+                  <CloseIcon />
+                </button>
+              )}
+              {msgSearch && (
+                <span style={{ fontSize: 12, color: C.g400 }}>
+                  {msgs.length} result{msgs.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Messages area */}
           <div style={{ flex: 1, overflow: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 4 }}>
             {msgs.length === 0 && (
-              <div style={{ textAlign: "center", color: C.g400, fontSize: 13, marginTop: 40 }}>{t.chat_no_messages}</div>
+              <div style={{ textAlign: "center", color: C.g400, fontSize: 13, marginTop: 40 }}>
+                {msgSearch ? "No messages match your search." : t.chat_no_messages}
+              </div>
             )}
             {msgs.map((m, idx) => {
               const isMe = m.from === currentUser.id;
@@ -727,14 +867,52 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
               const translated = autoTransLang !== "off" ? translations[transKey] : undefined;
               const loading = transLoading.has(transKey);
               const failed = transError.has(transKey);
+              const isHovered = hoveredMsgId === m.id;
+              const replyMsg = m.replyTo ? allMsgs.find((x) => x.id === m.replyTo) : null;
+              const isRead = isMe && (m.readBy?.some((uid) => uid !== currentUser.id));
+              const isSent = isMe && !isRead;
+
               return (
-                <div key={m.id} data-testid={`msg-${m.id}`} style={{ display: "flex", gap: 8, alignItems: "flex-end", flexDirection: isMe ? "row-reverse" : "row", marginTop: idx > 0 && msgs[idx - 1].from !== m.from ? 10 : 0 }}>
-                  {/* Avatar — only for first message in a run */}
+                <div
+                  key={m.id}
+                  data-testid={`msg-${m.id}`}
+                  onMouseEnter={() => setHoveredMsgId(m.id)}
+                  onMouseLeave={() => { setHoveredMsgId(null); }}
+                  style={{
+                    display: "flex", gap: 8, alignItems: "flex-end",
+                    flexDirection: isMe ? "row-reverse" : "row",
+                    marginTop: idx > 0 && msgs[idx - 1].from !== m.from ? 10 : 0,
+                    position: "relative",
+                  }}
+                >
+                  {/* Avatar */}
                   <div style={{ width: 30, flexShrink: 0 }}>
                     {showAvatar && <Av ini={sender?.av || "??"} photo={sender?.photo} size={30} />}
                   </div>
-                  <div style={{ maxWidth: isMobile ? "78%" : 420 }}>
+
+                  <div style={{ maxWidth: isMobile ? "78%" : 420, minWidth: 0 }}>
                     {showName && <div style={{ fontSize: 11, color: C.g400, marginBottom: 3, marginLeft: 4 }}>{sender?.name}</div>}
+
+                    {/* Reply quote */}
+                    {replyMsg && (
+                      <div style={{
+                        marginBottom: 4,
+                        padding: "5px 10px",
+                        borderLeft: `3px solid ${C.gold}`,
+                        borderRadius: "8px 8px 0 0",
+                        background: isMe ? "rgba(255,255,255,.1)" : `${C.gold}10`,
+                        fontSize: 11, color: isMe ? "rgba(255,255,255,.7)" : C.g500,
+                        maxWidth: "100%",
+                        overflow: "hidden",
+                      }}>
+                        <div style={{ fontWeight: 700, color: isMe ? "rgba(255,255,255,.9)" : C.gold, fontSize: 11, marginBottom: 1 }}>
+                          {replyMsg.from === currentUser.id ? "You" : userMap[replyMsg.from]?.name || "?"}
+                        </div>
+                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {replyMsg.text.startsWith("data:image") ? "🖊 Drawing" : replyMsg.text.slice(0, 80)}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Bubble */}
                     <div style={{
@@ -753,7 +931,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                           <img src={m.text} alt="Drawing" style={{ maxWidth: 280, maxHeight: 180, display: "block", verticalAlign: "top" }} />
                         </div>
                       ) : m.text ? (
-                        <span>{m.text}</span>
+                        <span>{msgSearch ? highlight(m.text, msgSearch) : m.text}</span>
                       ) : null}
 
                       {/* File / image attachment */}
@@ -761,66 +939,22 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                         <div style={{ marginTop: m.text ? 8 : 0 }}>
                           {m.attachment.type.startsWith("image/") ? (
                             <div style={{ borderRadius: 10, overflow: "hidden", maxWidth: 280 }}>
-                              <img
-                                src={m.attachment.data}
-                                alt={m.attachment.name}
-                                style={{ width: "100%", display: "block", maxHeight: 240, objectFit: "cover" }}
-                              />
-                              <div style={{
-                                display: "flex", alignItems: "center", justifyContent: "space-between",
-                                padding: "5px 8px",
-                                background: isMe ? "rgba(0,0,0,.25)" : "rgba(0,0,0,.04)",
-                                fontSize: 11,
-                              }}>
+                              <img src={m.attachment.data} alt={m.attachment.name} style={{ width: "100%", display: "block", maxHeight: 240, objectFit: "cover" }} />
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", background: isMe ? "rgba(0,0,0,.25)" : "rgba(0,0,0,.04)", fontSize: 11 }}>
                                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>{m.attachment.name}</span>
-                                <a
-                                  href={m.attachment.data}
-                                  download={m.attachment.name}
-                                  style={{ color: isMe ? "rgba(255,255,255,.7)" : C.gold, marginLeft: 8, flexShrink: 0 }}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <DownloadIcon />
-                                </a>
+                                <a href={m.attachment.data} download={m.attachment.name} style={{ color: isMe ? "rgba(255,255,255,.7)" : C.gold, marginLeft: 8, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}><DownloadIcon /></a>
                               </div>
                             </div>
                           ) : (
-                            <div style={{
-                              display: "flex", alignItems: "center", gap: 10,
-                              padding: "10px 12px", borderRadius: 10,
-                              background: isMe ? "rgba(255,255,255,.08)" : `${C.gold}10`,
-                              border: `1px solid ${isMe ? "rgba(255,255,255,.12)" : `${C.gold}25`}`,
-                              minWidth: 160, maxWidth: 260,
-                            }}>
-                              <div style={{
-                                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                                background: isMe ? "rgba(255,255,255,.12)" : `${C.gold}20`,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: isMe ? "rgba(255,255,255,.8)" : C.gold,
-                              }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, background: isMe ? "rgba(255,255,255,.08)" : `${C.gold}10`, border: `1px solid ${isMe ? "rgba(255,255,255,.12)" : `${C.gold}25`}`, minWidth: 160, maxWidth: 260 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: isMe ? "rgba(255,255,255,.12)" : `${C.gold}20`, display: "flex", alignItems: "center", justifyContent: "center", color: isMe ? "rgba(255,255,255,.8)" : C.gold }}>
                                 <FileIcon />
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                  fontSize: 12, fontWeight: 600,
-                                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                                  color: isMe ? "rgba(255,255,255,.9)" : C.navy,
-                                }}>{m.attachment.name}</div>
-                                <div style={{ fontSize: 11, color: isMe ? "rgba(255,255,255,.45)" : C.g400, marginTop: 1 }}>
-                                  {formatFileSize(m.attachment.size)}
-                                </div>
+                                <div style={{ fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isMe ? "rgba(255,255,255,.9)" : C.navy }}>{m.attachment.name}</div>
+                                <div style={{ fontSize: 11, color: isMe ? "rgba(255,255,255,.45)" : C.g400, marginTop: 1 }}>{formatFileSize(m.attachment.size)}</div>
                               </div>
-                              <a
-                                href={m.attachment.data}
-                                download={m.attachment.name}
-                                style={{
-                                  width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-                                  background: isMe ? "rgba(255,255,255,.12)" : `${C.gold}18`,
-                                  display: "flex", alignItems: "center", justifyContent: "center",
-                                  color: isMe ? "rgba(255,255,255,.8)" : C.gold,
-                                  textDecoration: "none",
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
+                              <a href={m.attachment.data} download={m.attachment.name} style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, background: isMe ? "rgba(255,255,255,.12)" : `${C.gold}18`, display: "flex", alignItems: "center", justifyContent: "center", color: isMe ? "rgba(255,255,255,.8)" : C.gold, textDecoration: "none" }} onClick={(e) => e.stopPropagation()}>
                                 <DownloadIcon />
                               </a>
                             </div>
@@ -828,6 +962,37 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                         </div>
                       )}
                     </div>
+
+                    {/* Reactions row */}
+                    {m.reactions && m.reactions.length > 0 && (
+                      <div style={{
+                        display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4,
+                        justifyContent: isMe ? "flex-end" : "flex-start",
+                      }}>
+                        {m.reactions.map((r) => {
+                          const iReacted = r.userIds.includes(currentUser.id);
+                          return (
+                            <button
+                              key={r.emoji}
+                              onClick={() => handleReact(m.id, r.emoji)}
+                              style={{
+                                display: "flex", alignItems: "center", gap: 3,
+                                padding: "2px 7px", borderRadius: 12,
+                                border: `1.5px solid ${iReacted ? C.gold : C.g200}`,
+                                background: iReacted ? `${C.gold}15` : C.w,
+                                cursor: "pointer", fontSize: 13,
+                                fontFamily: "inherit",
+                              }}
+                            >
+                              {r.emoji}
+                              <span style={{ fontSize: 11, color: iReacted ? C.gold : C.g500, fontWeight: iReacted ? 700 : 400 }}>
+                                {r.userIds.length}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {/* Translation row */}
                     {!isMe && !isImage && autoTransLang !== "off" && (
@@ -848,10 +1013,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                     {/* Per-message manual translate button */}
                     {!isMe && !isImage && autoTransLang === "off" && (
                       <button
-                        onClick={() => {
-                          const lang = "en";
-                          translateMsg(m.id, m.text, lang);
-                        }}
+                        onClick={() => translateMsg(m.id, m.text, "en")}
                         style={{ marginTop: 4, marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.g400, display: "flex", alignItems: "center", gap: 3, padding: "2px 0" }}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = C.gold; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = C.g400; }}
@@ -866,8 +1028,104 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                       </button>
                     )}
 
-                    <div style={{ fontSize: 10, color: C.g400, marginTop: 4, textAlign: isMe ? "right" : "left", marginLeft: 4, marginRight: 4 }}>{fmtT(m.ts)}</div>
+                    {/* Timestamp + edited + read receipts */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, justifyContent: isMe ? "flex-end" : "flex-start", marginLeft: 4, marginRight: 4 }}>
+                      <span style={{ fontSize: 10, color: C.g400 }}>{fmtT(m.ts)}</span>
+                      {m.edited && <span style={{ fontSize: 10, color: C.g400, fontStyle: "italic" }}>(edited)</span>}
+                      {isMe && (
+                        <span style={{ color: isRead ? C.gold : C.g400, display: "flex", alignItems: "center" }} title={isRead ? "Read" : "Sent"}>
+                          {isRead ? <CheckCheckIcon /> : isSent ? <CheckIcon /> : null}
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* ── Hover action bar ── */}
+                  {isHovered && !isImage && (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 2,
+                      position: "absolute",
+                      [isMe ? "left" : "right"]: isMobile ? 36 : 44,
+                      bottom: 24,
+                      background: C.w,
+                      border: `1px solid ${C.g100}`,
+                      borderRadius: 10,
+                      padding: "3px 4px",
+                      boxShadow: "0 2px 12px rgba(0,0,0,.12)",
+                      zIndex: 10,
+                    }}>
+                      {/* Reply */}
+                      <button
+                        onClick={() => startReply(m)}
+                        title="Reply"
+                        style={{ width: 26, height: 26, border: "none", background: "none", cursor: "pointer", color: C.g400, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = C.g50; e.currentTarget.style.color = C.navy; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.g400; }}
+                      ><ReplyIcon /></button>
+
+                      {/* React */}
+                      <div style={{ position: "relative" }}>
+                        <button
+                          onClick={() => setEmojiPickerMsgId(emojiPickerMsgId === m.id ? null : m.id)}
+                          title="React"
+                          style={{ width: 26, height: 26, border: "none", background: emojiPickerMsgId === m.id ? C.g50 : "none", cursor: "pointer", color: C.g400, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = C.g50; e.currentTarget.style.color = C.navy; }}
+                          onMouseLeave={(e) => { if (emojiPickerMsgId !== m.id) { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.g400; } }}
+                        ><SmileIcon /></button>
+
+                        {/* Emoji picker */}
+                        {emojiPickerMsgId === m.id && (
+                          <div
+                            id={`emoji-picker-${m.id}`}
+                            style={{
+                              position: "absolute",
+                              bottom: "calc(100% + 6px)",
+                              [isMe ? "right" : "left"]: 0,
+                              background: C.w,
+                              border: `1px solid ${C.g100}`,
+                              borderRadius: 12,
+                              padding: "6px 8px",
+                              display: "flex", gap: 4,
+                              boxShadow: "0 4px 20px rgba(0,0,0,.15)",
+                              zIndex: 50,
+                            }}
+                          >
+                            {QUICK_EMOJIS.map((emoji) => (
+                              <button
+                                key={emoji}
+                                onClick={() => handleReact(m.id, emoji)}
+                                style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 18, borderRadius: 8, transition: "transform .1s" }}
+                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.3)"; (e.currentTarget as HTMLElement).style.background = C.g50; }}
+                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.background = "none"; }}
+                              >{emoji}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Edit (own messages only) */}
+                      {isMe && !m.attachment && (
+                        <button
+                          onClick={() => startEdit(m)}
+                          title="Edit"
+                          style={{ width: 26, height: 26, border: "none", background: "none", cursor: "pointer", color: C.g400, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = C.g50; e.currentTarget.style.color = C.navy; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.g400; }}
+                        ><EditIcon /></button>
+                      )}
+
+                      {/* Delete */}
+                      {isMe && (
+                        <button
+                          onClick={() => setConfirmDeleteMsg(m)}
+                          title="Delete"
+                          style={{ width: 26, height: 26, border: "none", background: "none", cursor: "pointer", color: C.g400, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#FEF2F2"; e.currentTarget.style.color = C.err; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.g400; }}
+                        ><TrashIcon /></button>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -888,162 +1146,161 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             </div>
           )}
 
+          {/* ── Edit mode banner ── */}
+          {editingMsgId && (
+            <div style={{
+              margin: "0 20px 6px", padding: "7px 12px",
+              background: `${C.gold}10`, border: `1px solid ${C.gold}30`,
+              borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <EditIcon />
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.gold }}>Editing message</span>
+                <span style={{ fontSize: 11, color: C.g400 }}>— press Esc to cancel</span>
+              </div>
+              <button onClick={cancelEdit} style={{ background: "none", border: "none", cursor: "pointer", color: C.g400, display: "flex" }}>
+                <CloseIcon />
+              </button>
+            </div>
+          )}
+
+          {/* ── Reply-to preview strip ── */}
+          {replyToId && !editingMsgId && (
+            <div style={{
+              margin: "0 20px 6px", padding: "7px 12px",
+              background: `${C.navy}06`, border: `1px solid ${C.g100}`,
+              borderLeft: `3px solid ${C.gold}`,
+              borderRadius: "0 8px 8px 0",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, marginBottom: 1 }}>
+                  Replying to {(() => {
+                    const rm = allMsgs.find((x) => x.id === replyToId);
+                    return rm ? (rm.from === currentUser.id ? "yourself" : userMap[rm.from]?.name || "?") : "message";
+                  })()}
+                </div>
+                <div style={{ fontSize: 11, color: C.g500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {(() => {
+                    const rm = allMsgs.find((x) => x.id === replyToId);
+                    if (!rm) return "";
+                    return rm.text.startsWith("data:image") ? "🖊 Drawing" : rm.text.slice(0, 60);
+                  })()}
+                </div>
+              </div>
+              <button onClick={() => setReplyToId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: C.g400, display: "flex", flexShrink: 0, marginLeft: 8 }}>
+                <CloseIcon />
+              </button>
+            </div>
+          )}
+
           {/* Pending file preview strip */}
           {pendingFile && (
-            <div style={{
-              margin: "0 20px 8px", padding: "8px 12px", borderRadius: 10,
-              background: `${C.gold}0c`, border: `1px solid ${C.gold}30`,
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <div style={{
-                width: 30, height: 30, borderRadius: 7, flexShrink: 0,
-                background: `${C.gold}20`, display: "flex", alignItems: "center",
-                justifyContent: "center", color: C.gold,
-              }}>
+            <div style={{ margin: "0 20px 8px", padding: "8px 12px", borderRadius: 10, background: `${C.gold}0c`, border: `1px solid ${C.gold}30`, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 7, flexShrink: 0, background: `${C.gold}20`, display: "flex", alignItems: "center", justifyContent: "center", color: C.gold }}>
                 {pendingFile.type.startsWith("image/") ? (
                   <img src={pendingFile.data} alt="" style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 7 }} />
                 ) : <FileIcon />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {pendingFile.name}
-                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pendingFile.name}</div>
                 <div style={{ fontSize: 11, color: C.g400 }}>{formatFileSize(pendingFile.size)}</div>
               </div>
-              <button
-                onClick={() => setPendingFile(null)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: C.g400, padding: 4, display: "flex", alignItems: "center", justifyContent: "center" }}
+              <button onClick={() => setPendingFile(null)} style={{ background: "none", border: "none", cursor: "pointer", color: C.g400, padding: 4, display: "flex", alignItems: "center", justifyContent: "center" }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = C.err; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = C.g400; }}
-              >
-                <XSmIcon />
-              </button>
+              ><XSmIcon /></button>
             </div>
           )}
 
           {/* Input bar */}
           <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.g100}`, background: C.w, display: "flex", gap: 8, alignItems: "center" }}>
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="*/*"
-              style={{ display: "none" }}
-              onChange={handleFileSelect}
-            />
+            <input ref={fileInputRef} type="file" accept="*/*" style={{ display: "none" }} onChange={handleFileSelect} />
 
-            {/* Attach file button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              title="Attach file"
-              data-testid="attach-file-btn"
-              style={{
-                width: 38, height: 38, border: `1px solid ${pendingFile ? C.gold : C.g200}`, borderRadius: 10,
-                background: pendingFile ? `${C.gold}10` : C.w, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: pendingFile ? C.gold : C.g400, flexShrink: 0, transition: "all .15s",
-              }}
-              onMouseEnter={(e) => { if (!pendingFile) { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; } }}
-              onMouseLeave={(e) => { if (!pendingFile) { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g400; } }}
-            >
-              <PaperclipIcon />
-            </button>
+            {/* Attach file */}
+            {!editingMsgId && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach file"
+                data-testid="attach-file-btn"
+                style={{ width: 38, height: 38, border: `1px solid ${pendingFile ? C.gold : C.g200}`, borderRadius: 10, background: pendingFile ? `${C.gold}10` : C.w, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: pendingFile ? C.gold : C.g400, flexShrink: 0, transition: "all .15s" }}
+                onMouseEnter={(e) => { if (!pendingFile) { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; } }}
+                onMouseLeave={(e) => { if (!pendingFile) { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g400; } }}
+              ><PaperclipIcon /></button>
+            )}
 
-            {/* Draw button */}
-            <button
-              onClick={() => setShowDrawPad(true)}
-              title={t.chat_draw_title}
-              style={{
-                width: 38, height: 38, border: `1px solid ${C.g200}`, borderRadius: 10,
-                background: C.w, cursor: "pointer", display: "flex", alignItems: "center",
-                justifyContent: "center", color: C.g400, flexShrink: 0,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g400; }}
-            >
-              <PenIcon />
-            </button>
+            {/* Draw */}
+            {!editingMsgId && (
+              <button
+                onClick={() => setShowDrawPad(true)}
+                title={t.chat_draw_title}
+                style={{ width: 38, height: 38, border: `1px solid ${C.g200}`, borderRadius: 10, background: C.w, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.g400, flexShrink: 0 }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g400; }}
+              ><PenIcon /></button>
+            )}
 
             {/* Text input */}
             <div style={{ flex: 1, position: "relative" }}>
               <input
+                ref={inputRef}
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);
-                  /* Keep manual edits in sync so voice continues from here */
                   if (isRecording) finalTranscriptRef.current = e.target.value;
                 }}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                placeholder={isRecording && !input ? (t.chat_voice_recording || "Listening…") : t.chat_placeholder}
+                placeholder={
+                  editingMsgId ? "Edit your message…" :
+                  isRecording && !input ? (t.chat_voice_recording || "Listening…") :
+                  t.chat_placeholder
+                }
                 data-testid="chat-input"
                 style={{
                   width: "100%", padding: isRecording ? "10px 36px 10px 16px" : "10px 16px",
-                  border: `1.5px solid ${isRecording ? C.gold : C.g200}`,
+                  border: `1.5px solid ${editingMsgId ? C.gold : isRecording ? C.gold : C.g200}`,
                   borderRadius: 12, fontSize: 13, fontFamily: "inherit", outline: "none",
-                  boxSizing: "border-box", background: isRecording ? `${C.gold}08` : C.w,
+                  boxSizing: "border-box",
+                  background: editingMsgId ? `${C.gold}06` : isRecording ? `${C.gold}08` : C.w,
                   color: interimText ? "#6B7280" : C.navy,
                   transition: "border-color .15s, background .15s, color .15s",
                 }}
               />
-              {/* Pulsing dot while listening */}
               {isRecording && (
-                <span style={{
-                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                  width: 8, height: 8, borderRadius: "50%", background: C.gold,
-                  animation: "pulse 1.2s ease-in-out infinite",
-                }} />
+                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 8, height: 8, borderRadius: "50%", background: C.gold, animation: "pulse 1.2s ease-in-out infinite" }} />
               )}
             </div>
 
             {/* Voice button */}
-            {SR && (
-              <button
-                onClick={toggleVoice}
-                title={t.chat_voice_tip}
-                style={{
-                  width: 38, height: 38, border: `1.5px solid ${isRecording ? C.gold : C.g200}`,
-                  borderRadius: 10, background: isRecording ? `${C.gold}15` : C.w,
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  color: isRecording ? C.gold : C.g400, flexShrink: 0, transition: "all .15s",
-                }}
-              >
-                {isRecording ? <MicOffIcon /> : <MicIcon />}
-              </button>
+            {SR && !editingMsgId && (
+              <button onClick={toggleVoice} title={t.chat_voice_tip}
+                style={{ width: 38, height: 38, border: `1.5px solid ${isRecording ? C.gold : C.g200}`, borderRadius: 10, background: isRecording ? `${C.gold}15` : C.w, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: isRecording ? C.gold : C.g400, flexShrink: 0, transition: "all .15s" }}
+              >{isRecording ? <MicOffIcon /> : <MicIcon />}</button>
             )}
 
-            {/* WhatsApp button — only for direct conversations with a phone number */}
-            {whatsappUrl && (
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={t.chat_whatsapp_tip}
-                data-testid="whatsapp-btn"
-                style={{
-                  width: 38, height: 38, borderRadius: 10,
-                  background: "#25D366", border: "none",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#fff", flexShrink: 0, textDecoration: "none",
-                  transition: "opacity .15s",
-                }}
+            {/* WhatsApp */}
+            {whatsappUrl && !editingMsgId && (
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" title={t.chat_whatsapp_tip} data-testid="whatsapp-btn"
+                style={{ width: 38, height: 38, borderRadius: 10, background: "#25D366", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0, textDecoration: "none", transition: "opacity .15s" }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.85"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
-              >
-                <WhatsAppIcon />
-              </a>
+              ><WhatsAppIcon /></a>
             )}
 
-            {/* Send button */}
+            {/* Cancel edit button */}
+            {editingMsgId && (
+              <button onClick={cancelEdit} title="Cancel edit"
+                style={{ width: 38, height: 38, border: `1px solid ${C.g200}`, borderRadius: 10, background: C.w, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.g400, flexShrink: 0 }}
+              ><CloseIcon /></button>
+            )}
+
+            {/* Send / Save button */}
             <button
               onClick={sendMessage}
               data-testid="send-btn"
-              style={{
-                width: 38, height: 38, background: `linear-gradient(135deg,${C.gold},${C.goldD})`,
-                border: "none", borderRadius: 10, cursor: "pointer", color: C.w,
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-              }}
+              style={{ width: 38, height: 38, background: `linear-gradient(135deg,${C.gold},${C.goldD})`, border: "none", borderRadius: 10, cursor: "pointer", color: C.w, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >
-              <SendIcon />
+              {editingMsgId ? <CheckIcon /> : <SendIcon />}
             </button>
           </div>
         </div>
@@ -1060,12 +1317,10 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
 
       {/* ── Modals ────────────────────────────────────── */}
 
-      {/* Drawing pad modal */}
       <Modal open={showDrawPad} onClose={() => setShowDrawPad(false)} title={t.chat_draw_title}>
         <DrawPad onSend={sendDrawing} onClose={() => setShowDrawPad(false)} t={t as unknown as Record<string, string>} />
       </Modal>
 
-      {/* New conversation modal */}
       <Modal open={showNew} onClose={() => setShowNew(false)} title={t.chat_new}>
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
           {([["direct", t.chat_direct], ["group", t.chat_group]] as const).map(([type, label]) => (
@@ -1075,7 +1330,6 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             </button>
           ))}
         </div>
-
         {newType === "direct" ? (
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 6 }}>{t.chat_select_person}</label>
@@ -1105,7 +1359,6 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
         </Btn>
       </Modal>
 
-      {/* Confirm delete */}
       <ConfirmDialog
         open={!!confirmDeleteConvo}
         title="Delete Conversation"
@@ -1113,6 +1366,15 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
         confirmLabel="Delete"
         onConfirm={handleDeleteConvo}
         onCancel={() => setConfirmDeleteConvo(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteMsg}
+        title="Delete Message"
+        message="Are you sure you want to delete this message? This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDeleteMsg}
+        onCancel={() => setConfirmDeleteMsg(null)}
       />
     </div>
   );

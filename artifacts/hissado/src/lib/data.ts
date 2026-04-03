@@ -176,6 +176,11 @@ export type Attachment = {
   data: string;
 };
 
+export type Reaction = {
+  emoji: string;
+  userIds: string[];
+};
+
 export type Message = {
   id: string;
   cId: string;
@@ -183,6 +188,10 @@ export type Message = {
   text: string;
   ts: string;
   attachment?: Attachment;
+  replyTo?: string;
+  reactions?: Reaction[];
+  edited?: boolean;
+  readBy?: string[];
 };
 
 export type FileItem = {
