@@ -16,28 +16,6 @@ const LANGS = [
   { code: "ko", label: "한국어",     sr: "ko-KR" },
 ];
 
-/* ─── Jitsi script loader ────────────────────────────────────── */
-declare global { interface Window { JitsiMeetExternalAPI: any; } }
-
-function loadJitsiScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.JitsiMeetExternalAPI) { resolve(); return; }
-    if (document.getElementById("jitsi-api-script")) {
-      const check = setInterval(() => {
-        if (window.JitsiMeetExternalAPI) { clearInterval(check); resolve(); }
-      }, 100);
-      return;
-    }
-    const s = document.createElement("script");
-    s.id = "jitsi-api-script";
-    s.src = "https://meet.jit.si/external_api.js";
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Failed to load Jitsi"));
-    document.head.appendChild(s);
-  });
-}
-
 /* ─── Translation ────────────────────────────────────────────── */
 async function translateText(text: string, from: string, to: string): Promise<string> {
   if (!text.trim() || from === to) return text;
@@ -56,16 +34,14 @@ async function translateText(text: string, from: string, to: string): Promise<st
 /* ─── Icons ─────────────────────────────────────────────────── */
 const CcIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="6" width="20" height="12" rx="2" />
-    <path d="M7 12h2M13 12h4" />
+    <rect x="2" y="6" width="20" height="12" rx="2" /><path d="M7 12h2M13 12h4" />
   </svg>
 );
 const MicIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-    <line x1="12" y1="19" x2="12" y2="23" />
-    <line x1="8" y1="23" x2="16" y2="23" />
+    <line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
   </svg>
 );
 const XIcon = () => (
@@ -81,15 +57,8 @@ const PhoneOffIcon = () => (
 );
 const GlobeIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="2" y1="12" x2="22" y2="12" />
+    <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-  </svg>
-);
-const RefreshIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
   </svg>
 );
 
@@ -108,13 +77,10 @@ export default function VideoRoom({
   roomName, displayName, roomTitle, startWithVideoMuted = false, defaultLang = "en", onLeave,
 }: VideoRoomProps) {
   const { t } = useI18n();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const apiRef = useRef<any>(null);
   const recognitionRef = useRef<any>(null);
   const translateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [frameLoaded, setFrameLoaded] = useState(false);
   const [showCaptions, setShowCaptions] = useState(false);
   const [captionsActive, setCaptionsActive] = useState(false);
   const [inputLang, setInputLang] = useState("en");
@@ -127,9 +93,24 @@ export default function VideoRoom({
   const [translation, setTranslation] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const inputLangObj = LANGS.find((l) => l.code === inputLang) || LANGS[0];
+  /* ─── Build Jitsi URL with hash config (no External API) ─── */
+  const jitsiUrl = (() => {
+    const room = `hissado-${roomName}`;
+    const params = [
+      "config.prejoinPageEnabled=false",
+      `config.startWithVideoMuted=${startWithVideoMuted}`,
+      "config.startWithAudioMuted=false",
+      "config.disableDeepLinking=true",
+      "config.doNotStoreRoom=true",
+      "config.enableNoisyMicDetection=true",
+      "interfaceConfig.SHOW_JITSI_WATERMARK=false",
+      "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false",
+      "interfaceConfig.MOBILE_APP_PROMO=false",
+      `userInfo.displayName=${encodeURIComponent(displayName)}`,
+    ].join("&");
+    return `https://meet.jit.si/${room}#${params}`;
+  })();
 
   /* ─── Auto-hide controls ─── */
   const resetControlsTimer = useCallback(() => {
@@ -156,6 +137,8 @@ export default function VideoRoom({
   }, [inputLang, outputLang]);
 
   /* ─── Speech recognition ─── */
+  const inputLangObj = LANGS.find((l) => l.code === inputLang) || LANGS[0];
+
   const startRecognition = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return false;
@@ -181,7 +164,7 @@ export default function VideoRoom({
       }
       setInterimTranscript(interim);
     };
-    r.onerror = (e: any) => { if (e.error !== "no-speech" && e.error !== "audio-capture") return; };
+    r.onerror = () => {};
     r.onend = () => { if (captionsActive && recognitionRef.current === r) { try { r.start(); } catch { /* ignore */ } } };
     r.start();
     recognitionRef.current = r;
@@ -197,57 +180,6 @@ export default function VideoRoom({
     if (translateTimerRef.current) { clearTimeout(translateTimerRef.current); translateTimerRef.current = null; }
   }, []);
 
-  /* ─── Jitsi init ─── */
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    loadJitsiScript()
-      .then(() => {
-        if (cancelled || !containerRef.current) return;
-        try {
-          const api = new window.JitsiMeetExternalAPI("meet.jit.si", {
-            roomName: `hissado-${roomName}`,
-            width: "100%",
-            height: "100%",
-            parentNode: containerRef.current,
-            userInfo: { displayName },
-            configOverwrite: {
-              prejoinPageEnabled: false,
-              startWithAudioMuted: false,
-              startWithVideoMuted,
-              disableDeepLinking: true,
-              enableNoisyMicDetection: true,
-              doNotStoreRoom: true,
-            },
-            interfaceConfigOverwrite: {
-              MOBILE_APP_PROMO: false,
-              SHOW_JITSI_WATERMARK: false,
-              SHOW_WATERMARK_FOR_GUESTS: false,
-              TOOLBAR_ALWAYS_VISIBLE: false,
-            },
-          });
-          apiRef.current = api;
-          api.addEventListeners({
-            videoConferenceLeft: () => { if (!cancelled) onLeave(); },
-            readyToClose: () => { if (!cancelled) onLeave(); },
-          });
-          if (!cancelled) setLoading(false);
-        } catch {
-          if (!cancelled) setError(t.meet_error);
-        }
-      })
-      .catch(() => { if (!cancelled) setError(t.meet_error); });
-
-    return () => {
-      cancelled = true;
-      stopRecognition();
-      if (apiRef.current) { try { apiRef.current.dispose(); } catch { /* ignore */ } apiRef.current = null; }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomName, displayName]);
-
   useEffect(() => {
     if (transcript) triggerTranslation(transcript);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -262,20 +194,11 @@ export default function VideoRoom({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputLang]);
 
-  const toggleCaptions = () => {
-    if (!showCaptions) {
-      setShowCaptions(true);
-    } else if (!captionsActive) {
-      const ok = startRecognition();
-      if (!ok) { alert("Live captions require Chrome or Edge."); return; }
-      setCaptionsActive(true);
-    } else {
-      stopRecognition();
-      setCaptionsActive(false);
-      setTranscript(""); setInterimTranscript(""); setTranslation("");
-      setShowCaptions(false);
-    }
-  };
+  /* Cleanup on unmount */
+  useEffect(() => () => {
+    stopRecognition();
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+  }, [stopRecognition]);
 
   /* ─── Render ─── */
   return (
@@ -295,12 +218,19 @@ export default function VideoRoom({
         }
       `}</style>
 
-      {/* ── Jitsi frame ── */}
+      {/* ── Jitsi iframe (direct embed — permissions scoped to meet.jit.si) ── */}
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+        <iframe
+          src={jitsiUrl}
+          allow="camera *; microphone *; fullscreen *; display-capture *; autoplay *"
+          allowFullScreen
+          onLoad={() => setFrameLoaded(true)}
+          style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+          title="Hissado Meet"
+        />
 
-        {/* Loading overlay */}
-        {loading && !error && (
+        {/* Loading overlay — shown until iframe fires onLoad */}
+        {!frameLoaded && (
           <div style={{
             position: "absolute", inset: 0, zIndex: 10,
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -321,108 +251,67 @@ export default function VideoRoom({
           </div>
         )}
 
-        {/* Error overlay */}
-        {error && (
-          <div style={{
-            position: "absolute", inset: 0, zIndex: 10,
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            background: "#070D1A", padding: 32, textAlign: "center",
-          }}>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,.5)", maxWidth: 360, lineHeight: 1.6, marginBottom: 24 }}>
-              {t.meet_error}
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                onClick={() => window.location.reload()}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", border: `1px solid ${C.gold}`, borderRadius: 8, background: `${C.gold}18`, color: C.gold, cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans',sans-serif" }}
-              >
-                <RefreshIcon /> {t.meet_retry}
-              </button>
-              <button
-                onClick={onLeave}
-                style={{ padding: "9px 18px", border: "1px solid rgba(255,255,255,.15)", borderRadius: 8, background: "rgba(255,255,255,.05)", color: "rgba(255,255,255,.7)", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans',sans-serif" }}
-              >
-                {t.meet_leave}
-              </button>
-            </div>
+        {/* Floating top bar — auto-hides after 3.5 s of no mouse movement */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, zIndex: 20,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "12px 16px",
+          background: "linear-gradient(180deg,rgba(0,0,0,.65) 0%,transparent 100%)",
+          opacity: showControls ? 1 : 0,
+          transition: "opacity .4s ease",
+          pointerEvents: showControls ? "auto" : "none",
+        }}>
+          {/* Room info */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: frameLoaded ? "#22C55E" : "rgba(255,255,255,.3)",
+              boxShadow: frameLoaded ? "0 0 6px #22C55E" : "none",
+            }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,.85)", fontFamily: "'DM Sans',sans-serif" }}>
+              {roomTitle || roomName}
+            </span>
           </div>
-        )}
 
-        {/* Floating top controls bar */}
-        {!error && (
-          <div style={{
-            position: "absolute", top: 0, left: 0, right: 0, zIndex: 20,
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "12px 16px",
-            background: "linear-gradient(180deg,rgba(0,0,0,.65) 0%,transparent 100%)",
-            opacity: showControls ? 1 : 0,
-            transition: "opacity .4s ease",
-            pointerEvents: showControls ? "auto" : "none",
-          }}>
-            {/* Room info */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: loading ? "rgba(255,255,255,.3)" : "#22C55E",
-                boxShadow: loading ? "none" : "0 0 6px #22C55E",
-              }} />
-              <span style={{
-                fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,.85)",
-                fontFamily: "'DM Sans',sans-serif",
-              }}>
-                {roomTitle || roomName}
-              </span>
-            </div>
-
-            {/* Right controls */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {/* Captions toggle */}
-              <button
-                onClick={toggleCaptions}
-                title="Live captions & translation"
-                style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "6px 12px", border: `1px solid ${showCaptions ? C.gold : "rgba(255,255,255,.25)"}`,
-                  borderRadius: 20, background: showCaptions ? `${C.gold}22` : "rgba(255,255,255,.1)",
-                  cursor: "pointer", color: showCaptions ? C.gold : "rgba(255,255,255,.85)",
-                  fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 600,
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                <CcIcon />
-                <span style={{ display: window.innerWidth < 480 ? "none" : "inline" }}>
-                  CC
-                </span>
-                {captionsActive && (
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 5px #22C55E" }} />
-                )}
-              </button>
-
-              {/* Leave button */}
-              <button
-                onClick={onLeave}
-                title="Leave call"
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "6px 14px", border: "none",
-                  borderRadius: 20, background: "#EF4444",
-                  cursor: "pointer", color: "#fff",
-                  fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700,
-                  boxShadow: "0 2px 12px rgba(239,68,68,.4)",
-                }}
-              >
-                <PhoneOffIcon />
-                <span style={{ display: window.innerWidth < 480 ? "none" : "inline" }}>
-                  Leave
-                </span>
-              </button>
-            </div>
+          {/* Controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={() => setShowCaptions((v) => !v)}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "6px 12px", border: `1px solid ${showCaptions ? C.gold : "rgba(255,255,255,.25)"}`,
+                borderRadius: 20, background: showCaptions ? `${C.gold}22` : "rgba(255,255,255,.1)",
+                cursor: "pointer", color: showCaptions ? C.gold : "rgba(255,255,255,.85)",
+                fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 600,
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <CcIcon />
+              <span style={{ display: window.innerWidth < 480 ? "none" : "inline" }}>CC</span>
+              {captionsActive && (
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 5px #22C55E" }} />
+              )}
+            </button>
+            <button
+              onClick={onLeave}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 14px", border: "none",
+                borderRadius: 20, background: "#EF4444",
+                cursor: "pointer", color: "#fff",
+                fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700,
+                boxShadow: "0 2px 12px rgba(239,68,68,.4)",
+              }}
+            >
+              <PhoneOffIcon />
+              <span style={{ display: window.innerWidth < 480 ? "none" : "inline" }}>Leave</span>
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Live captions panel ── */}
-      {showCaptions && !error && (
+      {showCaptions && (
         <div style={{
           flexShrink: 0,
           background: "rgba(7,13,26,.96)",
@@ -432,13 +321,11 @@ export default function VideoRoom({
           display: "flex", flexDirection: "column", gap: 10,
           animation: "vr-fade-in .25s ease",
         }}>
-          {/* Panel header */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.4)", textTransform: "uppercase", letterSpacing: ".1em", flex: 1 }}>
               Live Captions
             </span>
 
-            {/* Mic toggle */}
             <button
               onClick={() => {
                 if (captionsActive) {
@@ -463,7 +350,7 @@ export default function VideoRoom({
               {captionsActive && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22C55E" }} />}
             </button>
 
-            {/* Language picker */}
+            {/* Translate-to picker */}
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => setShowLangPicker((v) => !v)}
@@ -491,8 +378,8 @@ export default function VideoRoom({
                       key={l.code}
                       onClick={() => { setOutputLang(l.code); setShowLangPicker(false); }}
                       style={{
-                        width: "100%", textAlign: "left", padding: "7px 12px",
-                        border: "none", background: l.code === outputLang ? `${C.gold}22` : "transparent",
+                        width: "100%", textAlign: "left", padding: "7px 12px", border: "none",
+                        background: l.code === outputLang ? `${C.gold}22` : "transparent",
                         cursor: "pointer", fontSize: 13, fontFamily: "'DM Sans',sans-serif",
                         color: l.code === outputLang ? C.gold : "rgba(255,255,255,.8)",
                         fontWeight: l.code === outputLang ? 700 : 400,
@@ -505,7 +392,7 @@ export default function VideoRoom({
               )}
             </div>
 
-            {/* Input lang */}
+            {/* Input lang select */}
             <select
               value={inputLang}
               onChange={(e) => setInputLang(e.target.value)}
@@ -518,7 +405,6 @@ export default function VideoRoom({
               {LANGS.map((l) => <option key={l.code} value={l.code} style={{ background: C.navy }}>{l.label}</option>)}
             </select>
 
-            {/* Close captions */}
             <button
               onClick={() => {
                 stopRecognition(); setCaptionsActive(false);
@@ -535,7 +421,6 @@ export default function VideoRoom({
             </button>
           </div>
 
-          {/* Transcript */}
           <div style={{
             flex: 1, minHeight: 0, background: "rgba(255,255,255,.04)", borderRadius: 10,
             padding: "10px 14px", overflow: "auto",
