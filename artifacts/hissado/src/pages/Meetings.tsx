@@ -65,7 +65,7 @@ function RoleBadge({ role }: { role: string }) {
 interface MeetingsProps {
   currentUser: User;
   teamMembers: User[];
-  onStartCall: (roomName: string, title: string, videoEnabled: boolean) => void;
+  onStartCall: (roomName: string, title: string, videoEnabled: boolean, target?: { id: string; name: string; color?: string }) => void;
 }
 
 /* ─── Component ──────────────────────────────────────────────── */
@@ -112,7 +112,7 @@ export default function Meetings({ currentUser, teamMembers, onStartCall }: Meet
 
   const startWith = (member: User, video: boolean) => {
     const ids = [currentUser.id, member.id].sort().join("-");
-    onStartCall(ids, member.name, video);
+    onStartCall(ids, member.name, video, { id: member.id, name: member.name, color: member.color });
   };
 
   /* ─── Render ─── */

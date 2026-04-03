@@ -170,7 +170,7 @@ interface ChatProps {
   onCreateConvo: (cv: Conversation) => void;
   onAddNotification: (n: Notification) => void;
   onDeleteConversation?: (id: string) => void;
-  onStartCall?: (roomName: string, title: string, videoEnabled: boolean) => void;
+  onStartCall?: (roomName: string, title: string, videoEnabled: boolean, target?: { id: string; name: string; color?: string }) => void;
 }
 
 /* ─── Main component ─────────────────────────────────────── */
@@ -537,10 +537,17 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                 ? [...convo.parts].sort().join("-")
                 : convo.id;
               const title = getConvoLabel(convo);
+              const otherUserId = convo.type === "direct"
+                ? convo.parts.find((p) => p !== currentUser.id)
+                : undefined;
+              const targetUser = otherUserId ? userMap[otherUserId] : undefined;
+              const target = targetUser
+                ? { id: targetUser.id, name: targetUser.name, color: targetUser.color }
+                : undefined;
               return (
                 <>
                   <button
-                    onClick={() => onStartCall(roomName, title, false)}
+                    onClick={() => onStartCall(roomName, title, false, target)}
                     title="Audio call"
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -553,7 +560,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                     <PhoneCallIcon />
                   </button>
                   <button
-                    onClick={() => onStartCall(roomName, title, true)}
+                    onClick={() => onStartCall(roomName, title, true, target)}
                     title="Video call"
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "center",

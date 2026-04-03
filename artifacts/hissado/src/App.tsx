@@ -4,6 +4,10 @@ import { useStore } from "@/lib/store";
 import type { Page } from "@/lib/store";
 import type { Task, Project, Service, Message } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
+import { useRealtime } from "@/hooks/useRealtime";
+import type { CallSignal, MessageSignal } from "@/hooks/useRealtime";
+import { useDesktopNotifications } from "@/hooks/useDesktopNotifications";
+import { pushToast } from "@/components/ToastNotifications";
 import {
   accessibleProjects, accessibleTasks, accessibleConversations,
   accessibleTeamMembers, accessibleFiles, accessibleFolders,
@@ -30,6 +34,9 @@ import ClientsPage from "@/pages/ClientsPage";
 import Settings from "@/pages/Settings";
 import Meetings from "@/pages/Meetings";
 import VideoRoom from "@/components/VideoRoom";
+import IncomingCall from "@/components/IncomingCall";
+import OutgoingCall from "@/components/OutgoingCall";
+import ToastNotifications from "@/components/ToastNotifications";
 import { C } from "@/components/primitives";
 
 // Client portal: auto-detected from the custom domain OR a ?portal=client URL param (fallback for dev/testing)
@@ -59,7 +66,57 @@ export default function App() {
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [taskDefaultProject, setTaskDefaultProject] = useState<string | undefined>();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [activeRoom, setActiveRoom] = useState<{ roomName: string; title: string; videoEnabled: boolean } | null>(null);
+
+  type CallState =
+    | null
+    | { type: "outgoing"; callId: string; targetId: string; targetName: string; targetColor?: string; roomName: string; videoEnabled: boolean }
+    | { type: "incoming"; signal: CallSignal }
+    | { type: "active"; roomName: string; title: string; videoEnabled: boolean };
+
+  const [callState, setCallState] = useState<CallState>(null);
+
+  const { send: desktopNotify } = useDesktopNotifications();
+
+  const realtime = useRealtime(currentUser?.id ?? null, {
+    onIncomingCall: (signal) => {
+      setCallState({ type: "incoming", signal });
+      desktopNotify(
+        `Incoming ${signal.videoEnabled ? "Video" : "Audio"} Call`,
+        `${signal.callerName} is calling you`,
+        { tag: `call-${signal.callId}` }
+      );
+    },
+    onCallAccepted: (_callId, roomName, videoEnabled) => {
+      setCallState((prev) => {
+        if (prev?.type === "outgoing") {
+          return { type: "active", roomName, title: prev.targetName, videoEnabled };
+        }
+        return prev;
+      });
+    },
+    onCallDeclined: (_callId) => {
+      setCallState((prev) => {
+        if (prev?.type === "outgoing") {
+          pushToast({ type: "call-missed", title: "Call declined", body: `${prev.targetName} declined your call` });
+          return null;
+        }
+        return prev;
+      });
+    },
+    onCallEnded: (_callId) => {
+      setCallState(null);
+    },
+    onNewMessage: (signal: MessageSignal) => {
+      pushToast({
+        type: "message",
+        title: signal.fromName,
+        body: signal.text,
+        color: undefined,
+      });
+      desktopNotify(signal.fromName, signal.text, { tag: `msg-${signal.conversationId}` });
+    },
+  });
+
   const isMobile = useIsMobile();
 
   // ── ALL hooks must come before any conditional returns ──
@@ -141,9 +198,53 @@ export default function App() {
     setMobileNavOpen(false);
   }, [setPage]);
 
-  const handleStartCall = useCallback((roomName: string, title: string, videoEnabled: boolean) => {
-    setActiveRoom({ roomName, title, videoEnabled });
-  }, []);
+  const handleStartCall = useCallback((
+    roomName: string,
+    title: string,
+    videoEnabled: boolean,
+    target?: { id: string; name: string; color?: string }
+  ) => {
+    if (target && currentUser) {
+      const callId = Math.random().toString(36).slice(2, 10);
+      setCallState({
+        type: "outgoing",
+        callId,
+        targetId: target.id,
+        targetName: target.name,
+        targetColor: target.color,
+        roomName,
+        videoEnabled,
+      });
+      realtime.ringUser(target.id, {
+        callId,
+        callerId: currentUser.id,
+        callerName: currentUser.name,
+        callerColor: currentUser.color,
+        roomName,
+        videoEnabled,
+      });
+    } else {
+      setCallState({ type: "active", roomName, title, videoEnabled });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, realtime]);
+
+  const handleSendMessage = useCallback((cId: string, msg: Message) => {
+    addMessage(msg);
+    if (!currentUser) return;
+    const convo = conversations.find((c) => c.id === cId);
+    if (!convo) return;
+    const recipients = convo.parts.filter((uid) => uid !== currentUser.id);
+    const preview = msg.text.slice(0, 100);
+    recipients.forEach((toId) => {
+      realtime.notifyMessage(toId, {
+        fromId: currentUser.id,
+        fromName: currentUser.name,
+        text: preview,
+        conversationId: cId,
+      });
+    });
+  }, [addMessage, conversations, currentUser, realtime]);
 
   const openProjectDetail = useCallback((p: Project) => {
     setSelectedProject(p);
@@ -377,7 +478,7 @@ export default function App() {
               messages={messagesMap}
               users={myTeam}
               currentUser={currentUser}
-              onSendMessage={(_, msg) => addMessage(msg)}
+              onSendMessage={handleSendMessage}
               onCreateConvo={addConversation}
               onAddNotification={addNotification}
               onDeleteConversation={isAdmin ? deleteConversation : undefined}
@@ -448,17 +549,54 @@ export default function App() {
         </main>
       </div>
 
-      {/* ── Video Room overlay ── */}
-      {activeRoom && (
-        <VideoRoom
-          roomName={activeRoom.roomName}
-          displayName={currentUser.name}
-          roomTitle={activeRoom.title}
-          startWithVideoMuted={!activeRoom.videoEnabled}
-          defaultLang={lang}
-          onLeave={() => setActiveRoom(null)}
+      {/* ── Outgoing call overlay ── */}
+      {callState?.type === "outgoing" && (
+        <OutgoingCall
+          targetName={callState.targetName}
+          targetColor={callState.targetColor}
+          videoEnabled={callState.videoEnabled}
+          onCancel={() => {
+            realtime.declineCall(callState.targetId, callState.callId);
+            setCallState(null);
+          }}
         />
       )}
+
+      {/* ── Incoming call overlay ── */}
+      {callState?.type === "incoming" && (
+        <IncomingCall
+          signal={callState.signal}
+          onAccept={() => {
+            const sig = (callState as { type: "incoming"; signal: CallSignal }).signal;
+            realtime.acceptCall(sig.callerId, sig.callId, sig.roomName, sig.videoEnabled);
+            setCallState({ type: "active", roomName: sig.roomName, title: sig.callerName, videoEnabled: sig.videoEnabled });
+          }}
+          onDecline={() => {
+            const sig = (callState as { type: "incoming"; signal: CallSignal }).signal;
+            realtime.declineCall(sig.callerId, sig.callId);
+            setCallState(null);
+          }}
+        />
+      )}
+
+      {/* ── Active video room overlay ── */}
+      {callState?.type === "active" && (
+        <VideoRoom
+          roomName={callState.roomName}
+          displayName={currentUser.name}
+          roomTitle={callState.title}
+          startWithVideoMuted={!callState.videoEnabled}
+          defaultLang={lang}
+          onLeave={() => {
+            if (callState.type === "active") {
+              setCallState(null);
+            }
+          }}
+        />
+      )}
+
+      {/* ── In-app toast notifications ── */}
+      <ToastNotifications />
 
       <TaskModal
         open={showTaskModal}
