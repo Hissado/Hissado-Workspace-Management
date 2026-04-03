@@ -214,6 +214,82 @@ export default function Sidebar({
         )}
       </div>
 
+      {/* ── User profile + language — prominent strip below logo ── */}
+      {userName && (
+        <div style={{
+          borderBottom: "1px solid rgba(255,255,255,.05)",
+          padding: isCollapsed ? "10px 0" : "10px 14px",
+        }}>
+          {!isCollapsed ? (
+            /* Expanded: horizontal row — avatar | name+role | online dot | lang pill */
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Av ini={userAv || "??"} photo={userPhoto} size={34} color={C.gold} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,.88)",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>{userName}</div>
+                <div style={{
+                  fontSize: 10.5, color: "rgba(255,255,255,.35)", textTransform: "capitalize",
+                  marginTop: 1, letterSpacing: ".02em",
+                }}>{userRole}</div>
+              </div>
+              {/* Online indicator */}
+              <div style={{
+                width: 7, height: 7, borderRadius: "50%",
+                background: "#10B981", flexShrink: 0,
+              }} />
+              {/* Language toggle pill */}
+              <button
+                onClick={() => setLang(nextLang)}
+                data-testid="lang-toggle-btn"
+                title={lang === "en" ? "Passer en français" : "Switch to English"}
+                onMouseEnter={() => setLangHov(true)}
+                onMouseLeave={() => setLangHov(false)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "4px 9px", border: `1px solid ${langHov ? `${C.gold}45` : "rgba(255,255,255,.12)"}`,
+                  borderRadius: 20, background: langHov ? `${C.gold}15` : "rgba(255,255,255,.05)",
+                  cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                  color: C.goldL, fontSize: 11, fontWeight: 700, flexShrink: 0,
+                  transition: "all .15s",
+                }}
+              >
+                <GlobeIcon />
+                <span>{lang === "en" ? "FR" : "EN"}</span>
+              </button>
+            </div>
+          ) : (
+            /* Collapsed: stacked avatar + compact lang button */
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
+              <div style={{ position: "relative" }}>
+                <Av ini={userAv || "??"} photo={userPhoto} size={34} color={C.gold} />
+                <div style={{
+                  position: "absolute", bottom: 0, right: 0,
+                  width: 8, height: 8, borderRadius: "50%",
+                  background: "#10B981", border: `2px solid ${C.navy}`,
+                }} />
+              </div>
+              <button
+                onClick={() => setLang(nextLang)}
+                data-testid="lang-toggle-btn"
+                title={lang === "en" ? "Passer en français" : "Switch to English"}
+                style={{
+                  padding: "3px 7px", borderRadius: 20,
+                  border: "1px solid rgba(255,255,255,.12)",
+                  background: "rgba(255,255,255,.05)",
+                  cursor: "pointer", fontSize: 10, fontWeight: 700,
+                  color: C.goldL, fontFamily: "'DM Sans', sans-serif",
+                  transition: "all .15s",
+                }}
+              >
+                {lang === "en" ? "FR" : "EN"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Nav items */}
       <nav style={{ padding: isCollapsed ? "12px 8px" : "12px 10px", flex: 1, position: "relative" }}>
         {NAV_ITEMS.map((n) => {
@@ -285,21 +361,16 @@ export default function Sidebar({
         )}
       </nav>
 
-      {/* Bottom: Language + User */}
-      <div style={{
-        padding: isCollapsed ? "12px 8px" : "12px 14px",
-        borderTop: "1px solid rgba(255,255,255,.05)",
-        position: "relative",
-      }}>
-        {/* Back to website — client users only */}
-        {userRole === "client" && !isCollapsed && (
+      {/* Bottom: client back-link only */}
+      {userRole === "client" && !isCollapsed && (
+        <div style={{ padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,.05)" }}>
           <a
             href="https://hissadoconsulting.com"
             target="_blank"
             rel="noopener noreferrer"
             style={{
               display: "flex", alignItems: "center", gap: 8,
-              width: "100%", marginBottom: 10,
+              width: "100%",
               padding: "8px 12px", borderRadius: 9,
               border: "1px solid rgba(255,255,255,.07)",
               background: "rgba(255,255,255,.02)",
@@ -323,72 +394,8 @@ export default function Sidebar({
             <ExternalIcon />
             <span style={{ flex: 1 }}>hissadoconsulting.com</span>
           </a>
-        )}
-
-        {/* Language toggle */}
-        <button
-          onClick={() => setLang(nextLang)}
-          data-testid="lang-toggle-btn"
-          title={lang === "en" ? "Passer en français" : "Switch to English"}
-          onMouseEnter={() => setLangHov(true)}
-          onMouseLeave={() => setLangHov(false)}
-          style={{
-            width: "100%",
-            marginBottom: isCollapsed ? 8 : 12,
-            padding: isCollapsed ? 10 : "7px 12px",
-            border: `1px solid ${langHov ? `${C.gold}35` : "rgba(255,255,255,.08)"}`,
-            borderRadius: 9, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 8,
-            justifyContent: isCollapsed ? "center" : "flex-start",
-            background: langHov ? `${C.gold}12` : "rgba(255,255,255,.03)",
-            color: langHov ? C.goldL : "rgba(255,255,255,.38)",
-            fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
-            transition: "all .15s",
-          }}
-        >
-          <GlobeIcon />
-          {!isCollapsed && (
-            <span>
-              {lang === "en" ? (
-                <><span style={{ fontWeight: 800, color: C.goldL }}>EN</span><span style={{ opacity: 0.35 }}> / FR</span></>
-              ) : (
-                <><span style={{ opacity: 0.35 }}>EN / </span><span style={{ fontWeight: 800, color: C.goldL }}>FR</span></>
-              )}
-            </span>
-          )}
-        </button>
-
-        {/* User info */}
-        {!isCollapsed && userName && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "9px 10px", borderRadius: 10,
-            background: "rgba(255,255,255,.03)",
-            border: "1px solid rgba(255,255,255,.06)",
-          }}>
-            <Av ini={userAv || "??"} photo={userPhoto} size={32} color={C.gold} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,.85)",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>{userName}</div>
-              <div style={{
-                fontSize: 10.5, color: "rgba(255,255,255,.3)",
-                textTransform: "capitalize", marginTop: 1, letterSpacing: ".02em",
-              }}>{userRole}</div>
-            </div>
-            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981", flexShrink: 0 }} />
-          </div>
-        )}
-        {isCollapsed && userAv && (
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <div style={{ position: "relative" }}>
-              <Av ini={userAv} photo={userPhoto} size={34} color={C.gold} />
-              <div style={{ position: "absolute", bottom: 0, right: 0, width: 8, height: 8, borderRadius: "50%", background: "#10B981", border: `2px solid ${C.navy}` }} />
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </aside>
   );
 }
