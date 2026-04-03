@@ -30,8 +30,10 @@ import ClientsPage from "@/pages/ClientsPage";
 import Settings from "@/pages/Settings";
 import { C } from "@/components/primitives";
 
-// Detect ?portal=client URL parameter (set once at module load — stable reference)
-const IS_CLIENT_PORTAL = new URLSearchParams(window.location.search).get("portal") === "client";
+// Client portal: auto-detected from the custom domain OR a ?portal=client URL param (fallback for dev/testing)
+const IS_CLIENT_PORTAL =
+  window.location.hostname === "project.hissadoconsulting.com" ||
+  new URLSearchParams(window.location.search).get("portal") === "client";
 
 export default function App() {
   const { t } = useI18n();
