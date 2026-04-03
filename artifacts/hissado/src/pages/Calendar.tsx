@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { C, Av, StatusBadge } from "@/components/primitives";
 import { useI18n, MONTH_NAMES, DAY_NAMES } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,33 +26,49 @@ export default function Calendar({ tasks, users, projects, onTaskClick }: Calend
   const DAYS = DAY_NAMES[lang];
   const DAYS_SHORT = DAYS.map((d) => d[0]);
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = useMemo(() => new Date(year, month + 1, 0).getDate(), [year, month]);
+  const firstDay = useMemo(() => new Date(year, month, 1).getDay(), [year, month]);
 
-  const projectMap = Object.fromEntries(projects.map((p) => [p.id, p]));
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+  const projectMap = useMemo(
+    () => Object.fromEntries(projects.map((p) => [p.id, p])),
+    [projects]
+  );
+  const userMap = useMemo(
+    () => Object.fromEntries(users.map((u) => [u.id, u])),
+    [users]
+  );
 
-  const tasksByDay: Record<number, Task[]> = {};
-  tasks.forEach((tk) => {
-    if (!tk.due) return;
-    const d = new Date(tk.due);
-    if (d.getFullYear() === year && d.getMonth() === month) {
-      const day = d.getDate();
-      if (!tasksByDay[day]) tasksByDay[day] = [];
-      tasksByDay[day].push(tk);
-    }
-  });
+  const tasksByDay = useMemo(() => {
+    const map: Record<number, Task[]> = {};
+    tasks.forEach((tk) => {
+      if (!tk.due) return;
+      const d = new Date(tk.due);
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        const day = d.getDate();
+        if (!map[day]) map[day] = [];
+        map[day].push(tk);
+      }
+    });
+    return map;
+  }, [tasks, year, month]);
 
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear((y) => y - 1); } else setMonth((m) => m - 1); };
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear((y) => y + 1); } else setMonth((m) => m + 1); };
-  const thisMonth = tasks.filter((tk) => {
-    if (!tk.due) return false;
-    const d = new Date(tk.due);
-    return d.getFullYear() === year && d.getMonth() === month;
-  });
 
-  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
-  while (cells.length % 7 !== 0) cells.push(null);
+  const thisMonth = useMemo(
+    () => tasks.filter((tk) => {
+      if (!tk.due) return false;
+      const d = new Date(tk.due);
+      return d.getFullYear() === year && d.getMonth() === month;
+    }),
+    [tasks, year, month]
+  );
+
+  const cells = useMemo(() => {
+    const arr: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+    while (arr.length % 7 !== 0) arr.push(null);
+    return arr;
+  }, [firstDay, daysInMonth]);
 
   const calendarGrid = (
     <div style={{ background: C.w, borderRadius: 16, border: `1px solid ${C.g100}`, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>

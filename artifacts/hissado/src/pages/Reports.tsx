@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { C, PBar } from "@/components/primitives";
 import { useI18n, STATUS_LABELS, PRIORITY_LABELS } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,33 +32,43 @@ function Bar({ label, value, max, color }: { label: string; value: number; max: 
   );
 }
 
+const STATUSES = ["To Do", "In Progress", "In Review", "Done"] as const;
+const STATUS_COLORS_CHART: Record<string, string> = { "To Do": C.g300, "In Progress": C.gold, "In Review": "#8B5CF6", "Done": "#10B981" };
+const PRIORITIES = ["Urgent", "High", "Medium", "Low"] as const;
+const PRIORITY_COLORS_CHART: Record<string, string> = { Urgent: "#EF4444", High: C.gold, Medium: "#3B82F6", Low: "#10B981" };
+
 export default function Reports({ tasks, projects, users }: ReportsProps) {
   const { t, lang } = useI18n();
   const isMobile = useIsMobile();
 
-  const doneTasks = tasks.filter((x) => x.status === "Done").length;
-  const overdueTasks = tasks.filter((x) => x.due && new Date(x.due) < new Date() && x.status !== "Done").length;
-  const activeProjects = projects.filter((p) => p.status === "active").length;
-  const completionRate = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
+  const now = useMemo(() => new Date(), []);
 
-  const STATUSES = ["To Do", "In Progress", "In Review", "Done"] as const;
-  const STATUS_COLORS_CHART: Record<string, string> = { "To Do": C.g300, "In Progress": C.gold, "In Review": "#8B5CF6", "Done": "#10B981" };
+  const doneTasks = useMemo(() => tasks.filter((x) => x.status === "Done").length, [tasks]);
+  const overdueTasks = useMemo(() => tasks.filter((x) => x.due && new Date(x.due) < now && x.status !== "Done").length, [tasks, now]);
+  const activeProjects = useMemo(() => projects.filter((p) => p.status === "active").length, [projects]);
+  const completionRate = useMemo(() => tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0, [doneTasks, tasks.length]);
 
-  const PRIORITIES = ["Urgent", "High", "Medium", "Low"] as const;
-  const PRIORITY_COLORS_CHART: Record<string, string> = { Urgent: "#EF4444", High: C.gold, Medium: "#3B82F6", Low: "#10B981" };
+  const statusCounts = useMemo(
+    () => Object.fromEntries(STATUSES.map((s) => [s, tasks.filter((x) => x.status === s).length])),
+    [tasks]
+  );
+  const priorityCounts = useMemo(
+    () => Object.fromEntries(PRIORITIES.map((p) => [p, tasks.filter((x) => x.pri === p).length])),
+    [tasks]
+  );
 
-  const statusCounts = Object.fromEntries(STATUSES.map((s) => [s, tasks.filter((x) => x.status === s).length]));
-  const priorityCounts = Object.fromEntries(PRIORITIES.map((p) => [p, tasks.filter((x) => x.pri === p).length]));
+  const workloadCounts = useMemo(
+    () => Object.fromEntries(users.map((u) => [u.id, tasks.filter((x) => x.assignee === u.id && x.status !== "Done").length])),
+    [users, tasks]
+  );
+  const maxWorkload = useMemo(() => Math.max(...Object.values(workloadCounts), 1), [workloadCounts]);
 
-  const workloadCounts = Object.fromEntries(users.map((u) => [u.id, tasks.filter((x) => x.assignee === u.id && x.status !== "Done").length]));
-  const maxWorkload = Math.max(...Object.values(workloadCounts), 1);
-
-  const stats = [
+  const stats = useMemo(() => [
     { label: t.rep_total_tasks, value: tasks.length, color: "#4F7CEC" },
     { label: t.rep_completion, value: `${completionRate}%`, color: "#10B981" },
     { label: t.rep_overdue, value: overdueTasks, color: "#EF4444" },
     { label: t.rep_active_projects, value: activeProjects, color: C.gold },
-  ];
+  ], [t, tasks.length, completionRate, overdueTasks, activeProjects]);
 
   return (
     <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { C, Av, Logo } from "./primitives";
 import type { Page } from "@/lib/store";
 import type { Project } from "@/lib/data";
@@ -117,7 +117,7 @@ export default function Sidebar({
   const isAdmin = userRole === "admin" || userRole === "manager";
   const isCollapsed = !isMobile && collapsed;
 
-  const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number; adminOnly?: boolean }[] = [
+  const ALL_NAV: { k: Page; icon: React.ReactNode; l: string; badge?: number; adminOnly?: boolean }[] = useMemo(() => [
     { k: "dashboard", icon: <HomeIcon />, l: t.nav_dashboard },
     { k: "chat", icon: <ChatIcon />, l: t.nav_chat, badge: unread },
     { k: "clients", icon: <BuildingIcon />, l: t.nav_clients, adminOnly: true },
@@ -127,14 +127,18 @@ export default function Sidebar({
     { k: "calendar", icon: <CalIcon />, l: t.nav_calendar },
     { k: "reports", icon: <ChartIcon />, l: t.nav_reports },
     { k: "team", icon: <UsersIcon />, l: t.nav_team },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [t, unread]);
 
-  const NAV_ITEMS = ALL_NAV.filter((n) => {
-    if (n.adminOnly && !isAdmin) return false;
-    if (!permissions) return true;
-    const perm = NAV_PERM[n.k as keyof typeof NAV_PERM];
-    return !perm || permissions.has(perm);
-  });
+  const NAV_ITEMS = useMemo(
+    () => ALL_NAV.filter((n) => {
+      if (n.adminOnly && !isAdmin) return false;
+      if (!permissions) return true;
+      const perm = NAV_PERM[n.k as keyof typeof NAV_PERM];
+      return !perm || permissions.has(perm);
+    }),
+    [ALL_NAV, isAdmin, permissions]
+  );
 
   const nextLang: Lang = lang === "en" ? "fr" : "en";
 

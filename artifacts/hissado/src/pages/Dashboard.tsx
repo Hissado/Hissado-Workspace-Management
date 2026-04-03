@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { C, SH, Av, PBar, StatusBadge, PriorityBadge, Card, SectionHeader } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -38,22 +39,55 @@ export default function Dashboard({ projects, tasks, users, clients, services, c
   const isMobile = useIsMobile();
   const greeting = useGreeting(t);
 
+  const now = useMemo(() => new Date(), []);
+
+  const userMap = useMemo(
+    () => Object.fromEntries(users.map((u) => [u.id, u])),
+    [users]
+  );
+
+  const projectMap = useMemo(
+    () => Object.fromEntries(projects.map((p) => [p.id, p])),
+    [projects]
+  );
+
   const totalTasks = tasks.length;
-  const doneTasks = tasks.filter((x) => x.status === "Done").length;
-  const ipTasks = tasks.filter((x) => x.status === "In Progress").length;
-  const overdueTasks = tasks.filter((x) => x.due && new Date(x.due) < new Date() && x.status !== "Done").length;
-  const activeProjects = projects.filter((p) => p.status === "active").length;
 
-  const upcoming = tasks
-    .filter((x) => x.due && x.status !== "Done")
-    .sort((a, b) => new Date(a.due!).getTime() - new Date(b.due!).getTime())
-    .slice(0, 5);
+  const doneTasks = useMemo(
+    () => tasks.filter((x) => x.status === "Done").length,
+    [tasks]
+  );
 
-  const recent = tasks.slice().reverse().slice(0, 8);
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
-  const projectMap = Object.fromEntries(projects.map((p) => [p.id, p]));
+  const ipTasks = useMemo(
+    () => tasks.filter((x) => x.status === "In Progress").length,
+    [tasks]
+  );
 
-  const stats = [
+  const overdueTasks = useMemo(
+    () => tasks.filter((x) => x.due && new Date(x.due) < now && x.status !== "Done").length,
+    [tasks, now]
+  );
+
+  const activeProjects = useMemo(
+    () => projects.filter((p) => p.status === "active").length,
+    [projects]
+  );
+
+  const upcoming = useMemo(
+    () =>
+      tasks
+        .filter((x) => x.due && x.status !== "Done")
+        .sort((a, b) => new Date(a.due!).getTime() - new Date(b.due!).getTime())
+        .slice(0, 5),
+    [tasks]
+  );
+
+  const recent = useMemo(
+    () => tasks.slice().reverse().slice(0, 8),
+    [tasks]
+  );
+
+  const stats = useMemo(() => [
     {
       label: t.dash_active_projects, value: activeProjects,
       sub: `${projects.length} ${t.dash_total}`,
@@ -74,7 +108,17 @@ export default function Dashboard({ projects, tasks, users, clients, services, c
       sub: `${overdueTasks} ${t.dash_tasks_past_due}`,
       color: C.err, light: C.errL,
     },
-  ];
+  ], [t, activeProjects, doneTasks, ipTasks, overdueTasks, totalTasks, projects.length]);
+
+  const activeProjectsList = useMemo(
+    () => projects.filter((p) => p.status === "active"),
+    [projects]
+  );
+
+  const activeClients = useMemo(
+    () => (clients || []).filter((c) => c.status === "active").slice(0, 5),
+    [clients]
+  );
 
   const firstName = currentUser?.name?.split(" ")[0] || "";
 
@@ -139,10 +183,10 @@ export default function Dashboard({ projects, tasks, users, clients, services, c
           {/* Projects progress */}
           <Card style={{ padding: 28 }}>
             <SectionHeader title={t.dash_projects_section} sub={`${activeProjects} active projects`} />
-            {projects.filter((p) => p.status === "active").length === 0 && (
+            {activeProjectsList.length === 0 && (
               <div style={{ textAlign: "center", padding: "32px 0", color: C.g400, fontSize: 13 }}>{t.proj_no_projects_desc}</div>
             )}
-            {projects.filter((p) => p.status === "active").slice(0, 6).map((p, idx, arr) => {
+            {activeProjectsList.slice(0, 6).map((p, idx, arr) => {
               const pTasks = tasks.filter((x) => x.pId === p.id);
               const done = pTasks.filter((x) => x.status === "Done").length;
               const pct = pTasks.length > 0 ? Math.round((done / pTasks.length) * 100) : 0;
@@ -210,7 +254,7 @@ export default function Dashboard({ projects, tasks, users, clients, services, c
                 <tbody>
                   {recent.map((tk, idx) => {
                     const assignee = userMap[tk.assignee];
-                    const isOverdue = tk.due && new Date(tk.due) < new Date() && tk.status !== "Done";
+                    const isOverdue = tk.due && new Date(tk.due) < now && tk.status !== "Done";
                     return (
                       <tr
                         key={tk.id}
@@ -244,7 +288,7 @@ export default function Dashboard({ projects, tasks, users, clients, services, c
         {/* Upcoming + clients sidebar */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* Active Clients widget (admin/manager only) */}
-          {clients && clients.length > 0 && (currentUser?.role === "admin" || currentUser?.role === "manager") && (
+          {activeClients.length > 0 && (currentUser?.role === "admin" || currentUser?.role === "manager") && (
             <Card style={{ padding: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <h3 style={{ fontSize: 13, fontWeight: 700, color: C.navy, margin: 0 }}>{t.dash_clients_title}</h3>
@@ -260,9 +304,9 @@ export default function Dashboard({ projects, tasks, users, clients, services, c
                   </button>
                 )}
               </div>
-              {clients.filter((c) => c.status === "active").length === 0 ? (
+              {activeClients.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "20px 0", color: C.g400, fontSize: 12 }}>{t.dash_clients_empty}</div>
-              ) : clients.filter((c) => c.status === "active").slice(0, 5).map((cl, idx, arr) => {
+              ) : activeClients.map((cl, idx, arr) => {
                 const clProjects = projects.filter((p) => p.clientId === cl.id).length;
                 const clServices = (services || []).filter((s) => s.clientId === cl.id).length;
                 return (
@@ -305,7 +349,7 @@ export default function Dashboard({ projects, tasks, users, clients, services, c
               <div style={{ textAlign: "center", padding: "32px 0", color: C.g400, fontSize: 13 }}>{t.dash_no_upcoming}</div>
             ) : upcoming.map((tk, idx) => {
               const p = projectMap[tk.pId];
-              const overdue = tk.due && new Date(tk.due) < new Date();
+              const overdue = tk.due && new Date(tk.due) < now;
               return (
                 <div
                   key={tk.id}

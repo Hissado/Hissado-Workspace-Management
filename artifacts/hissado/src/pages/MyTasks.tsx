@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { C, SH, Av, Btn, StatusBadge, PriorityBadge, Empty } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import type { Project, Task, User } from "@/lib/data";
@@ -50,22 +50,30 @@ export default function MyTasks({ tasks, projects, users, onTaskClick, onAddTask
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [sort, setSort] = useState<SortKey>("due");
 
-  const projectMap = Object.fromEntries(projects.map((p) => [p.id, p]));
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+  const projectMap = useMemo(
+    () => Object.fromEntries(projects.map((p) => [p.id, p])),
+    [projects]
+  );
+  const userMap = useMemo(
+    () => Object.fromEntries(users.map((u) => [u.id, u])),
+    [users]
+  );
 
-  let filtered = tasks
-    .filter((tk) => statusFilter === "All" || tk.status === statusFilter)
-    .filter((tk) => priorityFilter === "all" || tk.pri === priorityFilter);
+  const filtered = useMemo(() => {
+    const base = tasks
+      .filter((tk) => statusFilter === "All" || tk.status === statusFilter)
+      .filter((tk) => priorityFilter === "all" || tk.pri === priorityFilter);
 
-  filtered = filtered.slice().sort((a, b) => {
-    if (sort === "due") {
-      if (!a.due) return 1;
-      if (!b.due) return -1;
-      return new Date(a.due).getTime() - new Date(b.due).getTime();
-    }
-    if (sort === "priority") return (PRIORITY_ORDER[a.pri] ?? 99) - (PRIORITY_ORDER[b.pri] ?? 99);
-    return 0;
-  });
+    return base.slice().sort((a, b) => {
+      if (sort === "due") {
+        if (!a.due) return 1;
+        if (!b.due) return -1;
+        return new Date(a.due).getTime() - new Date(b.due).getTime();
+      }
+      if (sort === "priority") return (PRIORITY_ORDER[a.pri] ?? 99) - (PRIORITY_ORDER[b.pri] ?? 99);
+      return 0;
+    });
+  }, [tasks, statusFilter, priorityFilter, sort]);
 
   return (
     <div style={{ padding: isMobile ? "16px 16px 40px" : "32px 36px 60px", background: C.bg, minHeight: "100%" }}>
