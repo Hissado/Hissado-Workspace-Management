@@ -176,7 +176,7 @@ function buildEmailBody(opts: {
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
                 <tr>
                   <td align="center">
-                    <a href="https://project.hissadoconsulting.com" style="display:inline-block;background:linear-gradient(135deg,#C9A96E 0%,#A8762E 100%);color:#ffffff;text-decoration:none;padding:15px 36px;border-radius:11px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 16px rgba(201,169,110,0.35);">
+                    <a href="https://client.hissadoconsulting.com" style="display:inline-block;background:linear-gradient(135deg,#C9A96E 0%,#A8762E 100%);color:#ffffff;text-decoration:none;padding:15px 36px;border-radius:11px;font-weight:700;font-size:15px;letter-spacing:0.02em;box-shadow:0 4px 16px rgba(201,169,110,0.35);">
                       ${ctaLabel}
                     </a>
                   </td>
@@ -218,7 +218,7 @@ function buildEmailBody(opts: {
                         </td>
                       </tr>
                     </table>
-                    <a href="https://project.hissadoconsulting.com/install" style="display:inline-block;background:linear-gradient(135deg,#C9A96E 0%,#A8762E 100%);color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:0.02em;box-shadow:0 4px 14px rgba(201,169,110,0.35);">
+                    <a href="https://client.hissadoconsulting.com" style="display:inline-block;background:linear-gradient(135deg,#C9A96E 0%,#A8762E 100%);color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:0.02em;box-shadow:0 4px 14px rgba(201,169,110,0.35);">
                       ${installBtn}
                     </a>
                   </td>
