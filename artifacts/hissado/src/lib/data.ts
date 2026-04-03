@@ -83,6 +83,7 @@ export type Client = {
   company: string;
   color: string;
   contactEmail: string;
+  phone?: string;
   status: "active" | "inactive";
   created: string;
 };
@@ -96,6 +97,7 @@ export type User = {
   photo?: string;
   status: "active" | "inactive";
   dept: string;
+  phone?: string;
   clientId?: string;
   password?: string;
   mustChangePassword?: boolean;

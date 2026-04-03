@@ -56,6 +56,7 @@ export default function ClientsPage({
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [color, setColor] = useState(COLOR_PALETTE[0]);
   const [clientStatus, setClientStatus] = useState<Client["status"]>("active");
 
@@ -88,23 +89,23 @@ export default function ClientsPage({
 
   const openCreate = () => {
     setEditing(null);
-    setName(""); setCompany(""); setContactEmail(""); setColor(COLOR_PALETTE[0]); setClientStatus("active");
+    setName(""); setCompany(""); setContactEmail(""); setPhone(""); setColor(COLOR_PALETTE[0]); setClientStatus("active");
     setShowModal(true);
   };
 
   const openEdit = (cl: Client) => {
     setEditing(cl);
     setName(cl.name); setCompany(cl.company); setContactEmail(cl.contactEmail);
-    setColor(cl.color); setClientStatus(cl.status);
+    setPhone(cl.phone || ""); setColor(cl.color); setClientStatus(cl.status);
     setShowModal(true);
   };
 
   const save = () => {
     if (!name.trim()) return;
     if (editing) {
-      onUpdate({ ...editing, name: name.trim(), company, contactEmail, color, status: clientStatus });
+      onUpdate({ ...editing, name: name.trim(), company, contactEmail, phone: phone.trim() || undefined, color, status: clientStatus });
     } else {
-      onAdd({ id: uid(), name: name.trim(), company, contactEmail, color, status: clientStatus, created: fmt(new Date()) });
+      onAdd({ id: uid(), name: name.trim(), company, contactEmail, phone: phone.trim() || undefined, color, status: clientStatus, created: fmt(new Date()) });
     }
     setShowModal(false);
   };
@@ -406,6 +407,7 @@ export default function ClientsPage({
           <Inp label={t.client_name_label} value={name} onChange={setName} ph={t.client_name_ph} />
           <Inp label={t.client_company_label} value={company} onChange={setCompany} ph={t.client_company_ph} />
           <Inp label={t.client_email_label} value={contactEmail} onChange={setContactEmail} ph={t.client_email_ph} />
+          <Inp label={t.client_phone_label} value={phone} onChange={setPhone} ph={t.client_phone_ph} type="tel" />
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 8 }}>{t.client_color_label}</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

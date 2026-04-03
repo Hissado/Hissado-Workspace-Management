@@ -394,6 +394,7 @@ export default function App() {
               users={myTeam}
               currentUser={currentUser}
               onAddUser={addUser}
+              onUpdateUser={updateUser}
               onDeleteUser={deleteUser}
               deptList={departments}
               roleDefs={roleDefs}

@@ -14,6 +14,8 @@ const UsersIcon2 = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="n
 const SendIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
 const CheckCircleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>;
 const KeyIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></svg>;
+const EditIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>;
+const PhoneIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.75a16 16 0 0 0 6 6l.9-.9a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>;
 
 const FALLBACK_DEPTS = ["Engineering", "Design", "Marketing", "Product", "Operations", "Sales", "Executive", "External"];
 const FALLBACK_ROLES: RoleDef[] = [
@@ -34,18 +36,20 @@ interface TeamProps {
   users: User[];
   currentUser: User;
   onAddUser: (u: User) => void;
+  onUpdateUser: (u: User) => void;
   onDeleteUser: (id: string) => void;
   deptList?: string[];
   roleDefs?: RoleDef[];
 }
 
-export default function Team({ users, currentUser, onAddUser, onDeleteUser, deptList, roleDefs }: TeamProps) {
+export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDeleteUser, deptList, roleDefs }: TeamProps) {
   const { t, lang } = useI18n();
   const isMobile = useIsMobile();
   const [deptFilter, setDeptFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showInvite, setShowInvite] = useState(false);
   const [showProfile, setShowProfile] = useState<User | null>(null);
+  const [showEdit, setShowEdit] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -54,6 +58,14 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState<{ name: string; email: string; tempPw: string } | null>(null);
   const [inviteError, setInviteError] = useState("");
+
+  // Edit form state
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editRole, setEditRole] = useState("");
+  const [editDept, setEditDept] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editStatus, setEditStatus] = useState<"active" | "inactive">("active");
 
   const activeRoleDefs = roleDefs ?? FALLBACK_ROLES;
   const activeDeptList = deptList ?? FALLBACK_DEPTS;
@@ -78,6 +90,35 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
 
   const deptsInUse = [...new Set(users.map((u) => u.dept).filter(Boolean))];
   const rolesInUse = [...new Set(users.map((u) => u.role))];
+
+  const isAdmin = currentUser.role === "admin";
+
+  const openEdit = (u: User) => {
+    setEditName(u.name);
+    setEditEmail(u.email);
+    setEditRole(u.role);
+    setEditDept(u.dept || "");
+    setEditPhone(u.phone || "");
+    setEditStatus(u.status);
+    setShowEdit(u);
+    setShowProfile(null);
+  };
+
+  const saveEdit = () => {
+    if (!showEdit || !editName.trim()) return;
+    const av = editName.trim().split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+    onUpdateUser({
+      ...showEdit,
+      name: editName.trim(),
+      email: editEmail.trim().toLowerCase(),
+      role: editRole,
+      dept: editDept,
+      phone: editPhone.trim() || undefined,
+      status: editStatus,
+      av,
+    });
+    setShowEdit(null);
+  };
 
   const resetInviteForm = () => {
     setInviteName(""); setInviteEmail(""); setInviteRole("member");
@@ -428,6 +469,7 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
           </div>
           {[
             { l: t.team_email_label, v: showProfile.email },
+            { l: t.team_phone_label, v: showProfile.phone },
             { l: t.team_dept_label, v: showProfile.dept },
             { l: t.team_role, v: roleLabel(showProfile.role) },
             { l: t.team_status_label, v: showProfile.status === "active" ? t.team_status_active_label : t.team_status_inactive_label },
@@ -442,38 +484,105 @@ export default function Team({ users, currentUser, onAddUser, onDeleteUser, dept
             </div>
           ))}
 
-          {/* Admin-only delete zone */}
-          {canDeleteUser(currentUser, showProfile) && (
-            <div style={{
-              marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.g100}`,
-            }}>
+          {/* Admin-only action zone */}
+          {isAdmin && (
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.g100}`, display: "flex", gap: 10 }}>
               <button
-                data-testid={`delete-user-btn-${showProfile.id}`}
-                onClick={() => setDeleteTarget(showProfile)}
+                data-testid={`edit-user-btn-${showProfile.id}`}
+                onClick={() => openEdit(showProfile)}
                 style={{
-                  width: "100%", padding: "10px 16px",
-                  border: `1.5px solid #FECACA`,
+                  flex: 1, padding: "10px 16px",
+                  border: `1.5px solid ${C.g200}`,
                   borderRadius: 10, cursor: "pointer",
                   fontSize: 13, fontWeight: 700,
                   fontFamily: "'DM Sans', sans-serif",
-                  backgroundColor: "#FFF5F5", color: C.err,
+                  backgroundColor: C.w, color: C.navy,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                   transition: "all .15s",
                 }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = C.errL;
-                  (e.currentTarget as HTMLElement).style.borderColor = C.err;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "#FFF5F5";
-                  (e.currentTarget as HTMLElement).style.borderColor = "#FECACA";
-                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = C.gold; (e.currentTarget as HTMLElement).style.color = C.gold; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = C.g200; (e.currentTarget as HTMLElement).style.color = C.navy; }}
               >
-                <TrashIcon />
-                {t.team_delete_btn}
+                <EditIcon />
+                {t.team_edit_btn}
               </button>
+              {canDeleteUser(currentUser, showProfile) && (
+                <button
+                  data-testid={`delete-user-btn-${showProfile.id}`}
+                  onClick={() => setDeleteTarget(showProfile)}
+                  style={{
+                    flex: 1, padding: "10px 16px",
+                    border: `1.5px solid #FECACA`,
+                    borderRadius: 10, cursor: "pointer",
+                    fontSize: 13, fontWeight: 700,
+                    fontFamily: "'DM Sans', sans-serif",
+                    backgroundColor: "#FFF5F5", color: C.err,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    transition: "all .15s",
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = C.errL; (e.currentTarget as HTMLElement).style.borderColor = C.err; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#FFF5F5"; (e.currentTarget as HTMLElement).style.borderColor = "#FECACA"; }}
+                >
+                  <TrashIcon />
+                  {t.team_delete_btn}
+                </button>
+              )}
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* Edit Member Modal */}
+      {showEdit && (
+        <Modal open={!!showEdit} onClose={() => setShowEdit(null)} title={t.team_edit_title} w={460}>
+          <Inp label={t.team_full_name} value={editName} onChange={setEditName} ph={t.team_full_name_ph} />
+          <Inp label={t.team_email_label} value={editEmail} onChange={setEditEmail} ph={t.team_email_ph} type="email" />
+          <Inp label={t.team_phone_label} value={editPhone} onChange={setEditPhone} ph={t.team_phone_ph} type="tel" />
+          <Inp
+            label={t.team_role}
+            value={editRole}
+            onChange={setEditRole}
+            opts={activeRoleDefs.map((r) => ({ v: r.id, l: r.label }))}
+          />
+          <Inp
+            label={t.team_dept}
+            value={editDept}
+            onChange={setEditDept}
+            opts={activeDeptList.map((d) => ({ v: d, l: d }))}
+          />
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 8 }}>{t.team_status_label}</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              {(["active", "inactive"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setEditStatus(s)}
+                  style={{
+                    flex: 1, padding: "8px 12px",
+                    border: `2px solid ${editStatus === s ? (s === "active" ? C.ok : C.err) : C.g200}`,
+                    borderRadius: 9, cursor: "pointer", fontFamily: "inherit", fontSize: 12,
+                    fontWeight: editStatus === s ? 700 : 400,
+                    background: editStatus === s ? (s === "active" ? `${C.ok}12` : `${C.err}12`) : C.w,
+                    color: editStatus === s ? (s === "active" ? C.ok : C.err) : C.g500,
+                    transition: "all .15s",
+                  }}
+                >
+                  {s === "active" ? t.team_status_active_label : t.team_status_inactive_label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button
+              onClick={() => setShowEdit(null)}
+              style={{ padding: "9px 18px", background: C.g100, color: C.g600, border: "none", borderRadius: 9, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}
+            >
+              {lang === "fr" ? "Annuler" : "Cancel"}
+            </button>
+            <Btn onClick={saveEdit} data-testid="save-edit-btn">
+              {lang === "fr" ? "Enregistrer" : "Save Changes"}
+            </Btn>
+          </div>
         </Modal>
       )}
 
