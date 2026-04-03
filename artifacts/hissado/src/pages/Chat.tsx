@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { C, Av, Btn, Modal, Inp } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { Conversation, Message, User, Notification, Attachment } from "@/lib/data";
+import type { Conversation, Message, User, Notification, Attachment, SharedLocation } from "@/lib/data";
 import { uid, fmtT } from "@/lib/data";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
@@ -31,9 +31,151 @@ const CheckIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="no
 const CheckCheckIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="17 6 9 17 5 13" /><polyline points="22 6 14 17" /></svg>;
 const SearchMsgIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
 const CloseIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
+const MapPinIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+const ExternalLinkIcon = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+const NavIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>;
 
 /* ─── Emoji reactions set ────────────────────────────────── */
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
+/* ─── Location card component ────────────────────────────── */
+function LocationCard({ loc, isMe }: { loc: SharedLocation; isMe: boolean }) {
+  const [address, setAddress] = useState<string | null>(null);
+  const [addrLoading, setAddrLoading] = useState(false);
+
+  const lat = loc.lat.toFixed(5);
+  const lng = loc.lng.toFixed(5);
+  const googleUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
+  const osmUrl = `https://www.openstreetmap.org/?mlat=${loc.lat}&mlon=${loc.lng}#map=15/${loc.lat}/${loc.lng}`;
+  const tileUrl = `https://tile.openstreetmap.org/14/${lonToTile(loc.lng, 14)}/${latToTile(loc.lat, 14)}.png`;
+
+  useEffect(() => {
+    if (address || addrLoading) return;
+    setAddrLoading(true);
+    fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${loc.lat}&lon=${loc.lng}`,
+      { headers: { "Accept-Language": "en" } }
+    )
+      .then((r) => r.json())
+      .then((d) => setAddress(d?.display_name?.split(",").slice(0, 3).join(", ") || null))
+      .catch(() => setAddress(null))
+      .finally(() => setAddrLoading(false));
+  }, []);
+
+  return (
+    <div style={{
+      borderRadius: 12, overflow: "hidden",
+      width: 240, maxWidth: "100%",
+      boxShadow: "0 2px 10px rgba(0,0,0,.15)",
+      background: C.w,
+      border: `1px solid ${isMe ? "rgba(255,255,255,.15)" : C.g100}`,
+    }}>
+      {/* Map preview tile */}
+      <div style={{ position: "relative", height: 120, overflow: "hidden", background: "#e8f4ea" }}>
+        <img
+          src={tileUrl}
+          alt="Map"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          style={{
+            width: "100%", height: "100%",
+            objectFit: "cover", display: "block",
+            filter: "saturate(0.85) brightness(1.05)",
+          }}
+        />
+        {/* Pin overlay */}
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          pointerEvents: "none",
+        }}>
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            filter: "drop-shadow(0 2px 4px rgba(0,0,0,.4))",
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: "50% 50% 50% 0",
+              background: "#E53E3E", transform: "rotate(-45deg)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,.3)",
+            }}>
+              <div style={{
+                width: 12, height: 12, borderRadius: "50%",
+                background: "#fff", transform: "rotate(45deg)",
+              }} />
+            </div>
+            <div style={{ width: 2, height: 8, background: "#E53E3E", borderRadius: 1 }} />
+            <div style={{ width: 8, height: 3, borderRadius: "50%", background: "rgba(0,0,0,.3)" }} />
+          </div>
+        </div>
+        {/* Gradient overlay at bottom */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 40, background: "linear-gradient(transparent, rgba(0,0,0,.3))" }} />
+        <div style={{ position: "absolute", bottom: 6, left: 8, fontSize: 10, color: "#fff", fontWeight: 600, fontFamily: "inherit", textShadow: "0 1px 2px rgba(0,0,0,.5)" }}>
+          {lat}°, {lng}°
+        </div>
+      </div>
+
+      {/* Info footer */}
+      <div style={{ padding: "8px 10px", background: isMe ? "rgba(255,255,255,.06)" : "#fff" }}>
+        {/* Address line */}
+        <div style={{ fontSize: 11, color: isMe ? "rgba(255,255,255,.85)" : C.navy, fontWeight: 600, marginBottom: 2, lineHeight: 1.4, minHeight: 14 }}>
+          {addrLoading ? (
+            <span style={{ color: isMe ? "rgba(255,255,255,.5)" : C.g400 }}>Locating address…</span>
+          ) : address ? address : (
+            <span style={{ color: isMe ? "rgba(255,255,255,.5)" : C.g400 }}>📍 Shared Location</span>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+          <a
+            href={googleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              padding: "5px 0",
+              background: isMe ? "rgba(255,255,255,.15)" : `${C.gold}12`,
+              border: `1px solid ${isMe ? "rgba(255,255,255,.2)" : `${C.gold}30`}`,
+              borderRadius: 7, textDecoration: "none",
+              fontSize: 11, fontWeight: 700, fontFamily: "inherit",
+              color: isMe ? "#fff" : C.gold,
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.8"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+          >
+            <NavIcon /> Google Maps
+          </a>
+          <a
+            href={osmUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+              background: isMe ? "rgba(255,255,255,.08)" : C.g50,
+              border: `1px solid ${isMe ? "rgba(255,255,255,.12)" : C.g100}`,
+              borderRadius: 7, textDecoration: "none",
+              color: isMe ? "rgba(255,255,255,.6)" : C.g500,
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+            title="View on OpenStreetMap"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.7"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+          >
+            <ExternalLinkIcon />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* OSM tile coordinate helpers */
+function lonToTile(lon: number, zoom: number) { return Math.floor((lon + 180) / 360 * Math.pow(2, zoom)); }
+function latToTile(lat: number, zoom: number) {
+  return Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+}
 
 /* ─── Translation API ────────────────────────────────────── */
 const LANG_CODES: Record<string, string> = {
@@ -300,6 +442,10 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   const [msgSearch, setMsgSearch] = useState("");
   const [confirmDeleteMsg, setConfirmDeleteMsg] = useState<Message | null>(null);
 
+  /* location sharing */
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
   /* scroll */
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -498,6 +644,38 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     onSendMessage(selected, msg);
   };
 
+  /* share location */
+  const handleShareLocation = () => {
+    if (!selected) return;
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser.");
+      setTimeout(() => setLocationError(null), 4000);
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsLocating(false);
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const msg: Message = {
+          id: uid(), cId: selected, from: currentUser.id,
+          text: "", ts: new Date().toISOString(),
+          location: loc,
+        };
+        onSendMessage(selected, msg);
+        onAddNotification({ id: uid(), type: "message", text: `Shared a location`, read: false, date: fmtT(msg.ts) });
+      },
+      (err) => {
+        setIsLocating(false);
+        if (err.code === 1) setLocationError("Location access denied. Please allow location in your browser.");
+        else if (err.code === 2) setLocationError("Unable to determine your location.");
+        else setLocationError("Location request timed out. Try again.");
+        setTimeout(() => setLocationError(null), 5000);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   /* voice input */
   const startVoice = () => {
     if (!SR) { setVoiceUnsupported(true); setTimeout(() => setVoiceUnsupported(false), 3000); return; }
@@ -671,7 +849,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                       {lastMsg && (
                         <div style={{ fontSize: 12, color: unread > 0 ? C.navy : C.g400, fontWeight: unread > 0 ? 600 : 400, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {lastMsg.from === currentUser.id ? <span style={{ color: C.gold, fontSize: 11 }}>{t.chat_you}</span> : ""}
-                          {isImage ? "🖊 Drawing" : (lastMsg.attachment && !lastMsg.text ? `📎 ${lastMsg.attachment.name}` : lastMsg.text)}
+                          {isImage ? "🖊 Drawing" : lastMsg.location ? "📍 Location" : (lastMsg.attachment && !lastMsg.text ? `📎 ${lastMsg.attachment.name}` : lastMsg.text)}
                         </div>
                       )}
                       {cv.type === "group" && (
@@ -863,6 +1041,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
               const showAvatar = !isMe && (!prevMsg || prevMsg.from !== m.from);
               const showName = showAvatar;
               const isImage = m.text.startsWith("data:image");
+              const isLocationOnly = !!m.location && !m.text && !m.attachment && !isImage;
               const transKey = `${m.id}_${autoTransLang}`;
               const translated = autoTransLang !== "off" ? translations[transKey] : undefined;
               const loading = transLoading.has(transKey);
@@ -916,15 +1095,16 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
 
                     {/* Bubble */}
                     <div style={{
-                      padding: (isImage && !m.attachment) ? "4px" : "10px 14px",
+                      padding: isLocationOnly ? 0 : (isImage && !m.attachment) ? "4px" : "10px 14px",
                       borderRadius: isMe ? "18px 18px 4px 18px" : "4px 18px 18px 18px",
-                      background: isMe
+                      background: isLocationOnly ? "transparent" : isMe
                         ? `linear-gradient(135deg,${C.navy} 0%,${C.navyL} 100%)`
                         : C.w,
                       color: isMe ? C.w : C.navy,
                       fontSize: 13, lineHeight: 1.55,
                       wordBreak: "break-word",
-                      boxShadow: isMe ? "0 2px 8px rgba(7,13,26,.18)" : "0 1px 4px rgba(0,0,0,.07)",
+                      boxShadow: isLocationOnly ? "none" : isMe ? "0 2px 8px rgba(7,13,26,.18)" : "0 1px 4px rgba(0,0,0,.07)",
+                      overflow: isLocationOnly ? "hidden" : undefined,
                     }}>
                       {isImage ? (
                         <div style={{ background: "#ffffff", borderRadius: 8, overflow: "hidden", display: "inline-block" }}>
@@ -933,6 +1113,11 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                       ) : m.text ? (
                         <span>{msgSearch ? highlight(m.text, msgSearch) : m.text}</span>
                       ) : null}
+
+                      {/* Location card */}
+                      {m.location && (
+                        <LocationCard loc={m.location} isMe={isMe} />
+                      )}
 
                       {/* File / image attachment */}
                       {m.attachment && (
@@ -1214,6 +1399,46 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
           )}
 
           {/* Input bar */}
+          {/* Location error banner */}
+          {locationError && (
+            <div style={{
+              margin: "0 20px 4px",
+              padding: "8px 14px",
+              background: "#FEF2F2",
+              border: "1px solid #FECACA",
+              borderRadius: 10,
+              fontSize: 12,
+              color: "#DC2626",
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}>
+              <span style={{ fontSize: 14 }}>📍</span>
+              {locationError}
+            </div>
+          )}
+
+          {/* Locating indicator */}
+          {isLocating && (
+            <div style={{
+              margin: "0 20px 4px",
+              padding: "8px 14px",
+              background: `${C.gold}10`,
+              border: `1px solid ${C.gold}30`,
+              borderRadius: 10,
+              fontSize: 12,
+              color: C.gold,
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}>
+              <MapPinIcon />
+              Getting your location…
+            </div>
+          )}
+
           <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.g100}`, background: C.w, display: "flex", gap: 8, alignItems: "center" }}>
             <input ref={fileInputRef} type="file" accept="*/*" style={{ display: "none" }} onChange={handleFileSelect} />
 
@@ -1238,6 +1463,33 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g400; }}
               ><PenIcon /></button>
+            )}
+
+            {/* Share location */}
+            {!editingMsgId && (
+              <button
+                onClick={handleShareLocation}
+                disabled={isLocating}
+                title="Share my location"
+                data-testid="share-location-btn"
+                style={{
+                  width: 38, height: 38,
+                  border: `1px solid ${isLocating ? C.gold : C.g200}`,
+                  borderRadius: 10,
+                  background: isLocating ? `${C.gold}12` : C.w,
+                  cursor: isLocating ? "wait" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: isLocating ? C.gold : C.g400,
+                  flexShrink: 0,
+                  transition: "all .15s",
+                  opacity: isLocating ? 0.7 : 1,
+                  animation: isLocating ? "pulse 1s ease-in-out infinite" : "none",
+                }}
+                onMouseEnter={(e) => { if (!isLocating) { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; } }}
+                onMouseLeave={(e) => { if (!isLocating) { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g400; } }}
+              >
+                <MapPinIcon />
+              </button>
             )}
 
             {/* Text input */}

@@ -181,6 +181,12 @@ export type Reaction = {
   userIds: string[];
 };
 
+export type SharedLocation = {
+  lat: number;
+  lng: number;
+  label?: string;
+};
+
 export type Message = {
   id: string;
   cId: string;
@@ -192,6 +198,7 @@ export type Message = {
   reactions?: Reaction[];
   edited?: boolean;
   readBy?: string[];
+  location?: SharedLocation;
 };
 
 export type FileItem = {
