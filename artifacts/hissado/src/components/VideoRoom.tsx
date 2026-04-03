@@ -104,9 +104,13 @@ export default function VideoRoom({
       "config.disableDeepLinking=true",
       "config.doNotStoreRoom=true",
       "config.enableNoisyMicDetection=true",
+      /* watermark suppression — belt-and-suspenders across Jitsi versions */
+      "config.hideLogo=true",
       "interfaceConfig.SHOW_JITSI_WATERMARK=false",
       "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false",
+      "interfaceConfig.DISPLAY_WELCOME_PAGE_CONTENT=false",
       "interfaceConfig.MOBILE_APP_PROMO=false",
+      "interfaceConfig.HIDE_INVITE_MORE_HEADER=true",
       `userInfo.displayName=${encodeURIComponent(displayName)}`,
     ].join("&");
     return `https://meet.jit.si/${room}#${params}`;
@@ -228,6 +232,16 @@ export default function VideoRoom({
           style={{ width: "100%", height: "100%", border: "none", display: "block" }}
           title="Hissado Meet"
         />
+
+        {/* ── Logo cover — opaque black rectangle over the Jitsi branding spot ── */}
+        {/* CSS can't reach inside a cross-origin iframe, so we overlay a div    */}
+        <div style={{
+          position: "absolute", top: 0, left: 0,
+          width: 200, height: 72,
+          background: "#000",
+          zIndex: 4,          /* above iframe (1), below our controls (20) */
+          pointerEvents: "none",
+        }} />
 
         {/* Loading overlay — shown until iframe fires onLoad */}
         {!frameLoaded && (
