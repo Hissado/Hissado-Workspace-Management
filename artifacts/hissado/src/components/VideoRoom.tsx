@@ -80,6 +80,8 @@ export default function VideoRoom({
   const recognitionRef = useRef<any>(null);
   const translateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialLoadDoneRef = useRef(false);   /* true after the first iframe load */
+  const leavingRef = useRef(false);           /* guards against double-calls to onLeave */
   const [frameLoaded, setFrameLoaded] = useState(false);
   const [showCaptions, setShowCaptions] = useState(false);
   const [captionsActive, setCaptionsActive] = useState(false);
@@ -93,6 +95,43 @@ export default function VideoRoom({
   const [translation, setTranslation] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
   const [showControls, setShowControls] = useState(true);
+
+  /* ─── Safe leave — fires onLeave exactly once ────────────────── */
+  /* stopRecognition runs via the cleanup useEffect when VideoRoom unmounts */
+  const safeLeave = useCallback(() => {
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    onLeave();
+  }, [onLeave]);
+
+  /* ─── Detect Jitsi post-call navigation via postMessage ──────── */
+  /* Jitsi fires readyToClose / videoConferenceLeft when call ends  */
+  useEffect(() => {
+    const JITSI_EVENTS = new Set(["readyToClose", "videoConferenceLeft", "hangup"]);
+    const handler = (e: MessageEvent) => {
+      if (!String(e.origin).includes("jit.si")) return;
+      try {
+        const payload = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        const action: string = payload?.action ?? payload?.event ?? payload?.type ?? "";
+        if (JITSI_EVENTS.has(action)) safeLeave();
+      } catch { /* ignore non-JSON messages */ }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [safeLeave]);
+
+  /* ─── Detect Jitsi post-call navigation via iframe onLoad ────── */
+  /* When the call ends, Jitsi navigates the iframe to a promo page */
+  /* which fires onLoad a second time — we catch that and close.    */
+  const handleFrameLoad = useCallback(() => {
+    if (!initialLoadDoneRef.current) {
+      initialLoadDoneRef.current = true;
+      setFrameLoaded(true);
+    } else {
+      /* Second (or later) load = Jitsi navigated to post-call page */
+      safeLeave();
+    }
+  }, [safeLeave]);
 
   /* ─── Build Jitsi URL with hash config (no External API) ─── */
   const jitsiUrl = (() => {
@@ -228,7 +267,7 @@ export default function VideoRoom({
           src={jitsiUrl}
           allow="camera *; microphone *; fullscreen *; display-capture *; autoplay *"
           allowFullScreen
-          onLoad={() => setFrameLoaded(true)}
+          onLoad={handleFrameLoad}
           style={{ width: "100%", height: "100%", border: "none", display: "block" }}
           title="Hissado Meet"
         />
@@ -307,7 +346,7 @@ export default function VideoRoom({
               )}
             </button>
             <button
-              onClick={onLeave}
+              onClick={safeLeave}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "6px 14px", border: "none",
