@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 
 export interface CallSignal {
   callId: string;
@@ -24,49 +24,82 @@ interface Handlers {
   onNewMessage?: (signal: MessageSignal) => void;
 }
 
+/* Exponential-backoff delays (ms) for SSE reconnection */
+const BACKOFF = [2_000, 4_000, 8_000, 15_000, 30_000];
+
 export function useRealtime(userId: string | null, handlers: Handlers) {
   const esRef = useRef<EventSource | null>(null);
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
 
+  /* Incrementing this triggers a full reconnect of the EventSource
+     (the effect re-runs with a fresh connection + all event handlers). */
+  const [reconnectCount, setReconnectCount] = useState(0);
+  const failCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!userId) return;
 
-    const es = new EventSource(`/api/signal/stream?userId=${encodeURIComponent(userId)}`);
+    /* Clear any pending retry timer from a previous cycle */
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+
+    const es = new EventSource(
+      `/api/signal/stream?userId=${encodeURIComponent(userId)}`
+    );
     esRef.current = es;
 
-    const on = (event: string, cb: (d: any) => void) => {
+    const on = (event: string, cb: (d: unknown) => void) => {
       es.addEventListener(event, (e: MessageEvent) => {
-        try { cb(JSON.parse(e.data)); } catch { /* ignore */ }
+        try { cb(JSON.parse(e.data)); } catch { /* ignore malformed data */ }
       });
     };
 
-    on("call-ring", (d: CallSignal) => handlersRef.current.onIncomingCall?.(d));
-    on("call-accept", (d: { callId: string; roomName: string; videoEnabled: boolean }) =>
-      handlersRef.current.onCallAccepted?.(d.callId, d.roomName, d.videoEnabled));
-    on("call-decline", (d: { callId: string }) =>
-      handlersRef.current.onCallDeclined?.(d.callId));
-    on("call-end", (d: { callId: string }) =>
-      handlersRef.current.onCallEnded?.(d.callId));
-    on("new-message", (d: MessageSignal) =>
-      handlersRef.current.onNewMessage?.(d));
+    on("call-ring", (d) =>
+      handlersRef.current.onIncomingCall?.(d as CallSignal));
+    on("call-accept", (d) => {
+      const s = d as { callId: string; roomName: string; videoEnabled: boolean };
+      handlersRef.current.onCallAccepted?.(s.callId, s.roomName, s.videoEnabled);
+    });
+    on("call-decline", (d) =>
+      handlersRef.current.onCallDeclined?.((d as { callId: string }).callId));
+    on("call-end", (d) =>
+      handlersRef.current.onCallEnded?.((d as { callId: string }).callId));
+    on("new-message", (d) =>
+      handlersRef.current.onNewMessage?.(d as MessageSignal));
+
+    es.onopen = () => {
+      /* Successful (re)connect — reset fail counter */
+      failCountRef.current = 0;
+    };
 
     es.onerror = () => {
       es.close();
       esRef.current = null;
-      setTimeout(() => {
-        if (userId) {
-          const next = new EventSource(`/api/signal/stream?userId=${encodeURIComponent(userId)}`);
-          esRef.current = next;
-        }
-      }, 5000);
+
+      /* Exponential-backoff reconnect — picks next delay up to the cap */
+      const delay = BACKOFF[Math.min(failCountRef.current, BACKOFF.length - 1)];
+      failCountRef.current += 1;
+
+      retryTimerRef.current = setTimeout(() => {
+        setReconnectCount((c) => c + 1);
+      }, delay);
     };
 
     return () => {
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
       es.close();
       esRef.current = null;
     };
-  }, [userId]);
+    // reconnectCount is intentionally included so the effect re-runs on reconnect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, reconnectCount]);
 
   const signal = useCallback(async (to: string, event: string, data: unknown) => {
     try {
@@ -75,14 +108,17 @@ export function useRealtime(userId: string | null, handlers: Handlers) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to, event, data }),
       });
-    } catch { /* ignore */ }
+    } catch { /* non-fatal */ }
   }, []);
 
   const ringUser = useCallback((toId: string, s: CallSignal) =>
     signal(toId, "call-ring", s), [signal]);
 
-  const acceptCall = useCallback((toId: string, callId: string, roomName: string, videoEnabled: boolean) =>
-    signal(toId, "call-accept", { callId, roomName, videoEnabled }), [signal]);
+  const acceptCall = useCallback(
+    (toId: string, callId: string, roomName: string, videoEnabled: boolean) =>
+      signal(toId, "call-accept", { callId, roomName, videoEnabled }),
+    [signal]
+  );
 
   const declineCall = useCallback((toId: string, callId: string) =>
     signal(toId, "call-decline", { callId }), [signal]);

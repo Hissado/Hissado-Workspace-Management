@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { C, Av, Btn, Modal, Inp } from "@/components/primitives";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -474,6 +474,13 @@ function highlight(text: string, query: string): React.ReactNode {
   );
 }
 
+/* ─── Pure utilities (outside component to avoid recreation) ── */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /* ─── Main component ─────────────────────────────────────── */
 export default function Chat({ conversations, messages, users, currentUser, onSendMessage, onCreateConvo, onAddNotification, onDeleteConversation, onStartCall, onUpdateMessage, onDeleteMessage, onReact, onMarkRead, initialConvoId, onConvoOpened }: ChatProps) {
   const { t } = useI18n();
@@ -538,51 +545,73 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  /* derived */
-  const convo = conversations.find((c) => c.id === selected);
-  const allMsgs = selected ? (messages[selected] || []) : [];
-  const msgs = msgSearch
-    ? allMsgs.filter((m) => m.text.toLowerCase().includes(msgSearch.toLowerCase()))
-    : allMsgs;
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
-  const otherUsers = users.filter((u) => u.id !== currentUser.id);
+  /* ── Memoized derived state (prevents re-computation on every render) ── */
 
-  /* format file size */
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  /* O(n) lookup map for users — rebuilt only when the users array changes */
+  const userMap = useMemo(
+    () => Object.fromEntries(users.map((u) => [u.id, u])),
+    [users]
+  );
 
-  /* whatsapp */
-  const whatsappUrl = (() => {
+  /* Other team-members (for new-conversation picker) */
+  const otherUsers = useMemo(
+    () => users.filter((u) => u.id !== currentUser.id),
+    [users, currentUser.id]
+  );
+
+  /* Stable conversation label — depends on userMap */
+  const getConvoLabel = useCallback((cv: Conversation): string => {
+    if (cv.name) return cv.name;
+    const others = cv.parts.filter((id) => id !== currentUser.id);
+    return others.map((id) => userMap[id]?.name || "?").join(", ");
+  }, [userMap, currentUser.id]);
+
+  /* Conversation list — sorted newest-first, filtered by search */
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      const aTs = (messages[a.id] || []).at(-1)?.ts || a.created;
+      const bTs = (messages[b.id] || []).at(-1)?.ts || b.created;
+      return new Date(bTs).getTime() - new Date(aTs).getTime();
+    });
+  }, [conversations, messages]);
+
+  const filtered = useMemo(
+    () => sortedConversations.filter(
+      (cv) => getConvoLabel(cv).toLowerCase().includes(search.toLowerCase())
+    ),
+    [sortedConversations, getConvoLabel, search]
+  );
+
+  /* Active conversation object */
+  const convo = useMemo(
+    () => conversations.find((c) => c.id === selected),
+    [conversations, selected]
+  );
+
+  /* Active conversation messages, optionally filtered by message search */
+  const allMsgs = useMemo(
+    () => selected ? (messages[selected] || []) : [],
+    [messages, selected]
+  );
+  const msgs = useMemo(
+    () => msgSearch
+      ? allMsgs.filter((m) => m.text.toLowerCase().includes(msgSearch.toLowerCase()))
+      : allMsgs,
+    [allMsgs, msgSearch]
+  );
+
+  /* WhatsApp deep-link for the other party in a direct conversation */
+  const whatsappUrl = useMemo(() => {
     if (!convo || convo.type !== "direct") return null;
     const otherId = convo.parts.find((id) => id !== currentUser.id);
     const phone = otherId ? userMap[otherId]?.phone : undefined;
     if (!phone) return null;
     const digits = phone.replace(/\s+/g, "").replace(/[^\d+]/g, "").replace(/^\+/, "");
     return digits ? `https://wa.me/${digits}` : null;
-  })();
+  }, [convo, currentUser.id, userMap]);
 
-  const showList = !isMobile || !mobileShowChat || !selected;
-  const showChat = !isMobile || (mobileShowChat && !!selected);
-
-  /* sort conversations */
-  const sortedConversations = [...conversations].sort((a, b) => {
-    const aTs = (messages[a.id] || []).at(-1)?.ts || a.created;
-    const bTs = (messages[b.id] || []).at(-1)?.ts || b.created;
-    return new Date(bTs).getTime() - new Date(aTs).getTime();
-  });
-  const filtered = sortedConversations.filter((cv) => getConvoLabel(cv).toLowerCase().includes(search.toLowerCase()));
-
-  /* helpers */
-  function getConvoLabel(cv: Conversation): string {
-    if (cv.name) return cv.name;
-    const others = cv.parts.filter((id) => id !== currentUser.id);
-    return others.map((id) => userMap[id]?.name || "?").join(", ");
-  }
-
-  function getConvoAv(cv: Conversation) {
+  /* Avatar for a conversation (group icon or user Av) */
+  const getConvoAv = useCallback((cv: Conversation) => {
     if (cv.type === "group") return (
       <div style={{ width: 42, height: 42, borderRadius: 14, background: `${C.gold}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <UsersIcon2 />
@@ -590,7 +619,10 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     );
     const other = cv.parts.find((id) => id !== currentUser.id);
     return <Av ini={userMap[other || ""]?.av || "??"} photo={userMap[other || ""]?.photo} size={42} />;
-  }
+  }, [userMap, currentUser.id]);
+
+  const showList = !isMobile || !mobileShowChat || !selected;
+  const showChat = !isMobile || (mobileShowChat && !!selected);
 
   /* ── Navigate here from notification ── */
   useEffect(() => {
@@ -610,9 +642,15 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     }
   }, [selected]);
 
-  /* auto-scroll to newest message */
+  /* Track previous selected conversation to detect conversation-switch vs new message */
+  const prevSelectedRef = useRef<string | null>(null);
+  /* auto-scroll to newest message:
+     • instant jump when switching conversation (no jank)
+     • smooth scroll when a new message arrives in the current conversation */
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const switched = prevSelectedRef.current !== selected;
+    prevSelectedRef.current = selected;
+    bottomRef.current?.scrollIntoView({ behavior: switched ? "instant" : "smooth" });
   }, [msgs.length, selected]);
 
   /* close lang picker on outside click */
@@ -656,11 +694,13 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     if (autoTransLang === "off") return;
     msgs.forEach((m) => {
       if (m.from === currentUser.id) return;
-      if (m.text.startsWith("data:image")) return;
+      /* Skip drawings, location pins, and empty messages — nothing to translate */
+      if (!m.text || m.text.startsWith("data:image")) return;
       const key = `${m.id}_${autoTransLang}`;
       if (translations[key] || transLoading.has(key)) return;
       translateMsg(m.id, m.text, autoTransLang);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [msgs.length, autoTransLang, selected]);
 
   /* translate a single message */

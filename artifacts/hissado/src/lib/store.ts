@@ -134,10 +134,13 @@ export const useStore = create<AppState>()(
       roleDefs: SEED_ROLE_DEFS,
       rolePermissions: SEED_ROLE_PERMISSIONS,
 
-      /* Always navigate to dashboard on login or logout so the user starts
-         fresh, but page is persisted so a plain browser refresh keeps the
-         current page intact.                                                */
-      setCurrentUser: (u) => set({ currentUser: u, page: "dashboard" }),
+      /* Navigate to dashboard only when the logged-in identity changes
+         (login → new session, logout → null).  Updating the same user's
+         profile (e.g. from the Settings page) must NOT reset the page.    */
+      setCurrentUser: (u) => set((s) => ({
+        currentUser: u,
+        page: (!u || u.id !== s.currentUser?.id) ? "dashboard" : s.page,
+      })),
       setPage: (p) => set({ page: p }),
       setCollapsed: (v) => set({ collapsed: v }),
       setSearchQuery: (q) => set({ searchQuery: q }),

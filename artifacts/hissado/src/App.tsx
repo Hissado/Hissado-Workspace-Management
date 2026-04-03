@@ -300,7 +300,8 @@ export default function App() {
     if (!convo) return;
     const recipients = convo.parts.filter((uid) => uid !== currentUser.id);
     const isDrawing = msg.text.startsWith("data:image");
-    const preview = isDrawing ? "[Drawing]" : msg.text.slice(0, 120);
+    const isLocation = !!msg.location;
+    const preview = isLocation ? "📍 Location" : isDrawing ? "[Drawing]" : msg.text.slice(0, 120);
     const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
     recipients.forEach((toId) => {
@@ -489,7 +490,7 @@ export default function App() {
           </>
         )}
 
-        <main style={{ flex: 1, overflow: "auto" }}>
+        <main key={page} className="page-enter" style={{ flex: 1, overflow: "auto" }}>
           {page === "dashboard" && (
             <Dashboard
               projects={myProjects}
