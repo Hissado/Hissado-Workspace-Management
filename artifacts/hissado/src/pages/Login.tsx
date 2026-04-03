@@ -62,16 +62,44 @@ export default function Login({ users, onLogin, isClientPortal = false }: LoginP
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    const u = users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
-    if (!u) { setError(t.login_error); return; }
-    if (u.password && password && u.password !== password) {
-      setError(t.login_wrong_password || "Incorrect password. Please try again.");
+  const handleLogin = async () => {
+    const trimmedEmail = email.toLowerCase().trim();
+    const trimmedPass = password.trim();
+    if (!trimmedEmail || !trimmedPass) {
+      setError(t.login_error || "Please enter your email and password.");
       return;
     }
-    onLogin(u);
+    setLoading(true);
     setError("");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail, password: trimmedPass }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || t.login_wrong_password || "Incorrect email or password.");
+        return;
+      }
+      /* Server returned the authenticated user — merge with any local fields */
+      const serverUser: User = data.user;
+      const localUser = users.find((u) => u.id === serverUser.id);
+      onLogin(localUser ? { ...localUser, ...serverUser } : serverUser);
+    } catch {
+      /* Fallback to localStorage check if API is unreachable (dev/offline) */
+      const u = users.find((u) => u.email.toLowerCase() === trimmedEmail);
+      if (!u) { setError(t.login_error || "No account found with that email."); return; }
+      if (u.password && u.password !== trimmedPass) {
+        setError(t.login_wrong_password || "Incorrect password. Please try again.");
+        return;
+      }
+      onLogin(u);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const nextLang: Lang = lang === "en" ? "fr" : "en";
@@ -382,12 +410,15 @@ export default function Login({ users, onLogin, isClientPortal = false }: LoginP
               onClick={handleLogin}
               data-testid="login-submit-btn"
               sz="lg"
-              icon={<ArrowIcon />}
-              style={{ width: "100%", justifyContent: "center", marginTop: 4, borderRadius: 12 }}
+              icon={loading ? undefined : <ArrowIcon />}
+              disabled={loading}
+              style={{ width: "100%", justifyContent: "center", marginTop: 4, borderRadius: 12, opacity: loading ? 0.7 : 1 }}
             >
-              {isClientPortal
-                ? (lang === "en" ? "Access my portal" : "Accéder à mon portail")
-                : t.login_submit}
+              {loading
+                ? (lang === "en" ? "Signing in…" : "Connexion…")
+                : isClientPortal
+                  ? (lang === "en" ? "Access my portal" : "Accéder à mon portail")
+                  : t.login_submit}
             </Btn>
           </form>
 

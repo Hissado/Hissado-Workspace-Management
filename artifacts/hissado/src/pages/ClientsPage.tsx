@@ -140,9 +140,20 @@ export default function ClientsPage({
       invitedAt: fmt(new Date()),
       invitedBy: currentUser.id,
     };
+    /* 1 — Create user on server so credentials work in any browser */
+    try {
+      await fetch(`${API_BASE}/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+    } catch (_) { /* server offline — user added locally only */ }
+
+    /* 2 — Add to local store */
     onAddUser(newUser);
     setInviteTempPw(tempPw);
 
+    /* 3 — Send invite email (non-blocking) */
     try {
       await fetch(`${API_BASE}/invite`, {
         method: "POST",

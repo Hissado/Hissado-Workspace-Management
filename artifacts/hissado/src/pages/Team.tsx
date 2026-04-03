@@ -154,7 +154,18 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
     };
 
     try {
-      const res = await fetch("/api/invite", {
+      /* 1 — Create user on server (makes credentials work across all browsers) */
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+
+      /* 2 — Add to local store */
+      onAddUser(newUser);
+
+      /* 3 — Send invite email (non-blocking — failure is warned but doesn't abort) */
+      const emailRes = await fetch("/api/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -168,15 +179,14 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Email failed to send");
+      if (!emailRes.ok) {
+        const data = await emailRes.json().catch(() => ({}));
+        setInviteError(t.team_invite_error_email_fn(data.error || "Email failed to send"));
       }
 
-      onAddUser(newUser);
       setInviteSuccess({ name: newUser.name, email: newUser.email, tempPw: tempPassword });
     } catch (err: any) {
-      // Still add user even if email fails — show warning
+      /* Still add user locally even if server call fails */
       onAddUser(newUser);
       setInviteSuccess({ name: newUser.name, email: newUser.email, tempPw: tempPassword });
       setInviteError(t.team_invite_error_email_fn(err.message));

@@ -1,0 +1,58 @@
+[
+  {
+    "id": "u1",
+    "name": "Issa Daouda",
+    "email": "issa@hissado.com",
+    "password": "admin123",
+    "role": "admin",
+    "av": "ID",
+    "dept": "Executive",
+    "status": "active",
+    "mustChangePassword": false
+  },
+  {
+    "id": "u2",
+    "name": "Sarah Mitchell",
+    "email": "sarah@hissado.com",
+    "password": "manager123",
+    "role": "manager",
+    "av": "SM",
+    "dept": "Engineering",
+    "status": "active",
+    "mustChangePassword": false
+  },
+  {
+    "id": "u3",
+    "name": "James Chen",
+    "email": "james@hissado.com",
+    "password": "member123",
+    "role": "member",
+    "av": "JC",
+    "dept": "Engineering",
+    "status": "active",
+    "mustChangePassword": false
+  },
+  {
+    "id": "u4",
+    "name": "Amara Diallo",
+    "email": "amara@hissado.com",
+    "password": "member123",
+    "role": "member",
+    "av": "AD",
+    "dept": "Design",
+    "status": "active",
+    "mustChangePassword": false
+  },
+  {
+    "id": "u5",
+    "name": "Client Portal",
+    "email": "client@external.com",
+    "password": "client123",
+    "role": "client",
+    "av": "CP",
+    "dept": "External",
+    "status": "active",
+    "mustChangePassword": false,
+    "clientId": "cl1"
+  }
+]

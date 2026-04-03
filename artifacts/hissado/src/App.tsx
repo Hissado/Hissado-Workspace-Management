@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/lib/store";
 import type { Page } from "@/lib/store";
@@ -56,12 +56,21 @@ export default function App() {
     addTask, updateTask, deleteTask,
     addProject, updateProject, deleteProject,
     addService, updateService, deleteService,
-    addUser, updateUser, deleteUser,
+    addUser, updateUser, deleteUser, mergeServerUsers,
     addClient, updateClient, deleteClient,
     addNotification, markAllNotifsRead,
     addConversation, deleteConversation, addMessage,
     addFile, deleteFile, addFolder, deleteFolder,
   } = useStore();
+
+  /* ── Sync users from server on every mount (fixes cross-browser auth) ── */
+  useEffect(() => {
+    fetch("/api/users")
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((serverUsers) => { if (Array.isArray(serverUsers)) mergeServerUsers(serverUsers); })
+      .catch(() => { /* server unreachable — fall back to localStorage */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [taskDefaultProject, setTaskDefaultProject] = useState<string | undefined>();
@@ -297,6 +306,12 @@ export default function App() {
           const updated = { ...currentUser, password: newPw, mustChangePassword: false };
           updateUser(updated);
           setCurrentUser(updated);
+          /* Persist new password to server so it works across browsers */
+          fetch(`/api/users/${updated.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: newPw, mustChangePassword: false }),
+          }).catch(() => { /* non-critical — local store updated */ });
         }}
       />
     );

@@ -72,6 +72,7 @@ interface AppState {
   addUser: (u: User) => void;
   updateUser: (u: User) => void;
   deleteUser: (id: string) => void;
+  mergeServerUsers: (serverUsers: User[]) => void;
 
   addNotification: (n: Notification) => void;
   markAllNotifsRead: () => void;
@@ -172,6 +173,20 @@ export const useStore = create<AppState>()(
 
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
+      mergeServerUsers: (serverUsers) => set((s) => {
+        const serverById = new Map(serverUsers.map((u) => [u.id, u]));
+        /* Update existing local users with fresh server data (keep local password if server omitted it) */
+        const merged = s.users.map((local) => {
+          const srv = serverById.get(local.id);
+          if (!srv) return local;
+          return { ...local, ...srv, password: srv.password ?? local.password };
+        });
+        /* Add server users that don't yet exist locally */
+        for (const srv of serverUsers) {
+          if (!merged.find((u) => u.id === srv.id)) merged.push(srv);
+        }
+        return { users: merged };
+      }),
       deleteUser: (id) => set((s) => {
         // Find all 1-on-1 conversations involving this user so we can purge their messages too
         const removedConvIds = new Set(
