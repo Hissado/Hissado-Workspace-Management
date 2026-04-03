@@ -222,11 +222,15 @@ const getSR = (): (new () => SpeechRecognitionInstance) | null =>
   (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ||
   (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).webkitSpeechRecognition || null;
 
-/* ─── Drawing canvas component ───────────────────────────── */
+/* ─── Drawing / Signature canvas component ───────────────── */
 function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; onClose: () => void; t: Record<string, string> }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
-  const lastPos = useRef<{ x: number; y: number } | null>(null);
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
+  const sendBtnRef = useRef<HTMLButtonElement>(null);
+  const drawing    = useRef(false);
+  const lastPos    = useRef<{ x: number; y: number } | null>(null);
+  /* Use a ref so the keydown handler always has the live value without
+     needing to re-register on every render.                           */
+  const hasDrawnRef = useRef(false);
   const [hasDrawn, setHasDrawn] = useState(false);
 
   const initWhite = (canvas: HTMLCanvasElement) => {
@@ -236,25 +240,64 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   };
 
+  /* Initialise canvas on mount */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) initWhite(canvas);
   }, []);
 
+  /* Send helper (shared by button click and Enter key) */
+  const sendDrawing = useCallback(() => {
+    if (!hasDrawnRef.current) return;          // nothing drawn → ignore
+    const canvas = canvasRef.current; if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    onSend(dataUrl);
+    onClose();
+  }, [onSend, onClose]);
+
+  /* Global Enter key → confirm signature.
+     Registered once; always safe because sendDrawing reads from refs. */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
+      if (e.key !== "Enter" || e.shiftKey) return;
+      /* Don't steal Enter from any focused text input / textarea */
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (!hasDrawnRef.current) {
+        /* Gently flash the canvas border to remind the user to sign first */
+        const c = canvasRef.current;
+        if (c) {
+          c.style.borderColor = "#C9A96E";
+          c.style.boxShadow   = "0 0 0 3px rgba(201,169,110,.25)";
+          setTimeout(() => {
+            c.style.borderColor = "#E5E7EB";
+            c.style.boxShadow   = "none";
+          }, 600);
+        }
+        return;
+      }
+      e.preventDefault();
+      /* Pulse the Send button briefly so the user sees the key was recognised */
+      const btn = sendBtnRef.current;
+      if (btn) {
+        btn.style.transform  = "scale(0.94)";
+        btn.style.opacity    = "0.8";
+        setTimeout(() => {
+          btn.style.transform = "scale(1)";
+          btn.style.opacity   = "1";
+          sendDrawing();
+        }, 120);
+      } else {
         sendDrawing();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  });
+  }, [sendDrawing]);
 
   const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
+    const rect   = canvas.getBoundingClientRect();
+    const scaleX = canvas.width  / rect.width;
     const scaleY = canvas.height / rect.height;
     if ("touches" in e) {
       const touch = e.touches[0];
@@ -266,44 +309,44 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     const canvas = canvasRef.current; if (!canvas) return;
-    drawing.current = true;
-    lastPos.current = getPos(e, canvas);
+    drawing.current  = true;
+    lastPos.current  = getPos(e, canvas);
+    hasDrawnRef.current = true;
     setHasDrawn(true);
   };
+
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     if (!drawing.current || !lastPos.current) return;
     const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext("2d"); if (!ctx) return;
-    const pos = getPos(e, canvas);
+    const ctx    = canvas.getContext("2d");    if (!ctx)    return;
+    const pos    = getPos(e, canvas);
     ctx.beginPath();
     ctx.moveTo(lastPos.current.x, lastPos.current.y);
     ctx.lineTo(pos.x, pos.y);
     ctx.strokeStyle = "#1a1a2e";
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = "round";
+    ctx.lineJoin    = "round";
     ctx.stroke();
     lastPos.current = pos;
   };
+
   const endDraw = () => { drawing.current = false; lastPos.current = null; };
 
   const clearCanvas = () => {
     const canvas = canvasRef.current; if (!canvas) return;
     initWhite(canvas);
+    hasDrawnRef.current = false;
     setHasDrawn(false);
-  };
-
-  const sendDrawing = () => {
-    const canvas = canvasRef.current; if (!canvas) return;
-    const dataUrl = canvas.toDataURL("image/png");
-    onSend(dataUrl);
-    onClose();
   };
 
   return (
     <div>
-      <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 12 }}>{t.chat_draw_hint}</p>
+      <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 12 }}>
+        {t.chat_draw_hint}
+      </p>
+
       <canvas
         ref={canvasRef}
         width={520}
@@ -316,19 +359,64 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
         onTouchMove={draw}
         onTouchEnd={endDraw}
         style={{
-          width: "100%", height: 200, border: `1.5px solid ${hasDrawn ? "#C9A96E" : "#E5E7EB"}`,
+          width: "100%", height: 200,
+          border: `1.5px solid ${hasDrawn ? "#C9A96E" : "#E5E7EB"}`,
           borderRadius: 10, cursor: "crosshair", background: "#ffffff",
-          touchAction: "none", display: "block", transition: "border-color .2s",
+          touchAction: "none", display: "block",
+          transition: "border-color .2s, box-shadow .2s",
         }}
       />
-      <p style={{ fontSize: 11, color: "#9CA3AF", margin: "6px 0 0 0", textAlign: "right" }}>
-        {t.chat_draw_enter_hint || "Press Enter to send"}
-      </p>
+
+      {/* Keyboard shortcut hint */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, margin: "7px 0 0" }}>
+        <span style={{ fontSize: 11, color: "#9CA3AF" }}>
+          {t.chat_draw_enter_hint || "Press Enter to confirm"}
+        </span>
+        <kbd style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          padding: "1px 6px", borderRadius: 5, fontSize: 11, lineHeight: 1.6,
+          fontFamily: "inherit", fontWeight: 600,
+          background: hasDrawn ? "rgba(201,169,110,.12)" : "#F3F4F6",
+          border: `1px solid ${hasDrawn ? "rgba(201,169,110,.35)" : "#E5E7EB"}`,
+          color: hasDrawn ? "#C9A96E" : "#9CA3AF",
+          transition: "all .2s",
+        }}>
+          ↵
+        </kbd>
+      </div>
+
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-        <button onClick={clearCanvas} style={{ flex: 1, padding: "9px 0", border: `1px solid #E5E7EB`, borderRadius: 8, background: "#FFF", cursor: "pointer", fontSize: 13, fontFamily: "inherit", color: "#374151" }}>
+        <button
+          onClick={clearCanvas}
+          style={{
+            flex: 1, padding: "9px 0",
+            border: "1px solid #E5E7EB", borderRadius: 8,
+            background: "#FFF", cursor: "pointer",
+            fontSize: 13, fontFamily: "inherit", color: "#374151",
+            transition: "border-color .15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#C9A96E"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E5E7EB"; }}
+        >
           {t.chat_draw_clear}
         </button>
-        <button onClick={sendDrawing} style={{ flex: 2, padding: "9px 0", border: "none", borderRadius: 8, background: `linear-gradient(135deg,#C9A96E,#a87e4a)`, cursor: "pointer", fontSize: 13, fontFamily: "inherit", color: "#FFF", fontWeight: 600 }}>
+        <button
+          ref={sendBtnRef}
+          onClick={sendDrawing}
+          disabled={!hasDrawn}
+          style={{
+            flex: 2, padding: "9px 0",
+            border: "none", borderRadius: 8,
+            background: hasDrawn
+              ? "linear-gradient(135deg,#C9A96E,#a87e4a)"
+              : "#E5E7EB",
+            cursor: hasDrawn ? "pointer" : "not-allowed",
+            fontSize: 13, fontFamily: "inherit",
+            color: hasDrawn ? "#FFF" : "#9CA3AF",
+            fontWeight: 600,
+            transition: "background .2s, color .2s, transform .12s, opacity .12s",
+          }}
+        >
           {t.chat_draw_send}
         </button>
       </div>
