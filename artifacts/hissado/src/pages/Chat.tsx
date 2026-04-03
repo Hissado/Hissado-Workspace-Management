@@ -46,12 +46,21 @@ async function translateText(text: string, targetLang: string): Promise<string> 
 }
 
 /* ─── Voice recognition helper ───────────────────────────── */
+type SpeechRecognitionResult = { transcript: string; confidence: number };
+type SpeechRecognitionResultItem = { isFinal: boolean; [k: number]: SpeechRecognitionResult; length: number };
 type SpeechRecognitionInstance = {
-  lang: string; continuous: boolean; interimResults: boolean;
-  onresult: ((e: { results: { [k: number]: { [k: number]: { transcript: string } } } }) => void) | null;
-  onerror: (() => void) | null;
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((e: {
+    results: { [k: number]: SpeechRecognitionResultItem; length: number };
+    resultIndex: number;
+  }) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
-  start(): void; stop(): void;
+  start(): void;
+  stop(): void;
 };
 const getSR = (): (new () => SpeechRecognitionInstance) | null =>
   (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ||
@@ -62,14 +71,40 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
+  const [hasDrawn, setHasDrawn] = useState(false);
+
+  /* Initialize canvas with solid white background so exports always have white bg */
+  const initWhite = (canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) initWhite(canvas);
+  }, []);
+
+  /* Enter key confirms / sends the drawing */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendDrawing();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
 
   const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     if ("touches" in e) {
-      const t = e.touches[0];
-      return { x: (t.clientX - rect.left) * scaleX, y: (t.clientY - rect.top) * scaleY };
+      const touch = e.touches[0];
+      return { x: (touch.clientX - rect.left) * scaleX, y: (touch.clientY - rect.top) * scaleY };
     }
     return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   };
@@ -79,6 +114,7 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
     const canvas = canvasRef.current; if (!canvas) return;
     drawing.current = true;
     lastPos.current = getPos(e, canvas);
+    setHasDrawn(true);
   };
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -89,7 +125,7 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
     ctx.beginPath();
     ctx.moveTo(lastPos.current.x, lastPos.current.y);
     ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = "#070D1A";
+    ctx.strokeStyle = "#1a1a2e";
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -98,12 +134,14 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
   };
   const endDraw = () => { drawing.current = false; lastPos.current = null; };
 
+  /* Clear: re-fill with white (not transparent clearRect) */
   const clearCanvas = () => {
     const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext("2d"); if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    initWhite(canvas);
+    setHasDrawn(false);
   };
 
+  /* Export: canvas already has white background, no compositing needed */
   const sendDrawing = () => {
     const canvas = canvasRef.current; if (!canvas) return;
     const dataUrl = canvas.toDataURL("image/png");
@@ -126,12 +164,15 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
         onTouchMove={draw}
         onTouchEnd={endDraw}
         style={{
-          width: "100%", height: 200, border: `1.5px solid #E5E7EB`,
-          borderRadius: 10, cursor: "crosshair", background: "#FAFAFA",
-          touchAction: "none", display: "block",
+          width: "100%", height: 200, border: `1.5px solid ${hasDrawn ? "#C9A96E" : "#E5E7EB"}`,
+          borderRadius: 10, cursor: "crosshair", background: "#ffffff",
+          touchAction: "none", display: "block", transition: "border-color .2s",
         }}
       />
-      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+      <p style={{ fontSize: 11, color: "#9CA3AF", margin: "6px 0 0 0", textAlign: "right" }}>
+        {t.chat_draw_enter_hint || "Press Enter to send"}
+      </p>
+      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <button onClick={clearCanvas} style={{ flex: 1, padding: "9px 0", border: `1px solid #E5E7EB`, borderRadius: 8, background: "#FFF", cursor: "pointer", fontSize: 13, fontFamily: "inherit", color: "#374151" }}>
           {t.chat_draw_clear}
         </button>
@@ -197,7 +238,9 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   /* voice-to-text */
   const [isRecording, setIsRecording] = useState(false);
   const [voiceUnsupported, setVoiceUnsupported] = useState(false);
+  const [interimText, setInterimText] = useState("");
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const finalTranscriptRef = useRef("");
   const SR = getSR();
 
   /* drawing */
@@ -316,28 +359,66 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
     onSendMessage(selected, msg);
   };
 
-  /* voice input */
+  /* voice input — continuous mode with real-time interim display */
   const startVoice = () => {
     if (!SR) { setVoiceUnsupported(true); setTimeout(() => setVoiceUnsupported(false), 3000); return; }
     const rec = new SR();
-    rec.lang = navigator.language || "en-US";
-    rec.continuous = false;
-    rec.interimResults = false;
+    /* language: empty string lets the browser auto-detect from the microphone */
+    rec.lang = "";
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 3;
+
+    /* Seed finalTranscriptRef with whatever is already typed */
+    finalTranscriptRef.current = input.trimEnd();
+
     rec.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      setInput((prev) => (prev ? prev + " " + transcript : transcript));
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        const best = r[0].transcript.trim();
+        if (r.isFinal) {
+          finalTranscriptRef.current = finalTranscriptRef.current
+            ? finalTranscriptRef.current + " " + best
+            : best;
+        } else {
+          interim = best;
+        }
+      }
+      /* Show confirmed text + live interim together in the input */
+      setInterimText(interim);
+      const display = interim
+        ? (finalTranscriptRef.current ? finalTranscriptRef.current + " " + interim : interim)
+        : finalTranscriptRef.current;
+      setInput(display);
     };
-    rec.onerror = () => setIsRecording(false);
-    rec.onend = () => setIsRecording(false);
+
+    rec.onerror = (e) => {
+      /* Ignore non-fatal errors like "no-speech" — recognition continues */
+      if (e.error === "aborted" || e.error === "not-allowed") {
+        setIsRecording(false);
+        setInterimText("");
+      }
+    };
+
+    rec.onend = () => {
+      /* Commit the final transcript and clear interim */
+      setInput(finalTranscriptRef.current);
+      setInterimText("");
+      setIsRecording(false);
+    };
+
     rec.start();
     recognitionRef.current = rec;
     setIsRecording(true);
   };
+
   const stopVoice = () => {
     recognitionRef.current?.stop();
     recognitionRef.current = null;
-    setIsRecording(false);
+    /* onend fires after stop(), which commits the final text */
   };
+
   const toggleVoice = () => isRecording ? stopVoice() : startVoice();
 
   /* create conversation */
@@ -628,7 +709,9 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                       boxShadow: isMe ? "0 2px 8px rgba(7,13,26,.18)" : "0 1px 4px rgba(0,0,0,.07)",
                     }}>
                       {isImage ? (
-                        <img src={m.text} alt="Drawing" style={{ maxWidth: 280, maxHeight: 180, borderRadius: 10, display: "block" }} />
+                        <div style={{ background: "#ffffff", borderRadius: 8, overflow: "hidden", display: "inline-block" }}>
+                          <img src={m.text} alt="Drawing" style={{ maxWidth: 280, maxHeight: 180, display: "block", verticalAlign: "top" }} />
+                        </div>
                       ) : (
                         m.text
                       )}
@@ -707,18 +790,31 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
             <div style={{ flex: 1, position: "relative" }}>
               <input
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  /* Keep manual edits in sync so voice continues from here */
+                  if (isRecording) finalTranscriptRef.current = e.target.value;
+                }}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                placeholder={isRecording ? (t.chat_voice_recording || "Listening...") : t.chat_placeholder}
+                placeholder={isRecording && !input ? (t.chat_voice_recording || "Listening…") : t.chat_placeholder}
                 data-testid="chat-input"
                 style={{
-                  width: "100%", padding: "10px 16px",
+                  width: "100%", padding: isRecording ? "10px 36px 10px 16px" : "10px 16px",
                   border: `1.5px solid ${isRecording ? C.gold : C.g200}`,
                   borderRadius: 12, fontSize: 13, fontFamily: "inherit", outline: "none",
-                  boxSizing: "border-box", background: isRecording ? `${C.gold}08` : C.w, color: C.navy,
-                  transition: "border-color .15s",
+                  boxSizing: "border-box", background: isRecording ? `${C.gold}08` : C.w,
+                  color: interimText ? "#6B7280" : C.navy,
+                  transition: "border-color .15s, background .15s, color .15s",
                 }}
               />
+              {/* Pulsing dot while listening */}
+              {isRecording && (
+                <span style={{
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                  width: 8, height: 8, borderRadius: "50%", background: C.gold,
+                  animation: "pulse 1.2s ease-in-out infinite",
+                }} />
+              )}
             </div>
 
             {/* Voice button */}

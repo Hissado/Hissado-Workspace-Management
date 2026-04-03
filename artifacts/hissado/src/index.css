@@ -255,6 +255,12 @@
   50% { opacity: 0.4; }
 }
 
+/* Mic recording pulsing dot */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: translateY(-50%) scale(1); }
+  50% { opacity: 0.35; transform: translateY(-50%) scale(0.7); }
+}
+
 .fade-in { animation: fadeIn 0.25s ease forwards; }
 .scale-in { animation: scaleIn 0.2s ease forwards; }
 .pulse-soft { animation: pulse-soft 1.5s infinite; }

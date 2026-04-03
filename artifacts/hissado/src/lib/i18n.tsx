@@ -206,7 +206,8 @@ const T = {
     chat_draw_title: "Draw a Message",
     chat_draw_send: "Send Drawing",
     chat_draw_clear: "Clear",
-    chat_draw_hint: "Draw with your mouse or touch screen",
+    chat_draw_hint: "Draw or sign with your mouse or touch screen",
+    chat_draw_enter_hint: "Press Enter to send",
 
     // Files
     files_title: "Files & Documents",
@@ -754,7 +755,8 @@ const T = {
     chat_draw_title: "Dessiner un message",
     chat_draw_send: "Envoyer le dessin",
     chat_draw_clear: "Effacer",
-    chat_draw_hint: "Dessinez avec votre souris ou écran tactile",
+    chat_draw_hint: "Dessinez ou signez avec votre souris ou écran tactile",
+    chat_draw_enter_hint: "Appuyez sur Entrée pour envoyer",
 
     // Files
     files_title: "Fichiers & Documents",
