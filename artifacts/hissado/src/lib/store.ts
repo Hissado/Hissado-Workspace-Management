@@ -1,22 +1,35 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User, Project, Task, Service, Client, Notification, Conversation, Message, Reaction, FileItem, Folder, RoleDef, Permission } from "./data";
-import {
-  SEED_USERS, SEED_PROJECTS, SEED_SERVICES, SEED_CLIENTS, SEED_TASKS, SEED_NOTIFICATIONS,
-  SEED_CONVERSATIONS, SEED_MESSAGES, SEED_FILES, SEED_FOLDERS,
-  SEED_ROLE_DEFS, SEED_ROLE_PERMISSIONS, SEED_DEPARTMENTS,
+import type {
+  User, Project, Task, Service, Client,
+  Notification, Conversation, Message, Reaction,
+  FileItem, Folder, RoleDef, Permission,
 } from "./data";
+import {
+  SEED_USERS, SEED_PROJECTS, SEED_SERVICES, SEED_CLIENTS, SEED_TASKS,
+  SEED_NOTIFICATIONS, SEED_CONVERSATIONS, SEED_MESSAGES, SEED_FILES,
+  SEED_FOLDERS, SEED_ROLE_DEFS, SEED_ROLE_PERMISSIONS, SEED_DEPARTMENTS,
+} from "./seed";
+
+// ── Navigation ────────────────────────────────────────────────────────────────
 
 export type Page =
   | "dashboard" | "services" | "sdetail" | "projects" | "pdetail" | "tasks"
   | "chat" | "files" | "calendar" | "reports"
   | "team" | "clients" | "settings" | "meetings";
 
+
+// ── Store shape ───────────────────────────────────────────────────────────────
+
 interface AppState {
+  // Session
   currentUser: User | null;
   page: Page;
   collapsed: boolean;
   searchQuery: string;
+  chatOpenConvoId: string | null;
+
+  // UI state for modals / overlays
   selectedProject: Project | null;
   selectedService: Service | null;
   selectedTask: Task | null;
@@ -26,6 +39,7 @@ interface AppState {
   showNotifPanel: boolean;
   editingUser: User | null;
 
+  // Domain data
   users: User[];
   projects: Project[];
   services: Service[];
@@ -40,10 +54,14 @@ interface AppState {
   roleDefs: RoleDef[];
   rolePermissions: Record<string, Permission[]>;
 
+  // Session actions
   setCurrentUser: (u: User | null) => void;
   setPage: (p: Page) => void;
   setCollapsed: (v: boolean) => void;
   setSearchQuery: (q: string) => void;
+  setChatOpenConvoId: (id: string | null) => void;
+
+  // Modal/overlay actions
   setSelectedProject: (p: Project | null) => void;
   setSelectedService: (s: Service | null) => void;
   setSelectedTask: (t: Task | null) => void;
@@ -53,64 +71,76 @@ interface AppState {
   setShowNotifPanel: (v: boolean) => void;
   setEditingUser: (u: User | null) => void;
 
+  // Task actions
   addTask: (t: Task) => void;
   updateTask: (t: Task) => void;
   deleteTask: (id: string) => void;
 
+  // Project actions
   addProject: (p: Project) => void;
   updateProject: (p: Project) => void;
   deleteProject: (id: string) => void;
 
+  // Service actions
   addService: (s: Service) => void;
   updateService: (s: Service) => void;
   deleteService: (id: string) => void;
 
+  // Client actions
   addClient: (c: Client) => void;
   updateClient: (c: Client) => void;
   deleteClient: (id: string) => void;
 
+  // User actions
   addUser: (u: User) => void;
   updateUser: (u: User) => void;
   deleteUser: (id: string) => void;
   mergeServerUsers: (serverUsers: User[]) => void;
 
+  // Notification actions
   addNotification: (n: Notification) => void;
   markAllNotifsRead: () => void;
 
-  chatOpenConvoId: string | null;
-  setChatOpenConvoId: (id: string | null) => void;
-
+  // Conversation / message actions
   addConversation: (c: Conversation) => void;
   deleteConversation: (id: string) => void;
   addMessage: (m: Message) => void;
   updateMessage: (id: string, updates: Partial<Message>) => void;
   deleteMessage: (id: string) => void;
   addReaction: (msgId: string, emoji: string, userId: string) => void;
-  markMessagesRead: (cId: string, userId: string) => void;
+  markMessagesRead: (conversationId: string, userId: string) => void;
 
+  // File / folder actions
   addFile: (f: FileItem) => void;
   deleteFile: (id: string) => void;
   addFolder: (f: Folder) => void;
   deleteFolder: (id: string) => void;
 
+  // Department actions
   addDepartment: (name: string) => void;
   updateDepartment: (oldName: string, newName: string) => void;
   deleteDepartment: (name: string) => void;
 
+  // Role / permission actions
   addRoleDef: (r: RoleDef) => void;
   updateRoleDef: (r: RoleDef) => void;
   deleteRoleDef: (id: string) => void;
-
   setRolePermissions: (roleId: string, perms: Permission[]) => void;
 }
+
+
+// ── Store implementation ──────────────────────────────────────────────────────
 
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
+      // ── Initial state ──
       currentUser: null,
       page: "dashboard",
       collapsed: false,
       searchQuery: "",
+      chatOpenConvoId: null,
+
       selectedProject: null,
       selectedService: null,
       selectedTask: null,
@@ -134,9 +164,11 @@ export const useStore = create<AppState>()(
       roleDefs: SEED_ROLE_DEFS,
       rolePermissions: SEED_ROLE_PERMISSIONS,
 
-      /* Navigate to dashboard only when the logged-in identity changes
-         (login → new session, logout → null).  Updating the same user's
-         profile (e.g. from the Settings page) must NOT reset the page.    */
+      // ── Session ──
+
+      // Navigate to dashboard only when the logged-in identity changes
+      // (login → new session, logout → null). Updating the same user's
+      // profile (e.g. from the Settings page) must NOT reset the page.
       setCurrentUser: (u) => set((s) => ({
         currentUser: u,
         page: (!u || u.id !== s.currentUser?.id) ? "dashboard" : s.page,
@@ -144,6 +176,9 @@ export const useStore = create<AppState>()(
       setPage: (p) => set({ page: p }),
       setCollapsed: (v) => set({ collapsed: v }),
       setSearchQuery: (q) => set({ searchQuery: q }),
+      setChatOpenConvoId: (id) => set({ chatOpenConvoId: id }),
+
+      // ── Modals / overlays ──
       setSelectedProject: (p) => set({ selectedProject: p }),
       setSelectedService: (s) => set({ selectedService: s }),
       setSelectedTask: (t) => set({ selectedTask: t }),
@@ -153,83 +188,82 @@ export const useStore = create<AppState>()(
       setShowNotifPanel: (v) => set({ showNotifPanel: v }),
       setEditingUser: (u) => set({ editingUser: u }),
 
+      // ── Tasks ──
       addTask: (t) => set((s) => ({ tasks: [...s.tasks, t] })),
       updateTask: (t) => set((s) => ({ tasks: s.tasks.map((x) => (x.id === t.id ? t : x)) })),
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((x) => x.id !== id) })),
 
+      // ── Projects ──
       addProject: (p) => set((s) => ({ projects: [...s.projects, p] })),
       updateProject: (p) => set((s) => ({ projects: s.projects.map((x) => (x.id === p.id ? p : x)) })),
       deleteProject: (id) => set((s) => ({
         projects: s.projects.filter((x) => x.id !== id),
-        tasks: s.tasks.filter((t) => t.pId !== id),
-        files: s.files.filter((f) => f.pId !== id),
-        folders: s.folders.filter((f) => f.pId !== id),
+        // Cascade-delete associated tasks, files, folders, and conversations
+        tasks:         s.tasks.filter((t) => t.pId !== id),
+        files:         s.files.filter((f) => f.pId !== id),
+        folders:       s.folders.filter((f) => f.pId !== id),
         conversations: s.conversations.filter((c) => c.pId !== id),
       })),
 
+      // ── Services ──
       addService: (sv) => set((s) => ({ services: [...s.services, sv] })),
       updateService: (sv) => set((s) => ({ services: s.services.map((x) => (x.id === sv.id ? sv : x)) })),
       deleteService: (id) => set((s) => ({
         services: s.services.filter((x) => x.id !== id),
+        // Cascade-delete associated tasks
         tasks: s.tasks.filter((t) => t.sId !== id),
       })),
 
+      // ── Clients ──
       addClient: (c) => set((s) => ({ clients: [...s.clients, c] })),
       updateClient: (c) => set((s) => ({ clients: s.clients.map((x) => (x.id === c.id ? c : x)) })),
       deleteClient: (id) => set((s) => ({
         clients: s.clients.filter((x) => x.id !== id),
-        // Unlink clientId from all projects, services, and users that belonged to this client
-        projects: s.projects.map((p) => p.clientId === id ? { ...p, clientId: undefined } : p),
-        services: s.services.map((sv) => sv.clientId === id ? { ...sv, clientId: undefined } : sv),
-        users: s.users.map((u) => u.clientId === id ? { ...u, clientId: undefined } : u),
+        // Unlink clientId from projects, services, and users that belonged to this client
+        projects:  s.projects.map((p) => p.clientId === id ? { ...p, clientId: undefined } : p),
+        services:  s.services.map((sv) => sv.clientId === id ? { ...sv, clientId: undefined } : sv),
+        users:     s.users.map((u) => u.clientId === id ? { ...u, clientId: undefined } : u),
       })),
 
+      // ── Users ──
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
       mergeServerUsers: (serverUsers) => set((s) => {
-        /* LOCAL DATA WINS — never overwrite local user changes with server data.
-           This ensures that:
-           • Admin-made role / password changes survive a server restart.
-           • Republishing the app does not reset user credentials.
-           We only add server users whose ID is not already known locally
-           (e.g. a user registered on another device via email invite).     */
+        // LOCAL DATA WINS — never overwrite local changes with server data.
+        // We only add server users whose ID is not already known locally
+        // (e.g. a user registered on another device via email invite).
         const localIds = new Set(s.users.map((u) => u.id));
         const newFromServer = serverUsers.filter((srv) => !localIds.has(srv.id));
-        if (newFromServer.length === 0) return {};           // nothing to add
+        if (newFromServer.length === 0) return {};
         return { users: [...s.users, ...newFromServer] };
       }),
       deleteUser: (id) => set((s) => {
-        // Find all 1-on-1 conversations involving this user so we can purge their messages too
-        const removedConvIds = new Set(
+        // Collect 1-on-1 conversations involving this user so we can purge their messages
+        const removedConvoIds = new Set(
           s.conversations
             .filter((c) => c.type === "direct" && c.parts.includes(id))
             .map((c) => c.id)
         );
         return {
-          users: s.users.filter((x) => x.id !== id),
-          // Unassign any tasks this user was assigned to
-          tasks: s.tasks.map((t) => t.assignee === id ? { ...t, assignee: "" } : t),
-          // Remove user from all project member lists (don't delete the project itself)
-          projects: s.projects.map((p) => ({
-            ...p,
-            members: p.members.filter((m) => m !== id),
-          })),
-          // Delete their 1-on-1 conversations and those conversations' messages
-          conversations: s.conversations.filter((c) => !removedConvIds.has(c.id)),
-          messages: s.messages.filter((m) => !removedConvIds.has(m.cId)),
+          users:         s.users.filter((x) => x.id !== id),
+          tasks:         s.tasks.map((t) => t.assignee === id ? { ...t, assignee: "" } : t),
+          projects:      s.projects.map((p) => ({ ...p, members: p.members.filter((m) => m !== id) })),
+          conversations: s.conversations.filter((c) => !removedConvoIds.has(c.id)),
+          messages:      s.messages.filter((m) => !removedConvoIds.has(m.cId)),
         };
       }),
 
+      // ── Notifications ──
       addNotification: (n) => set((s) => ({ notifications: [n, ...s.notifications] })),
-      markAllNotifsRead: () => set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) })),
+      markAllNotifsRead: () => set((s) => ({
+        notifications: s.notifications.map((n) => ({ ...n, read: true })),
+      })),
 
-      chatOpenConvoId: null,
-      setChatOpenConvoId: (id) => set({ chatOpenConvoId: id }),
-
+      // ── Conversations & messages ──
       addConversation: (c) => set((s) => ({ conversations: [...s.conversations, c] })),
       deleteConversation: (id) => set((s) => ({
         conversations: s.conversations.filter((c) => c.id !== id),
-        messages: s.messages.filter((m) => m.cId !== id),
+        messages:      s.messages.filter((m) => m.cId !== id),
       })),
       addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
       updateMessage: (id, updates) => set((s) => ({
@@ -243,53 +277,62 @@ export const useStore = create<AppState>()(
           if (m.id !== msgId) return m;
           const reactions: Reaction[] = m.reactions ? [...m.reactions] : [];
           const existing = reactions.find((r) => r.emoji === emoji);
+
           if (existing) {
             if (existing.userIds.includes(userId)) {
+              // Toggle off: remove user from this reaction
               const updated = existing.userIds.filter((id) => id !== userId);
-              if (updated.length === 0) return { ...m, reactions: reactions.filter((r) => r.emoji !== emoji) };
+              if (updated.length === 0) {
+                return { ...m, reactions: reactions.filter((r) => r.emoji !== emoji) };
+              }
               return { ...m, reactions: reactions.map((r) => r.emoji === emoji ? { ...r, userIds: updated } : r) };
             }
+            // Toggle on: add user to existing reaction
             return { ...m, reactions: reactions.map((r) => r.emoji === emoji ? { ...r, userIds: [...r.userIds, userId] } : r) };
           }
+
+          // New reaction
           return { ...m, reactions: [...reactions, { emoji, userIds: [userId] }] };
         }),
       })),
-      markMessagesRead: (cId, userId) => set((s) => ({
+      markMessagesRead: (conversationId, userId) => set((s) => ({
         messages: s.messages.map((m) => {
-          if (m.cId !== cId || m.from === userId) return m;
+          if (m.cId !== conversationId || m.from === userId) return m;
           if (m.readBy?.includes(userId)) return m;
           return { ...m, readBy: [...(m.readBy || []), userId] };
         }),
       })),
 
+      // ── Files & folders ──
       addFile: (f) => set((s) => ({ files: [...s.files, f] })),
       deleteFile: (id) => set((s) => ({ files: s.files.filter((f) => f.id !== id) })),
       addFolder: (f) => set((s) => ({ folders: [...s.folders, f] })),
       deleteFolder: (id) => set((s) => ({
         folders: s.folders.filter((f) => f.id !== id),
-        files: s.files.filter((f) => f.fId !== id),
+        files:   s.files.filter((f) => f.fId !== id),
       })),
 
+      // ── Departments ──
       addDepartment: (name) => set((s) => ({ departments: [...s.departments, name] })),
       updateDepartment: (oldName, newName) => set((s) => ({
         departments: s.departments.map((d) => (d === oldName ? newName : d)),
-        users: s.users.map((u) => (u.dept === oldName ? { ...u, dept: newName } : u)),
+        users:       s.users.map((u) => (u.dept === oldName ? { ...u, dept: newName } : u)),
       })),
       deleteDepartment: (name) => set((s) => ({
         departments: s.departments.filter((d) => d !== name),
       })),
 
+      // ── Roles ──
       addRoleDef: (r) => set((s) => ({ roleDefs: [...s.roleDefs, r] })),
       updateRoleDef: (r) => set((s) => ({ roleDefs: s.roleDefs.map((x) => (x.id === r.id ? r : x)) })),
       deleteRoleDef: (id) => set((s) => {
         const { [id]: _removed, ...remainingPerms } = s.rolePermissions;
         return {
-          roleDefs: s.roleDefs.filter((r) => r.id !== id),
-          users: s.users.map((u) => (u.role === id ? { ...u, role: "member" } : u)),
+          roleDefs:        s.roleDefs.filter((r) => r.id !== id),
+          users:           s.users.map((u) => (u.role === id ? { ...u, role: "member" } : u)),
           rolePermissions: remainingPerms as Record<string, Permission[]>,
         };
       }),
-
       setRolePermissions: (roleId, perms) => set((s) => ({
         rolePermissions: { ...s.rolePermissions, [roleId]: perms },
       })),
@@ -298,9 +341,8 @@ export const useStore = create<AppState>()(
       name: "hissado-pm-v3",
       partialize: (state) => ({
         currentUser:     state.currentUser,
-        /* Persist the active page + detail context so a browser refresh
-           (F5) lands the user back on exactly where they were working,
-           rather than always resetting to the dashboard.                */
+        // Persist the active page + detail context so a refresh lands the user
+        // back where they were working, rather than always going to the dashboard.
         page:            state.page,
         selectedProject: state.selectedProject,
         selectedService: state.selectedService,

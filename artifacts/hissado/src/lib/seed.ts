@@ -1,0 +1,167 @@
+// Seed data used to populate the store on first load.
+// Kept separate from type definitions (data.ts) so that file stays focused
+// on shapes and constants that are used throughout the app.
+import type {
+  Client, User, Project, Service, Task, Notification,
+  Conversation, Message, FileItem, Folder, RoleDef, Permission,
+} from "./data";
+import { fmt, addD, addH, now } from "./data";
+
+export const SEED_ROLE_DEFS: RoleDef[] = [
+  { id: "admin",   label: "Admin",   isSystem: true, badgeVariant: "danger" },
+  { id: "manager", label: "Manager", isSystem: true, badgeVariant: "gold" },
+  { id: "member",  label: "Member",  isSystem: true, badgeVariant: "info" },
+  { id: "client",  label: "Client",  isSystem: true, badgeVariant: "default" },
+];
+
+const ALL_PERMISSIONS: Permission[] = [
+  "view_dashboard", "view_projects", "create_projects",
+  "view_tasks", "create_tasks",
+  "view_files", "upload_files",
+  "view_chat", "send_messages",
+  "view_calendar", "view_reports",
+  "view_team", "invite_members",
+  "view_settings",
+];
+
+export const SEED_ROLE_PERMISSIONS: Record<string, Permission[]> = {
+  admin:   [...ALL_PERMISSIONS],
+  manager: [...ALL_PERMISSIONS],
+  member: [
+    "view_dashboard", "view_projects", "view_tasks", "create_tasks",
+    "view_files", "upload_files", "view_chat", "send_messages",
+    "view_calendar", "view_reports", "view_team", "view_settings",
+  ],
+  client: [
+    "view_dashboard", "view_projects", "view_tasks",
+    "view_files", "view_chat", "view_team",
+  ],
+};
+
+export const SEED_DEPARTMENTS: string[] = [
+  "Engineering", "Design", "Marketing", "Product",
+  "Operations", "Sales", "Executive", "External",
+];
+
+export const SEED_CLIENTS: Client[] = [
+  { id: "cl1", name: "Acme Corporation",  company: "Acme Corp",           color: "#5B8DEF", contactEmail: "contact@acme.com", status: "active", created: fmt(addD(now, -90)) },
+  { id: "cl2", name: "Atlas Solutions",   company: "Atlas Solutions Inc.", color: "#6FCF97", contactEmail: "hello@atlas.com",  status: "active", created: fmt(addD(now, -60)) },
+];
+
+export const SEED_USERS: User[] = [
+  { id: "u1", name: "Issa Daouda",    email: "issa@hissado.com",    role: "admin",   av: "ID", status: "active", dept: "Executive",   password: "admin123",   mustChangePassword: false },
+  { id: "u2", name: "Sarah Mitchell", email: "sarah@hissado.com",   role: "manager", av: "SM", status: "active", dept: "Engineering", password: "manager123", mustChangePassword: false },
+  { id: "u3", name: "James Chen",     email: "james@hissado.com",   role: "member",  av: "JC", status: "active", dept: "Engineering", password: "member123",  mustChangePassword: false },
+  { id: "u4", name: "Amara Diallo",   email: "amara@hissado.com",   role: "member",  av: "AD", status: "active", dept: "Design",      password: "member123",  mustChangePassword: false },
+  { id: "u5", name: "Client Portal",  email: "client@external.com", role: "client",  av: "CP", status: "active", dept: "External",    password: "client123",  mustChangePassword: false, clientId: "cl1" },
+];
+
+export const SEED_PROJECTS: Project[] = [
+  { id: "p1", name: "Website Redesign",  desc: "Complete redesign of corporate website",    color: "#C8A45C", owner: "u2", members: ["u1", "u2", "u3", "u4", "u5"], clientId: "cl1", status: "active",  created: fmt(addD(now, -30)) },
+  { id: "p2", name: "Mobile App Launch", desc: "Native mobile app for iOS and Android",     color: "#5B8DEF", owner: "u2", members: ["u2", "u3"],                    clientId: "cl2", status: "active",  created: fmt(addD(now, -20)) },
+  { id: "p3", name: "Q2 Marketing",      desc: "Strategic marketing initiatives for Q2",    color: "#6FCF97", owner: "u1", members: ["u1", "u4"],                    clientId: "cl1", status: "active",  created: fmt(addD(now, -15)) },
+  { id: "p4", name: "Data Migration",    desc: "Legacy data migration to cloud",            color: "#F2994A", owner: "u2", members: ["u2", "u3"],                                     status: "on-hold", created: fmt(addD(now, -45)) },
+];
+
+export const SEED_SERVICES: Service[] = [
+  { id: "sv1", name: "Monthly Reporting",         desc: "Prepare and deliver monthly performance reports and analytics dashboards for all clients",            color: "#5B8DEF", cadence: "monthly",   members: ["u1", "u2"],       owner: "u1", clientId: "cl1", status: "active", created: fmt(addD(now, -60))  },
+  { id: "sv2", name: "Social Media Management",   desc: "Weekly content creation, scheduling, community management and performance tracking",                  color: "#6FCF97", cadence: "weekly",    members: ["u1", "u4"],       owner: "u1", clientId: "cl1", status: "active", created: fmt(addD(now, -45))  },
+  { id: "sv3", name: "Quarterly Strategy Review", desc: "In-depth quarterly business reviews, strategic planning sessions and roadmap alignment",              color: "#C9A96E", cadence: "quarterly", members: ["u1", "u2", "u3"], owner: "u1", clientId: "cl2", status: "active", created: fmt(addD(now, -90))  },
+  { id: "sv4", name: "Annual Brand Audit",        desc: "Comprehensive annual brand audit, competitive analysis and identity refresh recommendations",         color: "#BB6BD9", cadence: "annual",    members: ["u1", "u4"],       owner: "u1",                  status: "active", created: fmt(addD(now, -120)) },
+  { id: "sv5", name: "Weekly Development Sprints",desc: "Ongoing agile development sprints with weekly deliverables, demos and client feedback loops",         color: "#F2994A", cadence: "weekly",    members: ["u2", "u3"],       owner: "u2", clientId: "cl2", status: "active", created: fmt(addD(now, -30))  },
+];
+
+export const SEED_TASKS: Task[] = [
+  // ── Project p1: Website Redesign ──────────────────────────────────────────
+  { id: "t1",  pId: "p1", title: "Design system audit",   desc: "Audit design tokens",                     status: "Done",        pri: "High",   assignee: "u4", due: fmt(addD(now, -5)),  created: fmt(addD(now, -28)), subs: [{ id: "s1", t: "Color review", done: true }, { id: "s2", t: "Typography", done: true }], cmts: [{ id: "c1", uid: "u4", text: "Completed audit. 23 inconsistencies found.", date: fmt(addD(now, -6)) }], prog: 100 },
+  { id: "t2",  pId: "p1", title: "Wireframe homepage",    desc: "Create wireframes",                       status: "In Review",   pri: "High",   assignee: "u4", due: fmt(addD(now, 2)),   created: fmt(addD(now, -20)), subs: [{ id: "s3", t: "Desktop", done: true }, { id: "s4", t: "Mobile", done: true }, { id: "s5", t: "Tablet", done: false }], cmts: [], prog: 75 },
+  { id: "t3",  pId: "p1", title: "Frontend development",  desc: "Implement new design in React",           status: "In Progress", pri: "Medium", assignee: "u3", due: fmt(addD(now, 10)),  created: fmt(addD(now, -15)), subs: [{ id: "s6", t: "Header", done: true }, { id: "s7", t: "Hero", done: false }], cmts: [{ id: "c2", uid: "u3", text: "Started component library setup.", date: fmt(addD(now, -3)) }], prog: 35 },
+  { id: "t4",  pId: "p1", title: "SEO optimization",      desc: "Implement SEO best practices",            status: "To Do",       pri: "Low",    assignee: "u3", due: fmt(addD(now, 20)),  created: fmt(addD(now, -10)), subs: [], cmts: [], prog: 0 },
+  { id: "t5",  pId: "p1", title: "Content migration",     desc: "Migrate content to new CMS",             status: "To Do",       pri: "Medium", assignee: "u2", due: fmt(addD(now, 15)),  created: fmt(addD(now, -8)),  subs: [], cmts: [], prog: 0 },
+
+  // ── Project p2: Mobile App Launch ─────────────────────────────────────────
+  { id: "t6",  pId: "p2", title: "API architecture",      desc: "Design RESTful endpoints",                status: "Done",        pri: "Urgent", assignee: "u3", due: fmt(addD(now, -10)), created: fmt(addD(now, -18)), subs: [], cmts: [{ id: "c3", uid: "u2", text: "Great API docs!", date: fmt(addD(now, -11)) }], prog: 100 },
+  { id: "t7",  pId: "p2", title: "Auth module",           desc: "OAuth 2.0 + JWT",                        status: "In Progress", pri: "Urgent", assignee: "u3", due: fmt(addD(now, 3)),   created: fmt(addD(now, -12)), subs: [{ id: "s11", t: "Login flow", done: true }, { id: "s12", t: "Token refresh", done: false }], cmts: [], prog: 50 },
+  { id: "t8",  pId: "p2", title: "Push notifications",    desc: "Push notification service",               status: "To Do",       pri: "Medium", assignee: "u2", due: fmt(addD(now, 14)),  created: fmt(addD(now, -5)),  subs: [], cmts: [], prog: 0 },
+
+  // ── Project p3: Q2 Marketing ──────────────────────────────────────────────
+  { id: "t9",  pId: "p3", title: "Campaign strategy",     desc: "Q2 campaign planning",                    status: "Done",        pri: "High",   assignee: "u1", due: fmt(addD(now, -3)),  created: fmt(addD(now, -14)), subs: [], cmts: [], prog: 100 },
+  { id: "t10", pId: "p3", title: "Social media content",  desc: "Social calendar + content",               status: "In Progress", pri: "Medium", assignee: "u4", due: fmt(addD(now, 5)),   created: fmt(addD(now, -9)),  subs: [], cmts: [], prog: 60 },
+
+  // ── Service sv1: Monthly Reporting ────────────────────────────────────────
+  { id: "st1",  pId: "", sId: "sv1", section: "Data Collection",  title: "Gather analytics data",           desc: "Pull data from GA4, Mixpanel and CRM for the month",           status: "Done",        pri: "High",   assignee: "u1", due: fmt(addD(now, -8)),  created: fmt(addD(now, -20)), subs: [{ id: "ss1", t: "GA4 export", done: true }, { id: "ss2", t: "CRM export", done: true }], cmts: [{ id: "sc1", uid: "u1", text: "All data pulled and validated.", date: fmt(addD(now, -9)) }], prog: 100 },
+  { id: "st2",  pId: "", sId: "sv1", section: "Data Collection",  title: "Validate KPI metrics",            desc: "Cross-check all KPIs against source systems",                  status: "Done",        pri: "Medium", assignee: "u2", due: fmt(addD(now, -6)),  created: fmt(addD(now, -18)), subs: [], cmts: [], prog: 100 },
+  { id: "st3",  pId: "", sId: "sv1", section: "Report Production", title: "Build dashboard report",         desc: "Create interactive dashboard with all monthly metrics",         status: "In Progress", pri: "High",   assignee: "u1", due: fmt(addD(now, 3)),   created: fmt(addD(now, -14)), subs: [{ id: "ss3", t: "Revenue section", done: true }, { id: "ss4", t: "Traffic section", done: false }, { id: "ss5", t: "Conversion section", done: false }], cmts: [], prog: 40 },
+  { id: "st4",  pId: "", sId: "sv1", section: "Report Production", title: "Write executive summary",        desc: "Draft the executive narrative for the report",                  status: "To Do",       pri: "Medium", assignee: "u2", due: fmt(addD(now, 5)),   created: fmt(addD(now, -10)), subs: [], cmts: [], prog: 0 },
+  { id: "st5",  pId: "", sId: "sv1", section: "Delivery",          title: "Client review session",          desc: "Present and discuss findings with client stakeholders",         status: "To Do",       pri: "High",   assignee: "u1", due: fmt(addD(now, 8)),   created: fmt(addD(now, -8)),  subs: [], cmts: [], prog: 0 },
+
+  // ── Service sv2: Social Media Management ──────────────────────────────────
+  { id: "st6",  pId: "", sId: "sv2", section: "Content Planning", title: "Weekly content calendar",         desc: "Plan and schedule content for the week across all channels",   status: "Done",        pri: "High",   assignee: "u4", due: fmt(addD(now, -2)),  created: fmt(addD(now, -10)), subs: [{ id: "ss6", t: "LinkedIn posts", done: true }, { id: "ss7", t: "Instagram stories", done: true }], cmts: [], prog: 100 },
+  { id: "st7",  pId: "", sId: "sv2", section: "Content Planning", title: "Graphic assets creation",         desc: "Design all visual assets for scheduled content",                status: "In Progress", pri: "Medium", assignee: "u4", due: fmt(addD(now, 2)),   created: fmt(addD(now, -7)),  subs: [], cmts: [{ id: "sc2", uid: "u4", text: "Working on carousel graphics.", date: fmt(addD(now, -1)) }], prog: 60 },
+  { id: "st8",  pId: "", sId: "sv2", section: "Community",        title: "Community engagement monitoring", desc: "Respond to comments, messages and mentions",                    status: "In Progress", pri: "Medium", assignee: "u1", due: fmt(addD(now, 1)),   created: fmt(addD(now, -5)),  subs: [], cmts: [], prog: 50 },
+  { id: "st9",  pId: "", sId: "sv2", section: "Reporting",        title: "Weekly performance report",       desc: "Compile and send weekly social performance summary",            status: "To Do",       pri: "Low",    assignee: "u4", due: fmt(addD(now, 5)),   created: fmt(addD(now, -3)),  subs: [], cmts: [], prog: 0 },
+
+  // ── Service sv3: Quarterly Strategy Review ────────────────────────────────
+  { id: "st10", pId: "", sId: "sv3", section: "Preparation", title: "Gather Q2 performance data",           desc: "Compile all relevant metrics and business outcomes from Q2",    status: "Done",        pri: "Urgent", assignee: "u1", due: fmt(addD(now, -15)), created: fmt(addD(now, -30)), subs: [], cmts: [], prog: 100 },
+  { id: "st11", pId: "", sId: "sv3", section: "Preparation", title: "Competitive landscape analysis",       desc: "Research and document competitive positioning updates",          status: "In Review",   pri: "High",   assignee: "u2", due: fmt(addD(now, -5)),  created: fmt(addD(now, -25)), subs: [{ id: "ss8", t: "Market share analysis", done: true }, { id: "ss9", t: "Competitor pricing", done: true }, { id: "ss10", t: "SWOT update", done: true }], cmts: [], prog: 90 },
+  { id: "st12", pId: "", sId: "sv3", section: "Review Session", title: "Prepare strategy deck",             desc: "Create the presentation for the quarterly business review",    status: "In Progress", pri: "High",   assignee: "u1", due: fmt(addD(now, 10)),  created: fmt(addD(now, -12)), subs: [], cmts: [], prog: 45 },
+  { id: "st13", pId: "", sId: "sv3", section: "Planning",      title: "Q3 roadmap alignment",               desc: "Align on priorities and objectives for Q3",                    status: "To Do",       pri: "Urgent", assignee: "u3", due: fmt(addD(now, 20)),  created: fmt(addD(now, -5)),  subs: [], cmts: [], prog: 0 },
+];
+
+export const SEED_NOTIFICATIONS: Notification[] = [
+  { id: "n1", type: "assign",  text: "Assigned to 'Frontend development'",   read: false, date: fmt(addD(now, -1)) },
+  { id: "n2", type: "comment", text: "Amara commented on 'Design audit'",    read: false, date: fmt(addD(now, -2)) },
+  { id: "n3", type: "due",     text: "'Auth module' due in 3 days",          read: true,  date: fmt(now) },
+];
+
+export const SEED_CONVERSATIONS: Conversation[] = [
+  { id: "cv1", type: "direct", name: null,                  parts: ["u1", "u2"],             created: addH(now, -48).toISOString() },
+  { id: "cv2", type: "direct", name: null,                  parts: ["u1", "u3"],             created: addH(now, -72).toISOString() },
+  { id: "cv3", type: "group",  name: "Website Redesign Team", parts: ["u1", "u2", "u3", "u4"], pId: "p1", created: addD(now, -25).toISOString() },
+  { id: "cv4", type: "group",  name: "Engineering",          parts: ["u1", "u2", "u3"],      created: addD(now, -20).toISOString() },
+  { id: "cv5", type: "group",  name: "Design Team",          parts: ["u1", "u4"],            created: addD(now, -10).toISOString() },
+];
+
+export const SEED_MESSAGES: Message[] = [
+  { id: "m1",  cId: "cv1", from: "u2", text: "Hey Issa, I pushed the updated wireframes. Can you review?",                              ts: addH(now, -26).toISOString() },
+  { id: "m2",  cId: "cv1", from: "u1", text: "Sure, I'll look this afternoon. Mobile breakpoints included?",                            ts: addH(now, -25).toISOString() },
+  { id: "m3",  cId: "cv1", from: "u2", text: "Yes, all three breakpoints covered. Also added dark mode.",                               ts: addH(now, -24).toISOString() },
+  { id: "m4",  cId: "cv1", from: "u1", text: "Perfect. Feedback by EOD.",                                                               ts: addH(now, -23).toISOString() },
+  { id: "m5",  cId: "cv2", from: "u3", text: "API endpoints ready for testing. Deploy to staging?",                                     ts: addH(now, -10).toISOString() },
+  { id: "m6",  cId: "cv2", from: "u1", text: "Go ahead. Let me know when it's live.",                                                   ts: addH(now, -9).toISOString() },
+  { id: "m7",  cId: "cv3", from: "u2", text: "Team: On track for design review Friday. Components ready by Thursday EOD please.",       ts: addH(now, -48).toISOString() },
+  { id: "m8",  cId: "cv3", from: "u4", text: "Icon set and illustrations finalized by Wednesday.",                                      ts: addH(now, -46).toISOString() },
+  { id: "m9",  cId: "cv3", from: "u3", text: "Frontend at 60%. Header, nav, footer done. Working on hero.",                             ts: addH(now, -44).toISOString() },
+  { id: "m10", cId: "cv3", from: "u1", text: "Great progress. Let's sync Thursday morning.",                                            ts: addH(now, -42).toISOString() },
+  { id: "m11", cId: "cv4", from: "u2", text: "Code reviews moving to Tuesdays next week.",                                              ts: addH(now, -72).toISOString() },
+  { id: "m12", cId: "cv5", from: "u4", text: "Uploaded new brand guidelines to shared files.",                                          ts: addH(now, -5).toISOString() },
+  { id: "m13", cId: "cv5", from: "u1", text: "Thanks Amara! Color palette looks refined. Let's apply everywhere.",                      ts: addH(now, -4).toISOString() },
+];
+
+export const SEED_FILES: FileItem[] = [
+  { id: "f1",  name: "Brand Guidelines v2.pdf",  type: "pdf",  size: "2.4 MB",  pId: "p1", fId: "fl1", by: "u4", at: addD(now, -20).toISOString(), tags: ["design", "branding"] },
+  { id: "f2",  name: "Homepage Wireframe.fig",   type: "fig",  size: "8.1 MB",  pId: "p1", fId: "fl1", by: "u4", at: addD(now, -15).toISOString(), tags: ["wireframe"] },
+  { id: "f3",  name: "Component Library.fig",    type: "fig",  size: "12.3 MB", pId: "p1", fId: "fl1", by: "u4", at: addD(now, -10).toISOString(), tags: ["components"] },
+  { id: "f4",  name: "SEO Audit.pdf",            type: "pdf",  size: "1.8 MB",  pId: "p1", fId: "fl2", by: "u3", at: addD(now, -8).toISOString(),  tags: ["seo"] },
+  { id: "f5",  name: "Content Inventory.xls",    type: "xls",  size: "340 KB",  pId: "p1", fId: "fl2", by: "u2", at: addD(now, -5).toISOString(),  tags: ["content"] },
+  { id: "f6",  name: "API Docs.md",              type: "md",   size: "45 KB",   pId: "p2", fId: "fl3", by: "u3", at: addD(now, -12).toISOString(), tags: ["api"] },
+  { id: "f7",  name: "DB Schema.pdf",            type: "pdf",  size: "890 KB",  pId: "p2", fId: "fl3", by: "u3", at: addD(now, -10).toISOString(), tags: ["database"] },
+  { id: "f8",  name: "App Mockups.fig",          type: "fig",  size: "15.2 MB", pId: "p2", fId: "fl4", by: "u4", at: addD(now, -8).toISOString(),  tags: ["mobile"] },
+  { id: "f9",  name: "Q2 Strategy.pptx",         type: "pptx", size: "4.5 MB",  pId: "p3", fId: "fl5", by: "u1", at: addD(now, -7).toISOString(),  tags: ["strategy"] },
+  { id: "f10", name: "Social Calendar.xls",      type: "xls",  size: "210 KB",  pId: "p3", fId: "fl5", by: "u4", at: addD(now, -4).toISOString(),  tags: ["social"] },
+  { id: "f11", name: "Migration Plan.pdf",       type: "pdf",  size: "780 KB",  pId: "p4", fId: "fl6", by: "u2", at: addD(now, -25).toISOString(), tags: ["migration"] },
+];
+
+export const SEED_FOLDERS: Folder[] = [
+  { id: "fl1",  name: "Design Assets",       pId: "p1" },
+  { id: "fl2",  name: "Documents",           pId: "p1" },
+  { id: "fl3",  name: "Technical Docs",      pId: "p2" },
+  { id: "fl4",  name: "Design",             pId: "p2" },
+  { id: "fl5",  name: "Campaign Materials", pId: "p3" },
+  { id: "fl6",  name: "Migration Docs",     pId: "p4" },
+  { id: "fl7",  name: "Monthly Reports",    pId: "", sId: "sv1" },
+  { id: "fl8",  name: "Client Deliverables",pId: "", sId: "sv1" },
+  { id: "fl9",  name: "Social Content",     pId: "", sId: "sv2" },
+  { id: "fl10", name: "SEO Reports",        pId: "", sId: "sv3" },
+  { id: "fl11", name: "Audit Docs",         pId: "", sId: "sv3" },
+];

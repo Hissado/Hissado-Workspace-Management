@@ -46,6 +46,20 @@ The application is a pnpm workspace monorepo built with TypeScript.
 - **Validation**: Zod for schema validation, integrated with `drizzle-zod`.
 - **API Codegen**: Orval generates API client and Zod schemas from OpenAPI.
 - **Email Service**: Integrates with Resend for sending branded HTML email invitations.
+- **Email Builder**: HTML invitation email template is in `src/lib/inviteEmail.ts` (`buildInviteEmail()`), imported by the `/api/invite` route handler.
+
+## Architecture Notes
+
+### Frontend module boundaries
+| Module | Responsibility |
+|---|---|
+| `src/lib/data.ts` | TypeScript types, utility functions (`uid`, `fmt`, `fmtT`, `addD`, `addH`), and visual constants (`STATUS_COLORS`, `PRIORITY_COLORS`, `FILE_TYPES`). No seed data. |
+| `src/lib/seed.ts` | Initial seed data (`SEED_*` exports). Imported only by `store.ts`. |
+| `src/lib/store.ts` | Zustand store — all app state and actions. Imports seed from `seed.ts`. |
+| `src/lib/api.ts` | All `fetch()` calls to the Express backend (`fetchUsers`, `sendHeartbeat`, `updateUserPassword`, `registerReminder`, `sendInviteEmail`). |
+| `src/components/NotificationPanel.tsx` | Notification dropdown overlay (extracted from `App.tsx`). |
+| `src/components/SessionTimeoutModal.tsx` | Inactivity/auto-logout warning modal (extracted from `App.tsx`). |
+| `src/App.tsx` | Orchestration layer — hooks, memoized data slices, handler callbacks, layout, and page routing. |
 
 ### Core Features
 - **Services Management**: Dedicated "Services" page for managing recurring engagement types (weekly, monthly, quarterly, annual) with status, owner, and team members. Admin/manager roles can create, edit, delete services.
