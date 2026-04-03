@@ -105,6 +105,7 @@ const NAV_PERM: Partial<Record<Page, string>> = {
 
 const XIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
 const BuildingIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><rect x="9" y="12" width="6" height="9"/><circle cx="5" cy="20" r="0"/><path d="M9 22v-6h6v6"/><path d="M21 22H3"/><path d="M9 12h6"/></svg>;
+const ExternalIcon = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>;
 
 export default function Sidebar({
   page, onNavigate, projects, collapsed, onToggleCollapse,
@@ -288,6 +289,40 @@ export default function Sidebar({
         borderTop: "1px solid rgba(255,255,255,.05)",
         position: "relative",
       }}>
+        {/* Back to website — client users only */}
+        {userRole === "client" && !isCollapsed && (
+          <a
+            href="https://hissadoconsulting.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              width: "100%", marginBottom: 10,
+              padding: "8px 12px", borderRadius: 9,
+              border: "1px solid rgba(255,255,255,.07)",
+              background: "rgba(255,255,255,.02)",
+              color: "rgba(255,255,255,.35)", fontSize: 12, fontWeight: 600,
+              textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
+              transition: "all .15s",
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.color = C.goldL;
+              el.style.borderColor = `${C.gold}30`;
+              el.style.background = `${C.gold}08`;
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.color = "rgba(255,255,255,.35)";
+              el.style.borderColor = "rgba(255,255,255,.07)";
+              el.style.background = "rgba(255,255,255,.02)";
+            }}
+          >
+            <ExternalIcon />
+            <span style={{ flex: 1 }}>hissadoconsulting.com</span>
+          </a>
+        )}
+
         {/* Language toggle */}
         <button
           onClick={() => setLang(nextLang)}

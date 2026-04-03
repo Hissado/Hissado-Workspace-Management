@@ -30,6 +30,9 @@ import ClientsPage from "@/pages/ClientsPage";
 import Settings from "@/pages/Settings";
 import { C } from "@/components/primitives";
 
+// Detect ?portal=client URL parameter (set once at module load — stable reference)
+const IS_CLIENT_PORTAL = new URLSearchParams(window.location.search).get("portal") === "client";
+
 export default function App() {
   const { t } = useI18n();
   const {
@@ -172,7 +175,7 @@ export default function App() {
   // ── Conditional renders (after all hooks) ──
 
   if (!currentUser) {
-    return <Login users={users} onLogin={(u) => setCurrentUser(u)} />;
+    return <Login users={users} onLogin={(u) => setCurrentUser(u)} isClientPortal={IS_CLIENT_PORTAL} />;
   }
 
   if (currentUser.mustChangePassword) {
