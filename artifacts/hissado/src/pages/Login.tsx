@@ -135,7 +135,7 @@ export default function Login({ users, onLogin, isClientPortal = false }: LoginP
               <div>
                 <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: ".13em", fontFamily: "'DM Sans',sans-serif" }}>HISSADO</div>
                 <div style={{ fontSize: 8.5, fontWeight: 600, color: `${C.gold}CC`, letterSpacing: ".22em", textTransform: "uppercase", fontFamily: "'DM Sans',sans-serif" }}>
-                  {isClientPortal ? "CLIENT PORTAL" : "PROJECT"}
+                  {isClientPortal ? "CLIENT PORTAL" : "CLIENT"}
                 </div>
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function Login({ users, onLogin, isClientPortal = false }: LoginP
             <div style={{ lineHeight: 1 }}>
               <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", letterSpacing: ".13em", fontFamily: "'DM Sans',sans-serif" }}>HISSADO</div>
               <div style={{ fontSize: 9.5, fontWeight: 600, color: `${C.gold}CC`, letterSpacing: ".22em", textTransform: "uppercase", marginTop: 4, fontFamily: "'DM Sans',sans-serif" }}>
-                {isClientPortal ? "CLIENT PORTAL" : "PROJECT"}
+                {isClientPortal ? "CLIENT PORTAL" : "CLIENT"}
               </div>
             </div>
           </div>

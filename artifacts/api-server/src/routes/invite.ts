@@ -235,7 +235,7 @@ function buildEmailBody(opts: {
           <tr>
             <td style="background:#F8F9FC;border-top:1px solid #E8EAF0;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
               <p style="color:#9BA3B5;font-size:11px;margin:0;line-height:1.7;">
-                &copy; ${new Date().getFullYear()} Hissado Project Management &mdash; hissadoconsulting.com<br>
+                &copy; ${new Date().getFullYear()} Hissado Client &mdash; hissadoconsulting.com<br>
                 ${footerText}
               </p>
             </td>
@@ -269,7 +269,7 @@ router.post("/invite", async (req, res) => {
   try {
     const { client, fromEmail } = await getUncachableResendClient();
 
-    const ws = workspaceName || "Hissado Project";
+    const ws = workspaceName || "Hissado Client";
     const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
     const emailLang = lang === "fr" ? "fr" : "en";
 

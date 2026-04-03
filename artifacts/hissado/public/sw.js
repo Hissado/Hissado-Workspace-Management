@@ -52,7 +52,7 @@ self.addEventListener('fetch', (e) => {
 // Push notification support
 self.addEventListener('push', (e) => {
   const data = e.data ? e.data.json() : {};
-  const title = data.title || 'Hissado Project';
+  const title = data.title || 'Hissado Client';
   const options = {
     body: data.body || 'You have a new notification.',
     icon: '/icon-192.svg',

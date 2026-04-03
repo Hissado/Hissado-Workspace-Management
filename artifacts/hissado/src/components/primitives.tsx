@@ -446,7 +446,7 @@ export function Logo() {
       </div>
       <div style={{ lineHeight: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", letterSpacing: ".12em", fontFamily: "'DM Sans',sans-serif" }}>HISSADO</div>
-        <div style={{ fontSize: 8.5, fontWeight: 600, color: `${C.gold}BB`, letterSpacing: ".2em", textTransform: "uppercase", marginTop: 3, fontFamily: "'DM Sans',sans-serif" }}>PROJECT</div>
+        <div style={{ fontSize: 8.5, fontWeight: 600, color: `${C.gold}BB`, letterSpacing: ".2em", textTransform: "uppercase", marginTop: 3, fontFamily: "'DM Sans',sans-serif" }}>CLIENT</div>
       </div>
     </div>
   );

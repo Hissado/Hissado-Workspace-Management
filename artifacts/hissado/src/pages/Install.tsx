@@ -31,7 +31,7 @@ const S = {
     f3: "Full-screen, no browser chrome — feels native",
     f4: "Fast launch directly from your home screen",
     signIn: "Sign in to Hissado",
-    footer: "Hissado Project Management · hissadoconsulting.com",
+    footer: "Hissado Client · hissadoconsulting.com",
   },
   fr: {
     title: "Installer Hissado",
@@ -60,7 +60,7 @@ const S = {
     f3: "Plein écran, sans barre de navigation — comme une vraie app",
     f4: "Lancement rapide depuis votre écran d'accueil",
     signIn: "Se connecter à Hissado",
-    footer: "Hissado Project Management · hissadoconsulting.com",
+    footer: "Hissado Client · hissadoconsulting.com",
   },
 };
 

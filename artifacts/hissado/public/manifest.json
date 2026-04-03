@@ -1,7 +1,7 @@
 {
-  "name": "Hissado Project",
+  "name": "Hissado Client",
   "short_name": "Hissado",
-  "description": "Enterprise project management for teams that demand clarity and results.",
+  "description": "Enterprise client management for teams that demand clarity and results.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -163,7 +163,7 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
           role: newUser.role,
           tempPassword,
           invitedBy: currentUser.name,
-          workspaceName: "Hissado Project",
+          workspaceName: "Hissado Client",
           lang,
         }),
       });

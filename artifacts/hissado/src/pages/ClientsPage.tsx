@@ -153,7 +153,7 @@ export default function ClientsPage({
           role: "Client",
           tempPassword: tempPw,
           invitedBy: currentUser.name,
-          workspaceName: "Hissado Project",
+          workspaceName: "Hissado Client",
           lang,
         }),
       });
