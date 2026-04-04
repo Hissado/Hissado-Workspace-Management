@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const INACTIVITY_MS = 55 * 60 * 1000;
+export const INACTIVITY_MINUTES = 55;
+const INACTIVITY_MS = INACTIVITY_MINUTES * 60 * 1000;
 const WARNING_MS    =  5 * 60 * 1000;
 const WARNING_SECS  = WARNING_MS / 1000;
 

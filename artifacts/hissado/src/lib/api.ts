@@ -103,5 +103,9 @@ export async function sendInviteEmail(payload: InvitePayload): Promise<InviteRes
     const data = await res.json().catch(() => ({})) as { error?: string };
     return { success: false, error: data.error ?? `Server error ${res.status}` };
   }
-  return res.json();
+  try {
+    return await res.json() as InviteResult;
+  } catch {
+    return { success: false, error: "Server returned a non-JSON response" };
+  }
 }

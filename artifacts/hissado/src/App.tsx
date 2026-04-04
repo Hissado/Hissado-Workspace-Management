@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { useRealtime } from "@/hooks/useRealtime";
 import type { CallSignal, MessageSignal } from "@/hooks/useRealtime";
 import { useDesktopNotifications } from "@/hooks/useDesktopNotifications";
-import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { useSessionTimeout, INACTIVITY_MINUTES } from "@/hooks/useSessionTimeout";
 import { pushToast } from "@/components/ToastNotifications";
 import {
   fetchUsers, sendHeartbeat, updateUserPassword, registerReminder,
@@ -569,7 +569,7 @@ export default function App() {
         <SessionTimeoutModal
           countdown={timeoutCountdown}
           lang={lang}
-          inactiveDuration={55}
+          inactiveDuration={INACTIVITY_MINUTES}
           onSignOut={() => setCurrentUser(null)}
           onStayActive={stayActive}
         />
