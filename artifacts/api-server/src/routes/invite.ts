@@ -29,6 +29,10 @@ router.post("/invite", async (req, res) => {
   if (!name || !email || !role || !tempPassword || !invitedBy) {
     return res.status(400).json({ error: "Missing required fields: name, email, role, tempPassword, invitedBy" });
   }
+  if (typeof name !== "string" || typeof email !== "string" || typeof role !== "string" ||
+      typeof tempPassword !== "string" || typeof invitedBy !== "string") {
+    return res.status(400).json({ error: "All fields must be strings" });
+  }
 
   try {
     const { client, fromEmail } = await getUncachableResendClient();
