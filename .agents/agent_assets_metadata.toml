@@ -6,3 +6,9 @@ id = "bjKxDYAi8Sx1o3NI56KuF"
 uri = "file://hissado-refactor.tar.gz"
 type = "unspecified"
 title = "Hissado Refactor — 9 files (tar.gz)"
+
+[[outputs]]
+id = "5x59jND9IHUlHSclF8jIo"
+uri = "file://hissado-specification.md"
+type = "text"
+title = "Hissado Platform — Product Specification v1.0"

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "b81a1e3p-u3",
+    "recipientId": "u3",
+    "recipientEmail": "james@hissado.com",
+    "recipientName": "James Chen",
+    "type": "message",
+    "summary": "Issa Daouda: Ok",
+    "senderName": "Issa Daouda",
+    "lang": "fr",
+    "scheduledAt": "2026-04-04T11:06:52.988Z",
+    "sent": true,
+    "cancelled": false
+  },
+  {
+    "id": "0s1vug35-u3",
+    "recipientId": "u3",
+    "recipientEmail": "james@hissado.com",
+    "recipientName": "James Chen",
+    "type": "message",
+    "summary": "Issa Daouda: [Drawing]",
+    "senderName": "Issa Daouda",
+    "lang": "fr",
+    "scheduledAt": "2026-04-04T11:06:56.947Z",
+    "sent": true,
+    "cancelled": false
+  },
+  {
+    "id": "nyj5l3xi-u3",
+    "recipientId": "u3",
+    "recipientEmail": "james@hissado.com",
+    "recipientName": "James Chen",
+    "type": "message",
+    "summary": "Issa Daouda: Ok",
+    "senderName": "Issa Daouda",
+    "lang": "fr",
+    "scheduledAt": "2026-04-04T11:33:14.228Z",
+    "sent": true,
+    "cancelled": false
+  }
+]
