@@ -6,6 +6,7 @@ import type { User, RoleDef } from "@/lib/data";
 import { uid } from "@/lib/data";
 import { canInviteMembers, canDeleteUser } from "@/lib/access";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { createUser, sendInviteEmail } from "@/lib/api";
 
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>;
@@ -155,33 +156,26 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
 
     try {
       /* 1 — Create user on server (makes credentials work across all browsers) */
-      await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
+      await createUser(newUser).catch(() => {
+        // Non-fatal: local store is the source of truth; server sync is best-effort
       });
 
       /* 2 — Add to local store */
       onAddUser(newUser);
 
       /* 3 — Send invite email (non-blocking — failure is warned but doesn't abort) */
-      const emailRes = await fetch("/api/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-          tempPassword,
-          invitedBy: currentUser.name,
-          workspaceName: "Hissado Client",
-          lang,
-        }),
+      const emailResult = await sendInviteEmail({
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        tempPassword,
+        invitedBy: currentUser.name,
+        workspaceName: "Hissado Client",
+        lang,
       });
 
-      if (!emailRes.ok) {
-        const data = await emailRes.json().catch(() => ({}));
-        setInviteError(t.team_invite_error_email_fn(data.error || "Email failed to send"));
+      if (!emailResult.success) {
+        setInviteError(t.team_invite_error_email_fn(emailResult.error || "Email failed to send"));
       }
 
       setInviteSuccess({ name: newUser.name, email: newUser.email, tempPw: tempPassword });

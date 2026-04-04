@@ -210,8 +210,10 @@ export const useStore = create<AppState>()(
       updateService: (sv) => set((s) => ({ services: s.services.map((x) => (x.id === sv.id ? sv : x)) })),
       deleteService: (id) => set((s) => ({
         services: s.services.filter((x) => x.id !== id),
-        // Cascade-delete associated tasks
-        tasks: s.tasks.filter((t) => t.sId !== id),
+        // Cascade-delete tasks, files, and folders tied to this service
+        tasks:   s.tasks.filter((t) => t.sId !== id),
+        files:   s.files.filter((f) => f.sId !== id),
+        folders: s.folders.filter((f) => f.sId !== id),
       })),
 
       // ── Clients ──
@@ -238,17 +240,34 @@ export const useStore = create<AppState>()(
         return { users: [...s.users, ...newFromServer] };
       }),
       deleteUser: (id) => set((s) => {
-        // Collect 1-on-1 conversations involving this user so we can purge their messages
-        const removedConvoIds = new Set(
+        // Direct conversations involving this user are removed entirely
+        const directRemoved = new Set(
           s.conversations
             .filter((c) => c.type === "direct" && c.parts.includes(id))
             .map((c) => c.id)
         );
+        // Group conversations: remove the user from the participants list;
+        // if this leaves only 1 participant the conversation is meaningless — drop it too
+        const updatedGroups = s.conversations
+          .filter((c) => c.type === "group" && c.parts.includes(id))
+          .map((c) => ({ ...c, parts: c.parts.filter((p) => p !== id) }));
+        const groupRemovedIds = new Set(
+          updatedGroups.filter((c) => c.parts.length <= 1).map((c) => c.id)
+        );
+        const removedConvoIds = new Set([...directRemoved, ...groupRemovedIds]);
+
+        const mergedConversations = s.conversations
+          .filter((c) => !removedConvoIds.has(c.id))
+          .map((c) => {
+            const updated = updatedGroups.find((g) => g.id === c.id);
+            return updated ?? c;
+          });
+
         return {
           users:         s.users.filter((x) => x.id !== id),
           tasks:         s.tasks.map((t) => t.assignee === id ? { ...t, assignee: "" } : t),
           projects:      s.projects.map((p) => ({ ...p, members: p.members.filter((m) => m !== id) })),
-          conversations: s.conversations.filter((c) => !removedConvoIds.has(c.id)),
+          conversations: mergedConversations,
           messages:      s.messages.filter((m) => !removedConvoIds.has(m.cId)),
         };
       }),
@@ -344,6 +363,7 @@ export const useStore = create<AppState>()(
         // Persist the active page + detail context so a refresh lands the user
         // back where they were working, rather than always going to the dashboard.
         page:            state.page,
+        collapsed:       state.collapsed,
         selectedProject: state.selectedProject,
         selectedService: state.selectedService,
         users:           state.users,

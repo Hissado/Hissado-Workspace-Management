@@ -92,7 +92,7 @@ export default function Login({ users, onLogin, isClientPortal = false }: LoginP
       /* Fallback to localStorage check if API is unreachable (dev/offline) */
       const u = users.find((u) => u.email.toLowerCase() === trimmedEmail);
       if (!u) { setError(t.login_error || "No account found with that email."); return; }
-      if (u.password && u.password !== trimmedPass) {
+      if (!u.password || u.password !== trimmedPass) {
         setError(t.login_wrong_password || "Incorrect password. Please try again.");
         return;
       }

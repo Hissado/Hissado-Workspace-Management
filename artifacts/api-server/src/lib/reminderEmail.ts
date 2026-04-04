@@ -2,10 +2,10 @@ import type { Reminder } from "./reminderStore.js";
 
 type EmailContent = { subject: string; html: string };
 
-const APP_URL = "https://client.hissadoconsulting.com";
-const YEAR = new Date().getFullYear();
+const APP_URL = process.env["APP_URL"] ?? "https://client.hissadoconsulting.com";
 
 export function buildReminderEmail(r: Reminder): EmailContent {
+  const YEAR = new Date().getFullYear();
   const isFr = r.lang === "fr";
 
   const typeLabels: Record<Reminder["type"], { en: string; fr: string; icon: string }> = {

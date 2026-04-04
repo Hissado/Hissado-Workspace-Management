@@ -13,6 +13,19 @@ export async function fetchUsers(): Promise<User[]> {
   return res.json();
 }
 
+/** Creates a new user on the server so credentials are available across all browsers. */
+export async function createUser(user: User): Promise<void> {
+  const res = await fetch(`${BASE}/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(user),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `POST /users failed: ${res.status}`);
+  }
+}
+
 /** Persists a password update for a user to the server (used after a forced password change). */
 export async function updateUserPassword(userId: string, password: string): Promise<void> {
   const res = await fetch(`${BASE}/users/${userId}`, {

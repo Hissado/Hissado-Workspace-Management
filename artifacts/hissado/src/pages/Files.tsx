@@ -46,7 +46,7 @@ interface FilesProps {
 export default function Files({ files, folders, users, projects, services, onAddFile, onAddFolder, onDeleteFile, onDeleteFolder }: FilesProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
-  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+  const userMap = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u])), [users]);
 
   /* tree state */
   const [expanded, setExpanded] = useState<Set<string>>(new Set(projects.slice(0, 2).map((p) => p.id)));
@@ -69,15 +69,9 @@ export default function Files({ files, folders, users, projects, services, onAdd
   const [confirmDeleteFile, setConfirmDeleteFile] = useState<FileItem | null>(null);
 
   /* ── Derived content ────────────────────────────────────── */
-  const projMap = Object.fromEntries(projects.map((p) => [p.id, p]));
-  const svcMap = Object.fromEntries(services.map((s) => [s.id, s]));
-  const folderMap = Object.fromEntries(folders.map((f) => [f.id, f]));
-
-  const projFolders = (pId: string) => folders.filter((f) => f.pId === pId);
-  const svcFolders = (sId: string) => folders.filter((f) => f.sId === sId);
-  const folderFiles = (fId: string) => files.filter((f) => f.fId === fId);
-  const projFiles = (pId: string) => files.filter((f) => f.pId === pId);
-  const svcFiles = (sId: string) => files.filter((f) => f.sId === sId || folders.filter((fl) => fl.sId === sId).map((fl) => fl.id).includes(f.fId));
+  const projMap = useMemo(() => Object.fromEntries(projects.map((p) => [p.id, p])), [projects]);
+  const svcMap  = useMemo(() => Object.fromEntries(services.map((s) => [s.id, s])), [services]);
+  const folderMap = useMemo(() => Object.fromEntries(folders.map((f) => [f.id, f])), [folders]);
 
   const totalFiles = files.length;
 
@@ -95,26 +89,27 @@ export default function Files({ files, folders, users, projects, services, onAdd
         return { displayFiles: files, displayFolders: [] as Folder[], breadcrumb: [t.files_all_files] };
       case "proj": {
         const proj = projMap[selection.id];
-        const pFolders = projFolders(selection.id);
-        const pFiles = projFiles(selection.id);
+        const pFolders = folders.filter((f) => f.pId === selection.id);
+        const pFiles = files.filter((f) => f.pId === selection.id);
         return { displayFiles: pFiles, displayFolders: pFolders, breadcrumb: [t.files_all_files, proj?.name || ""] };
       }
       case "svc": {
         const svc = svcMap[selection.id];
-        const sFolders = svcFolders(selection.id);
-        const sFiles = svcFiles(selection.id);
+        const sFolderIds = new Set(folders.filter((f) => f.sId === selection.id).map((f) => f.id));
+        const sFolders = folders.filter((f) => f.sId === selection.id);
+        const sFiles = files.filter((f) => f.sId === selection.id || sFolderIds.has(f.fId));
         return { displayFiles: sFiles, displayFolders: sFolders, breadcrumb: [t.files_all_files, svc?.name || ""] };
       }
       case "folder": {
         const folder = folderMap[selection.id];
-        const fFiles = folderFiles(selection.id);
+        const fFiles = files.filter((f) => f.fId === selection.id);
         const parentName = selection.parentType === "proj"
           ? projMap[selection.parentId]?.name
           : svcMap[selection.parentId]?.name;
         return { displayFiles: fFiles, displayFolders: [] as Folder[], breadcrumb: [t.files_all_files, parentName || "", folder?.name || ""] };
       }
     }
-  }, [selection, files, folders, searchQuery, t]);
+  }, [selection, files, folders, searchQuery, t, projMap, svcMap, folderMap]);
 
   /* ── Actions ──────────────────────────────────────────────── */
   const toggleExpand = (id: string, e: React.MouseEvent) => {

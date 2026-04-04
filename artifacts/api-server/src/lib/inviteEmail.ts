@@ -1,8 +1,7 @@
 // Builds the HTML email body for workspace invitation emails.
 // Supports English and French (controlled by `lang` field).
 
-const APP_URL = "https://client.hissadoconsulting.com";
-const YEAR = new Date().getFullYear();
+const APP_URL = process.env["APP_URL"] ?? "https://client.hissadoconsulting.com";
 
 interface InviteEmailOptions {
   name: string;
@@ -15,6 +14,7 @@ interface InviteEmailOptions {
 }
 
 export function buildInviteEmail(opts: InviteEmailOptions): { subject: string; html: string } {
+  const YEAR = new Date().getFullYear();
   const { name, email, roleLabel, tempPassword, invitedBy, workspaceName: ws, lang } = opts;
   const isFr = lang === "fr";
 
