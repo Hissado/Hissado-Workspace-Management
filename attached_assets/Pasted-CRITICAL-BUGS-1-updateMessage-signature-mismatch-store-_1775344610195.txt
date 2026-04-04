@@ -1,0 +1,72 @@
+CRITICAL BUGS
+1. updateMessage signature mismatch (store.ts:108 → App.tsx:457)
+The store defines updateMessage: (id: string, updates: Partial<Message>) => void but App.tsx passes it to Chat as onUpdateMessage={updateMessage} where Chat likely calls it with a full Message object. This causes silent failures — the id parameter receives the Message object, and updates is undefined.
+→ Fixed: Changed to updateMessage: (m: Message) => void to match every other updater pattern.
+2. deleteProject orphans messages (store.ts:199–206)
+When deleting a project, conversations tied to it are removed, but messages belonging to those conversations are not cleaned up. They persist in localStorage forever as unreachable orphans, growing the store and causing phantom data.
+→ Fixed: Added cascade-delete for messages via removedConvoIds set, matching the pattern already used in deleteUser.
+3. deleteService orphans files and folders (store.ts:211–215)
+Service deletion only cascade-deletes tasks but leaves behind files and folders with sId pointing to the deleted service.
+→ Fixed: Added files and folders filtering by sId.
+STRUCTURAL / STATE ISSUES
+4. Duplicated UI state between store and App.tsx
+showNotifPanel, showUserModal, and editingUser exist in the store (persisted to localStorage!) but App.tsx creates its own useState for showNotifPanel. This means the store version is dead code that bloats localStorage, and if any component reads from the store version, it's stale.
+→ Fixed: Removed from the store entirely; these are local UI concerns.
+5. sendInviteEmail result not checked for HTTP errors (api.ts:83–90)
+The function returns res.json() without checking res.ok, so a 500 response still resolves as a "success" to the caller, swallowing server errors.
+6. lang dependency missing from handleSendMessage (App.tsx:294)
+The useCallback for handleSendMessage uses lang in the registerReminder call but lang is not in the dependency array. Stale closures mean reminders are sent with the wrong language after a language switch.
+7. handleStartCall also missing lang in deps (App.tsx:258)
+Same issue — lang used in registerReminder but not listed as a dependency.
+LOGIC FLAWS
+8. now is a mutable module-level Date (data.ts:8)
+export const now = new Date() is shared across all imports. If any consumer accidentally mutates it (now.setDate(...) without cloning), all seed data calculations break silently. While current usage always clones via addD/addH, this is a fragile contract.
+→ Fixed: Added documentation warning; consider Object.freeze.
+9. fmtT hardcodes "en-US" locale (data.ts:14)
+The bilingual app (EN/FR) forces US time formatting for all users. French users should see 24-hour time.
+→ Fixed: Changed to undefined locale so the browser picks the user's system locale.
+10. Seed ALL_PERMISSIONS shadowed between files (seed.ts:17 vs data.ts:216)
+seed.ts declares a local const ALL_PERMISSIONS that shadows the exported one from data.ts. They're structurally different (one is a Permission[], the other is an object array with labels). This isn't broken but is confusing and could cause import mistakes.
+TYPE SAFETY ISSUES
+11. PRIORITY_COLORS and STATUS_COLORS use Record<string, ...> (data.ts:239/246)
+These should be Record<TaskPriority, ...> and Record<TaskStatus, ...> for type safety, preventing typo-based lookup failures.
+→ Fixed in the corrected data.ts.
+12. User.role typed as string but compared against string literals
+Throughout the codebase, currentUser.role === "admin" etc. are unguarded string comparisons. A UserRole union type provides compile-time safety.
+→ Fixed: Added UserRole type.
+13. Missing exported types for reuse
+TaskStatus, TaskPriority, ProjectStatus, ConversationType are used as inline string literals in type definitions but not exported for use by consuming components.
+→ Fixed: Exported as named types.
+SECURITY CONCERNS
+14. Plaintext passwords in seed data and localStorage (seed.ts:52–57)
+Passwords like admin123 are stored as plaintext strings in the Zustand-persisted localStorage blob. The persist config includes users which includes password fields.
+15. No input sanitization on invite route (invite.ts:9–17)
+The req.body is destructured and passed directly into HTML template rendering (buildInviteEmail). The name, invitedBy, and workspaceName fields are injected into HTML without escaping, creating an XSS vector in the email body.
+16. invitedBy not validated (invite.ts:19)
+The validation check requires name, email, role, tempPassword but invitedBy is not validated. If absent, it renders as undefined in the email HTML.
+PERFORMANCE / SCALABILITY
+17. messagesMap rebuilt on every message change (App.tsx:174–181)
+Every new message triggers a full O(n) re-index of all messages. For a growing message store, this becomes expensive. Consider a normalized lookup maintained incrementally in the store itself.
+18. messages array in store grows unbounded
+All messages persist in localStorage with no eviction. Over months of use, this will hit the ~5MB localStorage limit and crash.
+19. saveTask scans entire tasks array twice (App.tsx:308–313)
+tasks.find(...) to check existence, then addTask or updateTask (which also scans). Could use a Set or Map for O(1) lookups.
+20. Excessive useMemo dependencies in PAGE_TITLES (App.tsx:199–214)
+PAGE_TITLES recalculates on every t, selectedProject.name, or selectedService.name change. Since t is the entire i18n dictionary object, it may cause unnecessary recalculations on language changes even when the page titles haven't changed.
+MINOR ISSUES
+21. Type assertion instead of type narrowing for call state (App.tsx:523/528)
+Uses as { type: "incoming"; signal: CallSignal } instead of using the already-narrowed callState which is guaranteed to be incoming type in that branch. Unnecessary and fragile.
+22. IS_CLIENT_PORTAL reads URL at module level (App.tsx:60–62)
+This runs once at import time, not per-render. If the app is ever loaded in an environment where the URL could change (e.g., client-side routing), this won't update. Low risk currently but worth noting.
+23. Empty catch blocks suppress errors silently (App.tsx:93, api.ts:34)
+Several .catch(() => {}) blocks swallow errors without even logging. At minimum, these should log to the console in development.
+24. handleAutoSignOut toast is English-only (App.tsx:110)
+The sign-out toast says "Signed out" / "You were signed out due to inactivity" but doesn't use the t i18n function, so French users see English.
+25. SessionTimeoutModal hardcodes magic number "55 minutes" (SessionTimeoutModal.tsx:48)
+The inactivity text says "55 minutes" but the actual timeout duration comes from useSessionTimeout hook configuration. If that config changes, the displayed text becomes wrong.
+26. inviteEmail.ts YEAR is computed at module load (inviteEmail.ts:5)
+const YEAR = new Date().getFullYear() is fine for a server that restarts regularly, but a long-running server that spans a year boundary will show the wrong year.
+27. sendInviteEmail doesn't propagate non-JSON error responses (api.ts:89)
+If the server returns a non-JSON error (e.g., HTML 502 from a proxy), res.json() will throw an unhandled parse error.
+28. Notification date formatting inconsistent (NotificationPanel.tsx:74)
+Notifications display raw n.date (ISO string like "2025-03-15") without formatting. Other dates in the app use fmtT or locale-aware formatting.
