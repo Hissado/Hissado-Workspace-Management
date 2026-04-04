@@ -552,16 +552,15 @@ export default function ClientsPage({
       </Modal>
 
       {/* Confirm Delete */}
-      {confirmDelete && (
-        <ConfirmDialog
-          title={t.client_delete_title}
-          message={t.client_delete_msg(confirmDelete.name)}
-          confirmLabel={t.delete}
-          danger
-          onConfirm={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }}
-          onCancel={() => setConfirmDelete(null)}
-        />
-      )}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title={t.client_delete_title}
+        message={confirmDelete ? t.client_delete_msg(confirmDelete.name) : ""}
+        confirmLabel={t.delete}
+        danger
+        onConfirm={() => { if (confirmDelete) { onDelete(confirmDelete.id); setConfirmDelete(null); } }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

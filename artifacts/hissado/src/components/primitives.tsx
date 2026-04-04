@@ -1,5 +1,5 @@
 import { type CSSProperties, type ReactNode, useState, useEffect } from "react";
-import { FILE_TYPES, STATUS_COLORS, PRIORITY_COLORS } from "@/lib/data";
+import { FILE_TYPES, STATUS_COLORS, PRIORITY_COLORS, type TaskStatus, type TaskPriority } from "@/lib/data";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // ── Premium Color System ──
@@ -469,7 +469,7 @@ export function FileIcon({ type, size = 40 }: { type: string; size?: number }) {
 
 // ── Status Badge ──
 export function StatusBadge({ status }: { status: string }) {
-  const sc = STATUS_COLORS[status] || { bg: C.g100, t: C.g600, a: C.g400 };
+  const sc = STATUS_COLORS[status as TaskStatus] || { bg: C.g100, t: C.g600, a: C.g400 };
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
@@ -485,7 +485,7 @@ export function StatusBadge({ status }: { status: string }) {
 
 // ── Priority Badge ──
 export function PriorityBadge({ pri }: { pri: string }) {
-  const pc = PRIORITY_COLORS[pri] || { bg: C.g100, t: C.g600, d: C.g400 };
+  const pc = PRIORITY_COLORS[pri as TaskPriority] || { bg: C.g100, t: C.g600, d: C.g400 };
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,

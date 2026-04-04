@@ -107,8 +107,8 @@ export default function App() {
 
   const handleAutoSignOut = useCallback(() => {
     setCurrentUser(null);
-    pushToast({ type: "message", title: "Signed out", body: "You were signed out due to inactivity." });
-  }, [setCurrentUser]);
+    pushToast({ type: "message", title: t.session_timeout_title, body: t.session_timeout_body });
+  }, [setCurrentUser, t]);
 
   const { showWarning: showTimeoutWarning, countdown: timeoutCountdown, stayActive } = useSessionTimeout({
     enabled: !!currentUser,
@@ -255,8 +255,7 @@ export default function App() {
     } else {
       setCallState({ type: "active", roomName, title, videoEnabled });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, realtime, users]);
+  }, [currentUser, lang, realtime, users]);
 
   // ── Message handling ─────────────────────────────────────────────────────────
 
@@ -291,7 +290,7 @@ export default function App() {
         }).catch(() => {});
       }
     });
-  }, [addMessage, conversations, currentUser, realtime, users]);
+  }, [addMessage, conversations, currentUser, lang, realtime, users]);
 
   // ── Task / project helpers ───────────────────────────────────────────────────
 
@@ -520,12 +519,12 @@ export default function App() {
         <IncomingCall
           signal={callState.signal}
           onAccept={() => {
-            const sig = (callState as { type: "incoming"; signal: CallSignal }).signal;
+            const sig = callState.signal;
             realtime.acceptCall(sig.callerId, sig.callId, sig.roomName, sig.videoEnabled);
             setCallState({ type: "active", roomName: sig.roomName, title: sig.callerName, videoEnabled: sig.videoEnabled });
           }}
           onDecline={() => {
-            const sig = (callState as { type: "incoming"; signal: CallSignal }).signal;
+            const sig = callState.signal;
             realtime.declineCall(sig.callerId, sig.callId);
             setCallState(null);
           }}
@@ -570,6 +569,7 @@ export default function App() {
         <SessionTimeoutModal
           countdown={timeoutCountdown}
           lang={lang}
+          inactiveDuration={55}
           onSignOut={() => setCurrentUser(null)}
           onStayActive={stayActive}
         />

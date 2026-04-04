@@ -71,7 +71,9 @@ export default function NotificationPanel({ notifications, onClose, onMarkAllRea
               )}
               <div style={{ flex: 1, marginLeft: n.read ? 16 : 0 }}>
                 <div style={{ fontSize: 13, color: C.g700 }}>{n.text}</div>
-                <div style={{ fontSize: 11, color: C.g400, marginTop: 3 }}>{n.date || ""}</div>
+                <div style={{ fontSize: 11, color: C.g400, marginTop: 3 }}>
+                  {n.date ? new Date(n.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}
+                </div>
               </div>
             </div>
           ))}

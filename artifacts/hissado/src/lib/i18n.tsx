@@ -499,6 +499,10 @@ const T = {
     dash_clients_projects_fn: (n: number) => `${n} project${n === 1 ? "" : "s"}`,
     dash_clients_services_fn: (n: number) => `${n} service${n === 1 ? "" : "s"}`,
 
+    // Session timeout
+    session_timeout_title: "Signed out",
+    session_timeout_body: "You were signed out due to inactivity.",
+
     // Common
     search_tasks: "Search tasks...",
     progress: "Progress",
@@ -1047,6 +1051,10 @@ const T = {
     dash_clients_view_all: "Voir tous les clients",
     dash_clients_projects_fn: (n: number) => `${n} projet${n > 1 ? "s" : ""}`,
     dash_clients_services_fn: (n: number) => `${n} service${n > 1 ? "s" : ""}`,
+
+    // Session timeout
+    session_timeout_title: "Déconnecté(e)",
+    session_timeout_body: "Vous avez été déconnecté(e) pour cause d'inactivité.",
 
     // Common
     search_tasks: "Rechercher des tâches...",

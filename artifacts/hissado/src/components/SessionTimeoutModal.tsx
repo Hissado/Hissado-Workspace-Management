@@ -3,12 +3,14 @@ import type { Lang } from "@/lib/i18n";
 interface SessionTimeoutModalProps {
   countdown: number;
   lang: Lang;
+  /** Minutes of inactivity before the timeout fires (used in the warning text). */
+  inactiveDuration: number;
   onSignOut: () => void;
   onStayActive: () => void;
 }
 
 export default function SessionTimeoutModal({
-  countdown, lang, onSignOut, onStayActive,
+  countdown, lang, inactiveDuration, onSignOut, onStayActive,
 }: SessionTimeoutModalProps) {
   const isFr = lang === "fr";
 
@@ -44,8 +46,8 @@ export default function SessionTimeoutModal({
         </h2>
         <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.65, margin: "0 0 8px" }}>
           {isFr
-            ? "Vous avez été inactif(ve) pendant 55 minutes."
-            : "You've been inactive for 55 minutes."}
+            ? `Vous avez été inactif(ve) pendant ${inactiveDuration} minutes.`
+            : `You've been inactive for ${inactiveDuration} minutes.`}
         </p>
         <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.65, margin: "0 0 28px" }}>
           {isFr ? "Déconnexion automatique dans" : "You'll be signed out automatically in"}

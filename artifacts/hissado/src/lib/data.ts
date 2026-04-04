@@ -9,9 +9,9 @@ export const now = new Date();
 /** Formats a Date as an ISO date string (YYYY-MM-DD). */
 export const fmt = (d: Date) => d.toISOString().split("T")[0];
 
-/** Formats a date/string as a human-readable time (e.g. "3:45 PM"). */
+/** Formats a date/string as a human-readable time using the system locale. */
 export const fmtT = (d: string | Date) =>
-  new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  new Date(d).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
 /** Returns a new Date offset by `n` days from `d`. */
 export const addD = (d: Date, n: number) => {
@@ -79,6 +79,8 @@ export type User = {
   invitedBy?: string;
 };
 
+export type ProjectStatus = "active" | "on-hold" | "completed";
+
 export type Project = {
   id: string;
   name: string;
@@ -86,12 +88,14 @@ export type Project = {
   color: string;
   owner: string;
   members: string[];
-  status: "active" | "on-hold" | "completed";
+  status: ProjectStatus;
   clientId?: string;
   created: string;
 };
 
 export type ServiceCadence = "weekly" | "monthly" | "quarterly" | "annual";
+
+export type ServiceStatus = "active" | "paused" | "completed";
 
 export type Service = {
   id: string;
@@ -101,13 +105,16 @@ export type Service = {
   cadence: ServiceCadence;
   members: string[];
   owner: string;
-  status: "active" | "paused" | "completed";
+  status: ServiceStatus;
   clientId?: string;
   created: string;
 };
 
 export type SubTask = { id: string; t: string; done: boolean };
 export type Comment = { id: string; uid: string; text: string; date: string };
+
+export type TaskStatus   = "To Do" | "In Progress" | "In Review" | "Done";
+export type TaskPriority = "Low" | "Medium" | "High" | "Urgent";
 
 export type Task = {
   id: string;
@@ -117,9 +124,9 @@ export type Task = {
   sId?: string;
   title: string;
   desc: string;
-  status: "To Do" | "In Progress" | "In Review" | "Done";
+  status: TaskStatus;
   /** Priority level. */
-  pri: "Low" | "Medium" | "High" | "Urgent";
+  pri: TaskPriority;
   assignee: string;
   due: string;
   created: string;
@@ -138,9 +145,11 @@ export type Notification = {
   date: string;
 };
 
+export type ConversationType = "direct" | "group";
+
 export type Conversation = {
   id: string;
-  type: "direct" | "group";
+  type: ConversationType;
   name: string | null;
   parts: string[];
   pId?: string;
@@ -236,14 +245,14 @@ export const ALL_PERMISSIONS: { id: Permission; group: string; groupFr: string; 
 export const STATUSES   = ["To Do", "In Progress", "In Review", "Done"] as const;
 export const PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
 
-export const PRIORITY_COLORS: Record<string, { bg: string; t: string; d: string }> = {
+export const PRIORITY_COLORS: Record<TaskPriority, { bg: string; t: string; d: string }> = {
   Low:    { bg: "#E8F5E9", t: "#2E7D32", d: "#4CAF50" },
   Medium: { bg: "#FFF3E0", t: "#E65100", d: "#FF9800" },
   High:   { bg: "#FCE4EC", t: "#C62828", d: "#EF5350" },
   Urgent: { bg: "#F3E5F5", t: "#6A1B9A", d: "#AB47BC" },
 };
 
-export const STATUS_COLORS: Record<string, { bg: string; t: string; a: string }> = {
+export const STATUS_COLORS: Record<TaskStatus, { bg: string; t: string; a: string }> = {
   "To Do":      { bg: "#E2E5EE", t: "#4A5268", a: "#9BA3B5" },
   "In Progress":{ bg: "#DBEAFE", t: "#1E40AF", a: "#3B82F6" },
   "In Review":  { bg: "#FEF3C7", t: "#92400E", a: "#F59E0B" },

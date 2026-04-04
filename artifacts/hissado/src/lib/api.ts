@@ -99,5 +99,9 @@ export async function sendInviteEmail(payload: InvitePayload): Promise<InviteRes
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    return { success: false, error: data.error ?? `Server error ${res.status}` };
+  }
   return res.json();
 }

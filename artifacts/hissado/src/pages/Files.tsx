@@ -73,6 +73,12 @@ export default function Files({ files, folders, users, projects, services, onAdd
   const svcMap  = useMemo(() => Object.fromEntries(services.map((s) => [s.id, s])), [services]);
   const folderMap = useMemo(() => Object.fromEntries(folders.map((f) => [f.id, f])), [folders]);
 
+  const projFolders  = (id: string) => folders.filter((f) => f.pId === id);
+  const projFiles    = (id: string) => files.filter((f) => f.pId === id);
+  const svcFolders   = (id: string) => folders.filter((f) => f.sId === id);
+  const svcFiles     = (id: string) => files.filter((f) => f.sId === id);
+  const folderFiles  = (id: string) => files.filter((f) => f.fId === id);
+
   const totalFiles = files.length;
 
   /* displayed files/folders based on selection */

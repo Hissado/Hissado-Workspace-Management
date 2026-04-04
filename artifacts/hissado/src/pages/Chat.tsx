@@ -1057,7 +1057,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                 }}
               >
                 <GlobeIcon />
-                {autoTransLang !== "off" ? (t as Record<string, string>)[`chat_lang_${autoTransLang}`] : ""}
+                {autoTransLang !== "off" ? (t as unknown as Record<string, string>)[`chat_lang_${autoTransLang}`] : ""}
                 <ChevronIcon />
               </button>
               {showLangPicker && (
@@ -1081,7 +1081,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                         fontWeight: autoTransLang === code ? 700 : 400,
                       }}
                     >
-                      {(t as Record<string, string>)[labelKey]}
+                      {(t as unknown as Record<string, string>)[labelKey]}
                     </button>
                   ))}
                 </div>

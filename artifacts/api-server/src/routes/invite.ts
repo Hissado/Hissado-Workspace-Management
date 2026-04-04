@@ -5,6 +5,16 @@ import { logger } from "../lib/logger.js";
 
 const router = Router();
 
+/** Replaces HTML special characters with their entity equivalents. */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 router.post("/invite", async (req, res) => {
   const { name, email, role, tempPassword, invitedBy, workspaceName, lang } = req.body as {
     name: string;
@@ -16,20 +26,20 @@ router.post("/invite", async (req, res) => {
     lang?: string;
   };
 
-  if (!name || !email || !role || !tempPassword) {
-    return res.status(400).json({ error: "Missing required fields: name, email, role, tempPassword" });
+  if (!name || !email || !role || !tempPassword || !invitedBy) {
+    return res.status(400).json({ error: "Missing required fields: name, email, role, tempPassword, invitedBy" });
   }
 
   try {
     const { client, fromEmail } = await getUncachableResendClient();
     const { subject, html } = buildInviteEmail({
-      name,
+      name:          escapeHtml(name),
       email,
-      roleLabel: role.charAt(0).toUpperCase() + role.slice(1),
+      roleLabel:     role.charAt(0).toUpperCase() + role.slice(1),
       tempPassword,
-      invitedBy,
-      workspaceName: workspaceName || "Hissado Client",
-      lang: lang === "fr" ? "fr" : "en",
+      invitedBy:     escapeHtml(invitedBy),
+      workspaceName: escapeHtml(workspaceName || "Hissado Client"),
+      lang:          lang === "fr" ? "fr" : "en",
     });
 
     const result = await client.emails.send({

@@ -35,9 +35,6 @@ interface AppState {
   selectedTask: Task | null;
   showTaskModal: boolean;
   showProjectModal: boolean;
-  showUserModal: boolean;
-  showNotifPanel: boolean;
-  editingUser: User | null;
 
   // Domain data
   users: User[];
@@ -67,9 +64,6 @@ interface AppState {
   setSelectedTask: (t: Task | null) => void;
   setShowTaskModal: (v: boolean) => void;
   setShowProjectModal: (v: boolean) => void;
-  setShowUserModal: (v: boolean) => void;
-  setShowNotifPanel: (v: boolean) => void;
-  setEditingUser: (u: User | null) => void;
 
   // Task actions
   addTask: (t: Task) => void;
@@ -146,9 +140,6 @@ export const useStore = create<AppState>()(
       selectedTask: null,
       showTaskModal: false,
       showProjectModal: false,
-      showUserModal: false,
-      showNotifPanel: false,
-      editingUser: null,
 
       users: SEED_USERS,
       projects: SEED_PROJECTS,
@@ -184,9 +175,6 @@ export const useStore = create<AppState>()(
       setSelectedTask: (t) => set({ selectedTask: t }),
       setShowTaskModal: (v) => set({ showTaskModal: v }),
       setShowProjectModal: (v) => set({ showProjectModal: v }),
-      setShowUserModal: (v) => set({ showUserModal: v }),
-      setShowNotifPanel: (v) => set({ showNotifPanel: v }),
-      setEditingUser: (u) => set({ editingUser: u }),
 
       // ── Tasks ──
       addTask: (t) => set((s) => ({ tasks: [...s.tasks, t] })),
@@ -196,14 +184,20 @@ export const useStore = create<AppState>()(
       // ── Projects ──
       addProject: (p) => set((s) => ({ projects: [...s.projects, p] })),
       updateProject: (p) => set((s) => ({ projects: s.projects.map((x) => (x.id === p.id ? p : x)) })),
-      deleteProject: (id) => set((s) => ({
-        projects: s.projects.filter((x) => x.id !== id),
-        // Cascade-delete associated tasks, files, folders, and conversations
-        tasks:         s.tasks.filter((t) => t.pId !== id),
-        files:         s.files.filter((f) => f.pId !== id),
-        folders:       s.folders.filter((f) => f.pId !== id),
-        conversations: s.conversations.filter((c) => c.pId !== id),
-      })),
+      deleteProject: (id) => set((s) => {
+        const removedConvoIds = new Set(
+          s.conversations.filter((c) => c.pId === id).map((c) => c.id)
+        );
+        return {
+          projects:      s.projects.filter((x) => x.id !== id),
+          // Cascade-delete associated tasks, files, folders, conversations, and their messages
+          tasks:         s.tasks.filter((t) => t.pId !== id),
+          files:         s.files.filter((f) => f.pId !== id),
+          folders:       s.folders.filter((f) => f.pId !== id),
+          conversations: s.conversations.filter((c) => c.pId !== id),
+          messages:      s.messages.filter((m) => !removedConvoIds.has(m.cId)),
+        };
+      }),
 
       // ── Services ──
       addService: (sv) => set((s) => ({ services: [...s.services, sv] })),

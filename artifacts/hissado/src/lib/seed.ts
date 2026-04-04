@@ -14,7 +14,7 @@ export const SEED_ROLE_DEFS: RoleDef[] = [
   { id: "client",  label: "Client",  isSystem: true, badgeVariant: "default" },
 ];
 
-const ALL_PERMISSIONS: Permission[] = [
+const ALL_PERMISSION_IDS: Permission[] = [
   "view_dashboard", "view_projects", "create_projects",
   "view_tasks", "create_tasks",
   "view_files", "upload_files",
@@ -25,8 +25,8 @@ const ALL_PERMISSIONS: Permission[] = [
 ];
 
 export const SEED_ROLE_PERMISSIONS: Record<string, Permission[]> = {
-  admin:   [...ALL_PERMISSIONS],
-  manager: [...ALL_PERMISSIONS],
+  admin:   [...ALL_PERMISSION_IDS],
+  manager: [...ALL_PERMISSION_IDS],
   member: [
     "view_dashboard", "view_projects", "view_tasks", "create_tasks",
     "view_files", "upload_files", "view_chat", "send_messages",
