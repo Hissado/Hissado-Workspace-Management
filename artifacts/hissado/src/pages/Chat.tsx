@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { C, Av, Btn, Modal, Inp } from "@/components/primitives";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Conversation, Message, User, Notification, Attachment, SharedLocation } from "@/lib/data";
 import { uid, fmtT } from "@/lib/data";
@@ -425,16 +425,20 @@ function DrawPad({ onSend, onClose, t }: { onSend: (dataUrl: string) => void; on
 }
 
 /* ─── Language picker dropdown ───────────────────────────── */
-const LANGS = [
+type LangLabelKey = Extract<TranslationKey,
+  "chat_trans_off" | "chat_lang_en" | "chat_lang_fr" | "chat_lang_zh" |
+  "chat_lang_es" | "chat_lang_de" | "chat_lang_ar" | "chat_lang_pt" | "chat_lang_ja"
+>;
+const LANGS: Array<{ code: string; labelKey: LangLabelKey }> = [
   { code: "off", labelKey: "chat_trans_off" },
-  { code: "en", labelKey: "chat_lang_en" },
-  { code: "fr", labelKey: "chat_lang_fr" },
-  { code: "zh", labelKey: "chat_lang_zh" },
-  { code: "es", labelKey: "chat_lang_es" },
-  { code: "de", labelKey: "chat_lang_de" },
-  { code: "ar", labelKey: "chat_lang_ar" },
-  { code: "pt", labelKey: "chat_lang_pt" },
-  { code: "ja", labelKey: "chat_lang_ja" },
+  { code: "en",  labelKey: "chat_lang_en" },
+  { code: "fr",  labelKey: "chat_lang_fr" },
+  { code: "zh",  labelKey: "chat_lang_zh" },
+  { code: "es",  labelKey: "chat_lang_es" },
+  { code: "de",  labelKey: "chat_lang_de" },
+  { code: "ar",  labelKey: "chat_lang_ar" },
+  { code: "pt",  labelKey: "chat_lang_pt" },
+  { code: "ja",  labelKey: "chat_lang_ja" },
 ];
 
 /* ─── Call icons ──────────────────────────────────────────── */
@@ -1057,7 +1061,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                 }}
               >
                 <GlobeIcon />
-                {autoTransLang !== "off" ? (t as unknown as Record<string, string>)[`chat_lang_${autoTransLang}`] : ""}
+                {autoTransLang !== "off" ? t[LANGS.find((l) => l.code === autoTransLang)?.labelKey ?? "chat_lang_en"] : ""}
                 <ChevronIcon />
               </button>
               {showLangPicker && (
@@ -1081,7 +1085,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                         fontWeight: autoTransLang === code ? 700 : 400,
                       }}
                     >
-                      {(t as unknown as Record<string, string>)[labelKey]}
+                      {t[labelKey]}
                     </button>
                   ))}
                 </div>
