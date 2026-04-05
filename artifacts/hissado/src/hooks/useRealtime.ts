@@ -27,6 +27,8 @@ interface Handlers {
   onCallDeclined?: (callId: string) => void;
   onCallEnded?: (callId: string) => void;
   onNewMessage?: (signal: MessageSignal) => void;
+  /** Called when another browser creates, updates, or deletes a user — triggers a re-fetch. */
+  onUsersChanged?: () => void;
 }
 
 /* Exponential-backoff delays (ms) for SSE reconnection */
@@ -75,6 +77,10 @@ export function useRealtime(userId: string | null, handlers: Handlers) {
       handlersRef.current.onCallEnded?.((d as { callId: string }).callId));
     on("new-message", (d) =>
       handlersRef.current.onNewMessage?.(d as MessageSignal));
+
+    /* Fired when a user is created, updated, or deleted in another browser */
+    on("users-changed", () =>
+      handlersRef.current.onUsersChanged?.());
 
     es.onopen = () => {
       /* Successful (re)connect — reset fail counter */

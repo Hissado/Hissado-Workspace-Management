@@ -1,0 +1,306 @@
+Please perform a deep technical investigation of the app’s cross-browser synchronization, user propagation, and authentication consistency issues, and implement durable fixes at the backend, real-time sync, caching, and frontend state-management levels.
+
+Objective
+
+Identify the root causes of why newly created users and updated records appear correctly in the browser where the change was made, but do not appear correctly in other browsers or sessions, and why newly created users cannot reliably log in from other browsers.
+
+The goal is to make all writes, updates, user creation events, and authentication state fully consistent across browsers, devices, and sessions.
+
+⸻
+
+Current symptoms
+
+We are experiencing serious cross-browser synchronization issues:
+	•	A new team member is created in one browser
+	•	App data is updated in one browser
+	•	The changes appear correctly in that same browser
+	•	The same changes do not appear in other browsers
+	•	Newly created users are not always recognized in other browsers/sessions
+	•	In some cases, those users cannot log in from another browser even though they were just created
+
+This suggests there may be problems with one or more of the following:
+	•	database write persistence
+	•	eventual consistency / propagation delay
+	•	frontend cache invalidation
+	•	stale session state
+	•	auth user creation vs profile creation mismatch
+	•	real-time sync/subscription failures
+	•	tenant/workspace scoping inconsistencies
+	•	browser-local state overriding server truth
+
+⸻
+
+Scope of investigation
+
+Please review the full lifecycle of create/update/auth flows across the app, including:
+	•	user creation flow
+	•	team member/profile creation flow
+	•	related database inserts/updates
+	•	auth account provisioning
+	•	role/permission assignment
+	•	session initialization
+	•	browser cache/state hydration
+	•	real-time subscriptions
+	•	cross-browser visibility rules
+	•	login/authentication validation
+	•	deployment/runtime environment consistency
+
+⸻
+
+Root-cause investigation areas
+
+1. User creation flow
+
+Please trace what happens when a new team member/user is created.
+
+Verify:
+	•	whether the auth user is actually created successfully
+	•	whether the related profile/team-member record is created successfully
+	•	whether both records are linked correctly
+	•	whether role, department, permissions, and assignments are persisted correctly
+	•	whether the user exists only in local UI state or truly exists in the database
+	•	whether there is a mismatch between auth identity and app user/profile records
+
+Check for failures such as:
+	•	auth account created but profile record missing
+	•	profile record created but auth account missing
+	•	local optimistic UI showing success despite failed backend write
+	•	insert succeeding in one table but failing in another
+	•	race conditions between user creation and role/assignment creation
+
+2. Cross-browser data visibility
+
+Please investigate why updates are visible in the source browser only.
+
+Verify:
+	•	whether the updated data is actually persisted to the database
+	•	whether other browsers are querying the latest server state
+	•	whether stale frontend cache/query results are being reused
+	•	whether state is being read from local storage/session storage instead of server truth
+	•	whether browser-specific cached data is masking the actual system state
+	•	whether revalidation/refetch logic is missing after writes
+
+Check:
+	•	cache invalidation logic
+	•	query keys
+	•	server/client rendering mismatches
+	•	stale state in stores
+	•	missing re-fetch after mutations
+	•	local-only mock state or fallback state still in use
+
+3. Authentication inconsistency across browsers
+
+Please investigate why newly created users cannot reliably log in from another browser.
+
+Verify:
+	•	whether the auth provider has fully created the account
+	•	whether email/password credentials are stored and validated correctly
+	•	whether email confirmation or first-login state is blocking access
+	•	whether the app is checking login against the wrong table/source
+	•	whether environment or auth config differs across sessions/browsers
+	•	whether account status flags are preventing login
+	•	whether temporary/default password logic behaves differently across browsers
+
+Check for:
+	•	incomplete auth provisioning
+	•	invalid password hashing/credential creation flow
+	•	browser-specific session assumptions
+	•	login logic depending on stale cached profile data
+	•	auth token parsing/session restore bugs
+	•	incorrect tenant/workspace gating during login
+
+4. Real-time sync / subscription issues
+
+Please review whether real-time updates are actually being broadcast and consumed correctly.
+
+Verify:
+	•	whether create/update events are emitted after mutations
+	•	whether other browsers are subscribed to the correct channels
+	•	whether subscription filters are too narrow or incorrect
+	•	whether listeners are attached and cleaned up correctly
+	•	whether refresh/reconnect logic restores subscriptions properly
+	•	whether updates require manual refresh because real-time events are missing
+
+Check for:
+	•	broken websocket/realtime configuration
+	•	channel authorization issues
+	•	wrong event payloads
+	•	stale listeners
+	•	duplicate listeners
+	•	missed events after reconnect
+	•	race conditions between initial fetch and live updates
+
+5. Backend persistence and data integrity
+
+Please confirm that all writes are committed properly and visible to all sessions.
+
+Audit:
+	•	database inserts and updates
+	•	transaction handling
+	•	API response correctness
+	•	server actions / endpoints / RPC functions
+	•	row-level security or permission policies
+	•	tenant/client scoping rules
+	•	soft-delete or status flags
+	•	replication or environment issues if applicable
+
+Check whether:
+	•	the write succeeds but read policies block visibility in other sessions
+	•	records are scoped incorrectly to the wrong tenant/client/workspace
+	•	admin browser bypasses restrictions while others do not
+	•	updated data is written to a different environment/schema than the one other browsers are reading from
+
+6. Frontend state-management and refresh behavior
+
+Please inspect whether the UI is incorrectly trusting local state over backend state.
+
+Review:
+	•	state store architecture
+	•	mutation handlers
+	•	optimistic updates
+	•	invalidation/refetch flow
+	•	hydration after login
+	•	session restoration
+	•	route-level data loading
+	•	stale state after browser reload
+
+Check whether:
+	•	the source browser is showing local optimistic state only
+	•	other browsers are correctly showing server data, revealing that writes never completed
+	•	state resets or hydration failures block fresh data visibility
+	•	profile/user lists need forced re-fetch after create/update actions
+
+⸻
+
+Required debugging method
+
+Please do not apply surface-level fixes only. Perform structured root-cause analysis.
+
+A. Trace the full create/update/login lifecycle
+
+For a new team member creation, trace:
+	1.	admin submits create-user form
+	2.	frontend mutation payload is built
+	3.	backend endpoint/service is called
+	4.	auth user is created
+	5.	app profile/team-member record is created
+	6.	role/permissions/assignments are linked
+	7.	database commit completes
+	8.	response returns success/failure
+	9.	cache/state is invalidated/refetched
+	10.	realtime event is emitted
+	11.	other browsers receive update
+	12.	new user can log in successfully in a separate browser
+
+B. Add structured diagnostics
+
+Please add diagnostic logging around:
+	•	user creation request payload
+	•	auth user creation result
+	•	profile/team-member creation result
+	•	role assignment result
+	•	database IDs returned
+	•	mutation success/failure state
+	•	cache invalidation/refetch triggers
+	•	realtime event emission and receipt
+	•	login attempt flow and failure reason
+
+Logs should make it possible to determine exactly where the flow breaks.
+
+C. Validate against server truth
+
+For each mutation, confirm:
+	•	what the UI shows
+	•	what the API returned
+	•	what the database actually contains
+	•	what a fresh browser session reads from the server
+
+Do not rely only on the browser that initiated the change.
+
+⸻
+
+Implementation expectations
+
+Please implement durable fixes, including where necessary:
+
+User creation
+	•	ensure auth user creation and app profile creation are atomic or reliably coordinated
+	•	ensure partial failures are handled and surfaced clearly
+	•	ensure successful creation is confirmed against backend state, not just local UI state
+
+Cross-browser sync
+	•	ensure mutations invalidate and refetch all relevant data queries
+	•	ensure realtime subscriptions deliver updates to other active sessions
+	•	ensure refreshed sessions pull the latest server state
+
+Authentication
+	•	ensure newly created users can authenticate from any browser immediately after creation, subject to intended onboarding rules
+	•	ensure login depends on consistent backend truth, not stale client state
+
+State management
+	•	eliminate local-only illusions of success
+	•	align UI state with confirmed backend writes
+	•	fix stale cache/query issues
+
+Error handling
+	•	surface actual backend/auth failures in the UI
+	•	avoid silent failures or false-success states
+	•	provide actionable error messages for failed user creation or login
+
+⸻
+
+QA scenarios to test
+
+Please validate at minimum the following:
+
+User creation
+	•	create a user in Browser A
+	•	verify user appears in Browser B without needing hidden/manual repair
+	•	verify user exists in backend tables and auth system
+	•	verify roles and assignments appear correctly in both browsers
+
+Data update
+	•	update team member details in Browser A
+	•	verify changes appear in Browser B
+	•	verify changes persist after refresh in both browsers
+	•	verify changes persist after logout/login
+
+Login
+	•	create a new user
+	•	log in using Browser A
+	•	log in using Browser B
+	•	log in on mobile if applicable
+	•	confirm credentials work consistently across sessions
+
+Sync/realtime
+	•	keep two browsers open simultaneously
+	•	create/update data in one browser
+	•	verify the other browser receives the change in real time or after correct revalidation
+	•	verify no stale lists remain visible
+
+Failure handling
+	•	simulate backend failure during user creation
+	•	verify UI does not falsely show success
+	•	verify partial records are not left orphaned without notice
+
+⸻
+
+Expected deliverable
+
+Please provide:
+	1.	a summary of the root causes identified
+	2.	the exact components/services/files affected
+	3.	the fixes implemented
+	4.	any schema/auth/permission/state-management changes made
+	5.	any race conditions or caching issues resolved
+	6.	any remaining risks or technical debt
+	7.	a validation checklist confirming cross-browser creation, sync, and login now work correctly
+
+Final goal
+
+The final result should ensure that:
+	•	newly created users are fully created in the backend, not just locally displayed
+	•	app updates are reflected consistently across browsers and sessions
+	•	newly created users can log in reliably from any browser
+	•	the app uses server truth as the source of record
+	•	sync, auth, and visibility behavior are stable and production-ready

@@ -36,6 +36,31 @@ export async function updateUserPassword(userId: string, password: string): Prom
   if (!res.ok) throw new Error(`PUT /users/${userId} failed: ${res.status}`);
 }
 
+/** Persists a full profile update for a user to the server (cross-browser sync). */
+export async function updateUserProfile(userId: string, updates: Partial<User>): Promise<void> {
+  const res = await fetch(`${BASE}/users/${userId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`PUT /users/${userId} failed: ${res.status}`);
+}
+
+/** Deletes a user from the server (cross-browser sync). */
+export async function deleteUserOnServer(userId: string): Promise<void> {
+  const res = await fetch(`${BASE}/users/${userId}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 404) throw new Error(`DELETE /users/${userId} failed: ${res.status}`);
+}
+
+/** Broadcasts a signal event to ALL currently connected users (for data-change notifications). */
+export async function broadcastSignal(event: string, data: unknown = {}, excludeUserId?: string): Promise<void> {
+  await fetch(`${BASE}/signal/broadcast`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event, data, excludeUserId }),
+  }).catch(() => { /* non-fatal */ });
+}
+
 // ── Heartbeat ─────────────────────────────────────────────────────────────────
 
 /** Sends a presence heartbeat so the server can track online status. */

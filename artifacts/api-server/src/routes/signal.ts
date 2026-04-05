@@ -40,7 +40,7 @@ router.get("/signal/stream", (req: Request, res: Response) => {
   });
 });
 
-/* ── POST /api/signal/send  (fire-and-forget signal) ── */
+/* ── POST /api/signal/send  (fire-and-forget signal to one user) ── */
 router.post("/signal/send", (req: Request, res: Response) => {
   const { to, event, data } = req.body as {
     to: string; event: string; data: unknown;
@@ -61,6 +61,36 @@ router.post("/signal/send", (req: Request, res: Response) => {
       }
     }
     dead.forEach((r) => targets.delete(r));
+  }
+
+  res.json({ delivered });
+});
+
+/* ── POST /api/signal/broadcast  (send event to ALL connected users) ── */
+router.post("/signal/broadcast", (req: Request, res: Response) => {
+  const { event, data, excludeUserId } = req.body as {
+    event: string; data: unknown; excludeUserId?: string;
+  };
+  if (!event) { res.status(400).json({ error: "event is required" }); return; }
+
+  let delivered = 0;
+  const allDead: { userId: string; res: Response }[] = [];
+
+  for (const [userId, connections] of clients.entries()) {
+    if (excludeUserId && userId === excludeUserId) continue;
+    for (const r of connections) {
+      try {
+        sendEvent(r, event, data ?? {});
+        delivered++;
+      } catch {
+        allDead.push({ userId, res: r });
+      }
+    }
+  }
+
+  /* Clean up dead connections */
+  for (const { userId, res: r } of allDead) {
+    clients.get(userId)?.delete(r);
   }
 
   res.json({ delivered });

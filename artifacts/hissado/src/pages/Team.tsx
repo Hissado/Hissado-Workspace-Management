@@ -6,7 +6,7 @@ import type { User, RoleDef } from "@/lib/data";
 import { uid } from "@/lib/data";
 import { canInviteMembers, canDeleteUser } from "@/lib/access";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { createUser, sendInviteEmail } from "@/lib/api";
+import { createUser, sendInviteEmail, updateUserProfile, deleteUserOnServer, broadcastSignal } from "@/lib/api";
 
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>;
@@ -108,7 +108,7 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
   const saveEdit = () => {
     if (!showEdit || !editName.trim()) return;
     const av = editName.trim().split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-    onUpdateUser({
+    const updated: User = {
       ...showEdit,
       name: editName.trim(),
       email: editEmail.trim().toLowerCase(),
@@ -117,8 +117,16 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
       phone: editPhone.trim() || undefined,
       status: editStatus,
       av,
-    });
+    };
+    /* 1 — Update local store immediately (optimistic) */
+    onUpdateUser(updated);
     setShowEdit(null);
+    /* 2 — Persist to server so other browsers pick it up on their next sync */
+    updateUserProfile(updated.id, updated).catch(() => {
+      /* Non-fatal: the local change is already applied; retry happens on next sync cycle */
+    });
+    /* 3 — Broadcast to all connected browsers so they re-fetch immediately */
+    broadcastSignal("users-changed", { action: "updated", userId: updated.id });
   };
 
   const resetInviteForm = () => {
@@ -156,14 +164,15 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
 
     try {
       /* 1 — Create user on server (makes credentials work across all browsers) */
-      await createUser(newUser).catch(() => {
-        // Non-fatal: local store is the source of truth; server sync is best-effort
-      });
+      await createUser(newUser);
 
       /* 2 — Add to local store */
       onAddUser(newUser);
 
-      /* 3 — Send invite email (non-blocking — failure is warned but doesn't abort) */
+      /* 3 — Broadcast to all connected browsers so they see the new user immediately */
+      broadcastSignal("users-changed", { action: "created", userId: newUser.id });
+
+      /* 4 — Send invite email (non-blocking — failure is warned but doesn't abort) */
       const emailResult = await sendInviteEmail({
         name: newUser.name,
         email: newUser.email,
@@ -597,9 +606,17 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
         message={deleteTarget ? t.team_delete_confirm(deleteTarget.name) : ""}
         onConfirm={() => {
           if (deleteTarget) {
-            onDeleteUser(deleteTarget.id);
+            const id = deleteTarget.id;
+            /* 1 — Remove from local store immediately (optimistic) */
+            onDeleteUser(id);
             setDeleteTarget(null);
             setShowProfile(null);
+            /* 2 — Delete on server so other browsers stop seeing this user */
+            deleteUserOnServer(id).catch(() => {
+              /* Non-fatal: local is already updated; server will be consistent after next sync */
+            });
+            /* 3 — Broadcast so all connected browsers re-fetch the user list */
+            broadcastSignal("users-changed", { action: "deleted", userId: id });
           }
         }}
         onCancel={() => setDeleteTarget(null)}

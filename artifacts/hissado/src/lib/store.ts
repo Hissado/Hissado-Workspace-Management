@@ -279,13 +279,38 @@ export const useStore = create<AppState>()(
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
       mergeServerUsers: (serverUsers) => set((s) => {
-        // LOCAL DATA WINS — never overwrite local changes with server data.
-        // We only add server users whose ID is not already known locally
-        // (e.g. a user registered on another device via email invite).
+        // SERVER IS TRUTH for core identity fields (name, email, role, dept, status,
+        // mustChangePassword, clientId, av, password). We merge server data into local
+        // users so that edits made in another browser are immediately reflected here.
+        // Local-only fields (color, photo, phone, etc.) that the server doesn't track
+        // are preserved from the local record.
+        const serverMap = new Map(serverUsers.map((u) => [u.id, u]));
+        let changed = false;
+
+        const merged = s.users.map((local) => {
+          const srv = serverMap.get(local.id);
+          if (!srv) return local; // user exists only locally — keep as-is
+          // Selectively apply server fields, preserving any local-only extras
+          const srvFields: Partial<typeof local> = {};
+          if (srv.name !== local.name)                               { srvFields.name = srv.name; changed = true; }
+          if (srv.email !== local.email)                             { srvFields.email = srv.email; changed = true; }
+          if (srv.role !== local.role)                               { srvFields.role = srv.role; changed = true; }
+          if (srv.dept !== local.dept)                               { srvFields.dept = srv.dept; changed = true; }
+          if (srv.status !== local.status)                           { srvFields.status = srv.status; changed = true; }
+          if (srv.av !== local.av && srv.av)                         { srvFields.av = srv.av; changed = true; }
+          if (srv.mustChangePassword !== local.mustChangePassword)   { srvFields.mustChangePassword = srv.mustChangePassword; changed = true; }
+          if (srv.clientId !== local.clientId)                       { srvFields.clientId = srv.clientId; changed = true; }
+          if (srv.password && srv.password !== local.password)       { srvFields.password = srv.password; changed = true; }
+          return Object.keys(srvFields).length > 0 ? { ...local, ...srvFields } : local;
+        });
+
+        // Add users that exist on the server but not locally
         const localIds = new Set(s.users.map((u) => u.id));
         const newFromServer = serverUsers.filter((srv) => !localIds.has(srv.id));
-        if (newFromServer.length === 0) return {};
-        return { users: [...s.users, ...newFromServer] };
+        if (newFromServer.length > 0) changed = true;
+
+        if (!changed) return {};
+        return { users: [...merged, ...newFromServer] };
       }),
       deleteUser: (id) => set((s) => {
         // Direct conversations involving this user are removed entirely

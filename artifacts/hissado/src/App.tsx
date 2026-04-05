@@ -105,6 +105,17 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
+  // Periodic re-sync: re-fetch users every 60 s as a safety net for missed SSE events
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchUsers()
+        .then((serverUsers) => { if (Array.isArray(serverUsers)) mergeServerUsers(serverUsers); })
+        .catch(() => { /* server unreachable — keep current local state */ });
+    }, 60_000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Session timeout ──────────────────────────────────────────────────────────
 
   const handleAutoSignOut = useCallback(() => {
@@ -193,6 +204,12 @@ export default function App() {
         onPress: () => { setPage("chat"); setChatOpenConvoId(signal.conversationId); },
       });
       desktopNotify(signal.fromName, signal.text, { tag: `msg-${signal.conversationId}` });
+    },
+    onUsersChanged: () => {
+      /* Another browser created, updated, or deleted a user — re-fetch and merge */
+      fetchUsers()
+        .then((serverUsers) => { if (Array.isArray(serverUsers)) mergeServerUsers(serverUsers); })
+        .catch(() => { /* server unreachable — keep current local state */ });
     },
   });
 
