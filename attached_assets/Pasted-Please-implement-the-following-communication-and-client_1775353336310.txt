@@ -1,0 +1,211 @@
+Please implement the following communication and client-experience enhancements in the app: (1) expanded emoji support in chat, (2) a structured complaint/request submission feature for clients, and (3) an app-sharing feature for web and mobile access.
+
+Objective
+
+Improve the communication layer and client self-service experience by:
+
+expanding the chat emoji system beyond the current limited set
+giving clients a formal way to submit complaints or requests outside the chat flow
+allowing users to share the app entry link easily across web and mobile
+1. Chat emoji enhancement
+Current issue
+
+The chat currently displays only 4 emojis, which is too limited and does not provide a modern messaging experience.
+
+Requirements
+
+Please replace or enhance the current emoji implementation so that:
+
+users can access a full emoji picker
+emojis can be inserted into chat messages easily
+the emoji picker is usable on both desktop and mobile
+emojis render correctly in:
+direct messages
+group chats
+message history
+notifications previews where applicable
+emoji input works consistently across supported browsers and devices
+Functional logic
+Clicking the emoji icon should open a full emoji selector
+Selecting an emoji should insert it into the current message input at the cursor position
+Users should be able to add multiple emojis in one message
+Emojis should persist correctly after sending, refreshing, syncing, and reloading conversation history
+The picker should close properly after selection or when clicking outside
+Mobile behavior should be optimized so the picker does not break the message composer layout
+Acceptance criteria
+More than 4 emojis are available; ideally a full standard emoji set
+User can open the emoji picker from the chat input
+Selected emojis appear in the message draft before sending
+Sent messages display emojis correctly for both sender and recipient
+Emojis remain visible after refresh and in historical messages
+Emoji behavior works in both one-to-one and group chats
+Emoji picker is functional on desktop and mobile
+2. Complaint / request submission feature
+Goal
+
+Add a dedicated structured workflow for clients to submit a complaint, issue, request, or formal note without using regular chat.
+
+Requirements
+
+Please create a separate feature/module for complaint/request submission that is distinct from chat.
+
+Clients should be able to:
+
+submit a complaint
+submit a service request
+report an issue
+raise a concern
+send a structured message requiring formal review
+Recommended fields
+
+Please include at minimum:
+
+subject/title
+category/type
+complaint
+request
+issue
+other
+description/details
+related project/service/client context if applicable
+optional attachment support
+submission date/time
+submitter identity
+status
+Workflow logic
+The client opens a dedicated “Complaint / Request” area
+The client fills out and submits the form
+The submission is stored in the database as a structured record, not as a regular chat message
+Relevant staff/admin users receive notification of the new submission
+The submission can be reviewed, updated, and tracked internally
+Statuses should support something like:
+new
+under review
+in progress
+resolved
+closed
+Permissions
+Clients can create and view only their own submissions
+Assigned staff/admin users can view and manage submissions linked to their scope
+Unauthorized users should not see unrelated submissions
+UI/UX expectations
+This feature should appear as its own menu item, button, or dashboard action
+It should feel formal, organized, and clearly separated from chat
+Clients should be able to view the history and status of past submissions
+Acceptance criteria
+Client can open a dedicated complaint/request form
+Client can submit a structured record successfully
+Submission is stored in the correct database table/entity
+Assigned internal users receive notification of the submission
+Client can later view submitted items and their statuses
+Staff/admin can update status and review details
+The feature is separate from normal messaging/chat
+Access is role-based and scoped correctly
+3. Share the app feature
+Goal
+
+Allow users to share the app access link easily, even with people who do not yet have a portal account.
+
+Requirements
+
+Please add a Share the App feature that allows users to send the platform link to others.
+
+The feature should:
+
+provide a shareable link to the app
+work on both mobile and web
+allow recipients to open the app landing/login page even if they do not yet have access credentials
+support native sharing where available on mobile
+provide a fallback copy-link action on desktop/web
+Functional logic
+Add a “Share App” action in an appropriate location, such as:
+settings
+dashboard
+menu/navigation
+onboarding/invitation area
+When triggered:
+on mobile, open the native device share sheet if supported
+on desktop/web, provide a copyable link and optional share modal
+The shared link should direct the recipient to the correct platform entry point
+If the recipient is not authenticated, they should land on the correct login, invitation, or landing page
+Shared links should not expose private data or authenticated content
+Security requirements
+Shared links must not bypass authentication
+Shared links must not expose project, client, or user-specific protected content
+Only the general app access URL or approved onboarding URL should be shareable unless explicitly designed otherwise
+Acceptance criteria
+User can trigger a Share App action from the platform
+On mobile, the native share flow works where supported
+On web/desktop, the link can be copied successfully
+Recipient can open the link on mobile or web
+Non-authenticated recipients are redirected to the appropriate entry point
+No private data is exposed through the shared link
+Feature works cleanly across desktop and mobile
+Technical implementation expectations
+
+Please also review the following during implementation:
+
+Frontend
+add or replace the emoji picker component
+add complaint/request form UI and submission history UI
+add app-sharing UI for desktop and mobile
+ensure responsive behavior across devices
+Backend / data model
+add a structured entity/table for complaint/request submissions
+include status, category, submitter, assignment, timestamps, and optional attachments
+add notification triggers for new submissions if required
+support auditability/history where appropriate
+Notifications
+
+For complaint/request submissions, ensure internal notifications can be sent to:
+
+assigned staff
+relevant managers
+admins where applicable
+Localization
+
+If the app is bilingual/multilingual, ensure these new features are also localized properly, including:
+
+emoji picker labels if present
+complaint/request form labels
+statuses
+share app UI text
+QA scenarios
+
+Please test at minimum:
+
+Emoji
+send emoji in direct chat
+send multiple emojis in one message
+emoji rendering after refresh
+emoji use on mobile and desktop
+Complaint/request
+client submits complaint
+client submits request with attachment
+staff receives notification
+staff updates status
+client sees updated status
+access restrictions prevent other clients from seeing unrelated records
+Share app
+share on mobile through native share
+copy app link on desktop
+open shared link while logged out
+open shared link on phone browser
+verify no protected content is exposed without authentication
+Expected deliverable
+
+Please provide:
+
+a summary of what was implemented
+affected components/modules
+any schema/data model changes
+permission logic applied
+notification logic added
+acceptance test results for each feature
+Final goal
+
+The final result should provide:
+
+a modern full emoji experience in chat
+a formal client complaint/request workflow outside chat
+a clean and secure share-app experience across mobile and web

@@ -40,6 +40,7 @@ import Team from "@/pages/Team";
 import ClientsPage from "@/pages/ClientsPage";
 import Settings from "@/pages/Settings";
 import Meetings from "@/pages/Meetings";
+import TicketsPage from "@/pages/TicketsPage";
 import VideoRoom from "@/components/VideoRoom";
 import IncomingCall from "@/components/IncomingCall";
 import OutgoingCall from "@/components/OutgoingCall";
@@ -515,6 +516,7 @@ export default function App() {
               deptList={departments} roleDefs={roleDefs}
             />
           )}
+          {page === "tickets" && <TicketsPage />}
           {page === "clients" && (
             <ClientsPage
               clients={myClients} users={users} projects={projects} services={services}

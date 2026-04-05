@@ -18,6 +18,10 @@ const FileIcon2 = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="no
 const ChevRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>;
 const ChevLeft = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>;
 const GlobeIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
+const TicketIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5v2M15 11v2M15 17v2M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 1 0 0-4V7a2 2 0 0 1 2-2z" /></svg>;
+const ShareIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>;
+const CopyIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
+const CheckSmIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>;
 
 interface SidebarProps {
   page: Page;
@@ -115,6 +119,8 @@ export default function Sidebar({
 }: SidebarProps) {
   const { t, lang, setLang } = useI18n();
   const [langHov, setLangHov] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const isMobile = useIsMobile();
   const isAdmin = userRole === "admin" || userRole === "manager";
   const isCollapsed = !isMobile && collapsed;
@@ -130,6 +136,7 @@ export default function Sidebar({
     { k: "calendar", icon: <CalIcon />, l: t.nav_calendar },
     { k: "reports", icon: <ChartIcon />, l: t.nav_reports },
     { k: "team", icon: <UsersIcon />, l: t.nav_team },
+    { k: "tickets", icon: <TicketIcon />, l: t.nav_tickets },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [t, unread]);
 
@@ -360,6 +367,78 @@ export default function Sidebar({
           </div>
         )}
       </nav>
+
+      {/* Share button */}
+      {!isCollapsed && (
+        <div style={{ padding: "8px 14px 0" }}>
+          <button
+            onClick={() => {
+              const url = window.location.href;
+              if (navigator.share) {
+                navigator.share({ title: "Hissado", url }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(url).then(() => {
+                  setShareCopied(true);
+                  setTimeout(() => setShareCopied(false), 2200);
+                });
+              }
+            }}
+            title={t.share_title}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              width: "100%",
+              padding: "8px 12px", borderRadius: 9,
+              border: "1px solid rgba(255,255,255,.07)",
+              background: "rgba(255,255,255,.02)",
+              color: shareCopied ? C.goldL : "rgba(255,255,255,.35)",
+              fontSize: 12, fontWeight: 600,
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              transition: "all .15s",
+            }}
+            onMouseEnter={(e) => {
+              if (!shareCopied) {
+                e.currentTarget.style.color = C.goldL;
+                e.currentTarget.style.borderColor = `${C.gold}30`;
+                e.currentTarget.style.background = `${C.gold}08`;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!shareCopied) {
+                e.currentTarget.style.color = "rgba(255,255,255,.35)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,.07)";
+                e.currentTarget.style.background = "rgba(255,255,255,.02)";
+              }
+            }}
+          >
+            {shareCopied ? <CheckSmIcon /> : <ShareIcon />}
+            <span>{shareCopied ? t.share_copied : t.share_copy}</span>
+          </button>
+        </div>
+      )}
+      {isCollapsed && (
+        <div style={{ padding: "8px 14px 0", display: "flex", justifyContent: "center" }}>
+          <button
+            onClick={() => {
+              const url = window.location.href;
+              navigator.clipboard.writeText(url).then(() => {
+                setShareCopied(true);
+                setTimeout(() => setShareCopied(false), 2200);
+              });
+            }}
+            title={t.share_copy}
+            style={{
+              width: 36, height: 36, borderRadius: 8,
+              border: "1px solid rgba(255,255,255,.07)",
+              background: "rgba(255,255,255,.02)",
+              color: shareCopied ? C.goldL : "rgba(255,255,255,.35)",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all .15s",
+            }}
+          >
+            {shareCopied ? <CheckSmIcon /> : <ShareIcon />}
+          </button>
+        </div>
+      )}
 
       {/* Bottom: client back-link only */}
       {userRole === "client" && !isCollapsed && (

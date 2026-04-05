@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { C, Av, Btn, Modal, Inp } from "@/components/primitives";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
+import EmojiPicker from "@/components/EmojiPicker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Conversation, Message, User, Notification, Attachment, SharedLocation } from "@/lib/data";
 import { uid, fmtT } from "@/lib/data";
@@ -36,7 +37,7 @@ const ExternalLinkIcon = () => <svg width="11" height="11" viewBox="0 0 24 24" f
 const NavIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>;
 
 /* ─── Emoji reactions set ────────────────────────────────── */
-const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const QUICK_EMOJIS = ["👍","❤️","😂","🤣","😊","😍","🥰","😘","😎","🤩","🙏","🔥","✅","🎉","💡","🚀","👏","💪","🤔","😅","😭","😤","🫶","💯","⭐","🙌"];
 
 /* ─── Location card component ────────────────────────────── */
 function LocationCard({ loc, isMe }: { loc: SharedLocation; isMe: boolean }) {
@@ -533,6 +534,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [emojiPickerMsgId, setEmojiPickerMsgId] = useState<string | null>(null);
+  const [showComposeEmoji, setShowComposeEmoji] = useState(false);
   const [showMsgSearch, setShowMsgSearch] = useState(false);
   const [msgSearch, setMsgSearch] = useState("");
   const [confirmDeleteMsg, setConfirmDeleteMsg] = useState<Message | null>(null);
@@ -1644,6 +1646,53 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
               >
                 <MapPinIcon />
               </button>
+            )}
+
+            {/* Compose emoji picker */}
+            {!editingMsgId && (
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button
+                  onClick={() => { setShowComposeEmoji((v) => !v); setEmojiPickerMsgId(null); }}
+                  title="Emoji"
+                  style={{
+                    width: 38, height: 38,
+                    border: `1px solid ${showComposeEmoji ? C.gold : C.g200}`,
+                    borderRadius: 10,
+                    background: showComposeEmoji ? `${C.gold}12` : C.w,
+                    cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: showComposeEmoji ? C.gold : C.g400,
+                    transition: "all .15s",
+                    fontSize: 18,
+                  }}
+                  onMouseEnter={(e) => { if (!showComposeEmoji) { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; } }}
+                  onMouseLeave={(e) => { if (!showComposeEmoji) { e.currentTarget.style.borderColor = C.g200; e.currentTarget.style.color = C.g400; } }}
+                >
+                  😊
+                </button>
+                {showComposeEmoji && (
+                  <EmojiPicker
+                    onSelect={(emoji) => {
+                      const el = inputRef.current;
+                      if (el) {
+                        const start = el.selectionStart ?? input.length;
+                        const end = el.selectionEnd ?? input.length;
+                        const next = input.slice(0, start) + emoji + input.slice(end);
+                        setInput(next);
+                        setTimeout(() => {
+                          el.focus();
+                          el.setSelectionRange(start + emoji.length, start + emoji.length);
+                        }, 0);
+                      } else {
+                        setInput((v) => v + emoji);
+                      }
+                      setShowComposeEmoji(false);
+                    }}
+                    onClose={() => setShowComposeEmoji(false)}
+                    align="left"
+                  />
+                )}
+              </div>
             )}
 
             {/* Text input */}

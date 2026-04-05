@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type {
   User, Project, Task, Service, Client,
   Notification, Conversation, Message, Reaction,
-  FileItem, Folder, RoleDef, Permission,
+  FileItem, Folder, RoleDef, Permission, Ticket,
 } from "./data";
 import {
   SEED_USERS, SEED_PROJECTS, SEED_SERVICES, SEED_CLIENTS, SEED_TASKS,
@@ -16,7 +16,7 @@ import {
 export type Page =
   | "dashboard" | "services" | "sdetail" | "projects" | "pdetail" | "tasks"
   | "chat" | "files" | "calendar" | "reports"
-  | "team" | "clients" | "settings" | "meetings";
+  | "team" | "clients" | "settings" | "meetings" | "tickets";
 
 
 // ── Store shape ───────────────────────────────────────────────────────────────
@@ -50,6 +50,7 @@ interface AppState {
   departments: string[];
   roleDefs: RoleDef[];
   rolePermissions: Record<string, Permission[]>;
+  tickets: Ticket[];
 
   // Session actions
   setCurrentUser: (u: User | null) => void;
@@ -121,6 +122,11 @@ interface AppState {
   updateRoleDef: (r: RoleDef) => void;
   deleteRoleDef: (id: string) => void;
   setRolePermissions: (roleId: string, perms: Permission[]) => void;
+
+  // Ticket actions
+  addTicket: (t: Ticket) => void;
+  updateTicket: (id: string, updates: Partial<Ticket>) => void;
+  deleteTicket: (id: string) => void;
 }
 
 
@@ -155,6 +161,7 @@ export const useStore = create<AppState>()(
       departments: SEED_DEPARTMENTS,
       roleDefs: SEED_ROLE_DEFS,
       rolePermissions: SEED_ROLE_PERMISSIONS,
+      tickets: [],
 
       // ── Session ──
 
@@ -398,6 +405,13 @@ export const useStore = create<AppState>()(
       setRolePermissions: (roleId, perms) => set((s) => ({
         rolePermissions: { ...s.rolePermissions, [roleId]: perms },
       })),
+
+      // ── Tickets ──
+      addTicket: (t) => set((s) => ({ tickets: [t, ...s.tickets] })),
+      updateTicket: (id, updates) => set((s) => ({
+        tickets: s.tickets.map((t) => t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t),
+      })),
+      deleteTicket: (id) => set((s) => ({ tickets: s.tickets.filter((t) => t.id !== id) })),
     }),
     {
       name: "hissado-pm-v3",
@@ -422,6 +436,7 @@ export const useStore = create<AppState>()(
         departments:     state.departments,
         roleDefs:        state.roleDefs,
         rolePermissions: state.rolePermissions,
+        tickets:         state.tickets,
       }),
     }
   )

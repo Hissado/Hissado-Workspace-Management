@@ -220,6 +220,38 @@ export type Folder = {
   sId?: string;
 };
 
+export type TicketStatus = "new" | "under_review" | "in_progress" | "resolved" | "closed";
+export type TicketCategory = "complaint" | "request" | "issue" | "other";
+
+export type TicketNote = {
+  id: string;
+  /** User ID of note author. */
+  uid: string;
+  text: string;
+  date: string;
+};
+
+export type Ticket = {
+  id: string;
+  title: string;
+  category: TicketCategory;
+  description: string;
+  status: TicketStatus;
+  /** User ID of the person who submitted the ticket. */
+  submitterId: string;
+  /** Client ID associated with the submitter (if any). */
+  clientId?: string;
+  /** Optional related project ID. */
+  projectId?: string;
+  /** Optional related service ID. */
+  serviceId?: string;
+  attachment?: Attachment;
+  /** Internal staff notes, not visible to the client submitter. */
+  notes: TicketNote[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 
 // ── Permission catalogue ───────────────────────────────────────────────────────
 
