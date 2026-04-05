@@ -62,6 +62,71 @@
     "lang": "en",
     "scheduledAt": "2026-04-05T00:54:21.171Z",
     "sent": false,
-    "cancelled": false
+    "cancelled": true
+  },
+  {
+    "id": "exsjo88j-u2",
+    "recipientId": "u2",
+    "recipientEmail": "sarah@hissado.com",
+    "recipientName": "Sarah Mitchell",
+    "type": "message",
+    "summary": "Issa Halirou Daouda: ok",
+    "senderName": "Issa Halirou Daouda",
+    "lang": "fr",
+    "scheduledAt": "2026-04-05T01:28:24.698Z",
+    "sent": false,
+    "cancelled": true
+  },
+  {
+    "id": "2ecu8pw9-u2",
+    "recipientId": "u2",
+    "recipientEmail": "sarah@hissado.com",
+    "recipientName": "Sarah Mitchell",
+    "type": "message",
+    "summary": "Issa Halirou Daouda: ok",
+    "senderName": "Issa Halirou Daouda",
+    "lang": "fr",
+    "scheduledAt": "2026-04-05T01:51:50.290Z",
+    "sent": false,
+    "cancelled": true
+  },
+  {
+    "id": "g5wk2sbj-u2",
+    "recipientId": "u2",
+    "recipientEmail": "sarah@hissado.com",
+    "recipientName": "Sarah Mitchell",
+    "type": "message",
+    "summary": "Issa Daouda: Hello Sarah, this is a test message",
+    "senderName": "Issa Daouda",
+    "lang": "en",
+    "scheduledAt": "2026-04-05T01:53:00.732Z",
+    "sent": false,
+    "cancelled": true
+  },
+  {
+    "id": "hxtykxm3-u2",
+    "recipientId": "u2",
+    "recipientEmail": "sarah@hissado.com",
+    "recipientName": "Sarah Mitchell",
+    "type": "message",
+    "summary": "Issa Halirou Daouda: ok",
+    "senderName": "Issa Halirou Daouda",
+    "lang": "fr",
+    "scheduledAt": "2026-04-05T01:54:13.628Z",
+    "sent": false,
+    "cancelled": true
+  },
+  {
+    "id": "y867y1tu-u2",
+    "recipientId": "u2",
+    "recipientEmail": "sarah@hissado.com",
+    "recipientName": "Sarah Mitchell",
+    "type": "message",
+    "summary": "Issa Halirou Daouda: ok",
+    "senderName": "Issa Halirou Daouda",
+    "lang": "fr",
+    "scheduledAt": "2026-04-05T01:54:21.828Z",
+    "sent": false,
+    "cancelled": true
   }
 ]

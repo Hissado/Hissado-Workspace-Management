@@ -2,7 +2,8 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/lib/store";
 import type { Page } from "@/lib/store";
-import type { Task, Project, Service, Message } from "@/lib/data";
+import type { Task, Project, Service, Message, Conversation } from "@/lib/data";
+import { uid, fmtT } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
 import { useRealtime } from "@/hooks/useRealtime";
 import type { CallSignal, MessageSignal } from "@/hooks/useRealtime";
@@ -155,6 +156,34 @@ export default function App() {
     onCallEnded: (_callId) => setCallState(null),
     onNewMessage: (signal: MessageSignal) => {
       if (!currentUser || signal.fromId === currentUser.id) return;
+
+      // 1. Sync the conversation into the recipient's store if missing.
+      //    This handles the first-ever message case where the recipient has no thread yet.
+      if (signal.conversation) {
+        const alreadyHave = conversations.find((c) => c.id === signal.conversation!.id);
+        if (!alreadyHave) {
+          addConversation(signal.conversation as Conversation);
+        }
+      }
+
+      // 2. Sync the full message into the recipient's store so it renders when they open chat.
+      if (signal.message) {
+        const alreadyHave = messages.some((m) => m.id === signal.message!.id);
+        if (!alreadyHave) {
+          addMessage(signal.message as Message);
+        }
+      }
+
+      // 3. Add a persistent bell notification for the recipient.
+      addNotification({
+        id: uid(),
+        type: "message",
+        text: `${signal.fromName}: ${signal.text}`,
+        read: false,
+        date: fmtT(new Date().toISOString()),
+      });
+
+      // 4. Show in-app toast and desktop notification.
       pushToast({
         type: "message",
         title: signal.fromName,
@@ -275,6 +304,10 @@ export default function App() {
       realtime.notifyMessage(toId, {
         fromId: currentUser.id, fromName: currentUser.name,
         text: preview, conversationId: cId,
+        // Include the full message and conversation so the recipient can sync them
+        // directly into their local store — messages are visible immediately on open.
+        message: msg,
+        conversation: convo,
       });
       const recipient = users.find((u) => u.id === toId);
       if (recipient?.email) {

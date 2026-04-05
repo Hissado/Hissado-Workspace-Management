@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import type { Message, Conversation } from "@/lib/data";
 
 export interface CallSignal {
   callId: string;
@@ -14,6 +15,10 @@ export interface MessageSignal {
   fromName: string;
   text: string;
   conversationId: string;
+  /** Full message object — allows the recipient to sync it into their local store. */
+  message?: Message;
+  /** Conversation object — allows the recipient to auto-create the thread if they don't have it. */
+  conversation?: Conversation;
 }
 
 interface Handlers {

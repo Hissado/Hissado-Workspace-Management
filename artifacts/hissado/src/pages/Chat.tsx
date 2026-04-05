@@ -183,22 +183,24 @@ const LANG_CODES: Record<string, string> = {
   de: "de-DE", ar: "ar-SA", pt: "pt-BR", ja: "ja-JP",
 };
 
+/**
+ * Translate `text` to `targetLang` via the MyMemory public API.
+ * Throws on network error or a non-200 API status so callers can show
+ * an explicit error + retry button instead of silently returning the source.
+ */
 async function translateText(text: string, targetLang: string): Promise<string> {
   if (!text || text.startsWith("data:image")) return text;
-  try {
-    const code = LANG_CODES[targetLang] || targetLang;
-    const res = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${code}`,
-      { signal: AbortSignal.timeout(8000) }
-    );
-    const json = await res.json();
-    if (json?.responseStatus === 200 && json?.responseData?.translatedText) {
-      return json.responseData.translatedText;
-    }
-    return text;
-  } catch {
-    return text;
+  const code = LANG_CODES[targetLang] || targetLang;
+  const res = await fetch(
+    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${code}`,
+    { signal: AbortSignal.timeout(8000) }
+  );
+  if (!res.ok) throw new Error(`Translation API error: ${res.status}`);
+  const json = await res.json();
+  if (json?.responseStatus === 200 && json?.responseData?.translatedText) {
+    return json.responseData.translatedText;
   }
+  throw new Error(json?.responseDetails || "Translation unavailable");
 }
 
 /* ─── Voice recognition helper ───────────────────────────── */
@@ -707,18 +709,19 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [msgs.length, autoTransLang, selected]);
 
-  /* translate a single message */
+  /* translate a single message — clears the error flag and retries if called again */
   const translateMsg = useCallback(async (msgId: string, text: string, lang: string) => {
     const key = `${msgId}_${lang}`;
     setTransLoading((s) => new Set(s).add(key));
     setTransError((prev) => { const n = new Set(prev); n.delete(key); return n; });
-    const result = await translateText(text, lang);
-    if (result === text) {
-      setTransError((s) => new Set(s).add(key));
-    } else {
+    try {
+      const result = await translateText(text, lang);
       setTranslations((prev) => ({ ...prev, [key]: result }));
+    } catch {
+      setTransError((s) => new Set(s).add(key));
+    } finally {
+      setTransLoading((s) => { const n = new Set(s); n.delete(key); return n; });
     }
-    setTransLoading((s) => { const n = new Set(s); n.delete(key); return n; });
   }, []);
 
   /* file selection */
@@ -763,7 +766,9 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
       ...(replyToId ? { replyTo: replyToId } : {}),
     };
     onSendMessage(selected, msg);
-    onAddNotification({ id: uid(), type: "message", text: `New message in ${getConvoLabel(convo!)}`, read: false, date: fmtT(msg.ts) });
+    // NOTE: Do NOT call onAddNotification here — the sender should NOT receive their own
+    // bell notification. Recipient notifications are triggered by the onNewMessage handler
+    // in App.tsx when the SSE signal is received.
     setInput("");
     setPendingFile(null);
     setReplyToId(null);
@@ -795,7 +800,7 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
           location: loc,
         };
         onSendMessage(selected, msg);
-        onAddNotification({ id: uid(), type: "message", text: `Shared a location`, read: false, date: fmtT(msg.ts) });
+        // Location sharing: same as regular messages — do NOT notify the sender themselves.
       },
       (err) => {
         setIsLocating(false);
@@ -1317,7 +1322,15 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                         {loading ? (
                           <span style={{ fontSize: 11, color: C.gold }}>{t.chat_translating}</span>
                         ) : failed ? (
-                          <span style={{ fontSize: 11, color: C.err }}>{t.chat_trans_failed}</span>
+                          <span style={{ fontSize: 11, color: C.err, display: "flex", alignItems: "center", gap: 6 }}>
+                            {t.chat_trans_failed}
+                            <button
+                              onClick={() => translateMsg(m.id, m.text, autoTransLang)}
+                              style={{ fontSize: 11, color: C.gold, background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontFamily: "inherit", textDecoration: "underline" }}
+                            >
+                              {t.chat_translate}
+                            </button>
+                          </span>
                         ) : translated ? (
                           <div style={{ fontSize: 12, color: C.g500, background: `${C.gold}0e`, borderRadius: 8, padding: "5px 10px", borderLeft: `2px solid ${C.gold}` }}>
                             <span style={{ fontSize: 10, fontWeight: 700, color: C.gold, display: "block", marginBottom: 1 }}>{t.chat_translated}</span>
@@ -1328,21 +1341,36 @@ export default function Chat({ conversations, messages, users, currentUser, onSe
                     )}
 
                     {/* Per-message manual translate button */}
-                    {!isMe && !isImage && autoTransLang === "off" && (
-                      <button
-                        onClick={() => translateMsg(m.id, m.text, "en")}
-                        style={{ marginTop: 4, marginLeft: 4, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.g400, display: "flex", alignItems: "center", gap: 3, padding: "2px 0" }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = C.gold; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = C.g400; }}
-                      >
+                    {!isMe && !isImage && autoTransLang === "off" && m.text && (
+                      <div style={{ marginTop: 4, marginLeft: 4 }}>
                         {transLoading.has(`${m.id}_en`) ? (
-                          <span>{t.chat_translating}</span>
+                          <span style={{ fontSize: 11, color: C.gold }}>{t.chat_translating}</span>
                         ) : translations[`${m.id}_en`] ? (
-                          <span style={{ color: C.gold }}>{t.chat_translated}: {translations[`${m.id}_en`]}</span>
+                          <div style={{ fontSize: 12, color: C.g500, background: `${C.gold}0e`, borderRadius: 8, padding: "5px 10px", borderLeft: `2px solid ${C.gold}` }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: C.gold, display: "block", marginBottom: 1 }}>{t.chat_translated}</span>
+                            {translations[`${m.id}_en`]}
+                          </div>
+                        ) : transError.has(`${m.id}_en`) ? (
+                          <span style={{ fontSize: 11, color: C.err, display: "flex", alignItems: "center", gap: 6 }}>
+                            {t.chat_trans_failed}
+                            <button
+                              onClick={() => translateMsg(m.id, m.text, "en")}
+                              style={{ fontSize: 11, color: C.gold, background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontFamily: "inherit", textDecoration: "underline" }}
+                            >
+                              {t.chat_translate}
+                            </button>
+                          </span>
                         ) : (
-                          <><TranslateIcon /> {t.chat_translate}</>
+                          <button
+                            onClick={() => translateMsg(m.id, m.text, "en")}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.g400, display: "flex", alignItems: "center", gap: 3, padding: "2px 0", fontFamily: "inherit" }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = C.gold; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = C.g400; }}
+                          >
+                            <TranslateIcon /> {t.chat_translate}
+                          </button>
                         )}
-                      </button>
+                      </div>
                     )}
 
                     {/* Timestamp + edited + read receipts */}

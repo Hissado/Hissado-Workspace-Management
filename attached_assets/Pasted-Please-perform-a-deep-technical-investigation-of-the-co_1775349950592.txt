@@ -1,0 +1,256 @@
+Please perform a deep technical investigation of the communication module to identify the root causes of the messaging, notification, conversation-sync, calling, and chat-translation issues, and implement durable fixes at the architecture, data, and UI levels.
+
+Objective
+
+Stabilize the full communication layer so that messaging, notifications, calls, and translation work correctly, consistently, and in real time across all relevant clients, users, and conversations.
+
+Scope of investigation
+
+Please review the full communication stack end to end, including:
+
+frontend chat and calling UI
+state management
+real-time event handling
+conversation and recipient mapping
+backend message/call creation logic
+notification triggers
+database persistence
+access control and recipient resolution
+translation pipeline and translation state handling
+sync behavior across browser sessions and devices
+Primary issues to investigate and fix
+1. Message routing bug
+
+Current issue:
+
+when User A sends a message to User B, the message appears to return to User A instead of reaching User B
+User A also receives the notification, which strongly suggests incorrect routing, recipient resolution, or conversation binding
+
+Please investigate:
+
+whether sender and recipient IDs are being mixed up
+whether the conversation ID is mapped correctly
+whether the message is being stored with the correct sender_id, recipient_id, project_id, service_id, and conversation_id
+whether the frontend is subscribing to the wrong thread or incorrectly filtering messages
+whether notification triggers are using the sender as recipient
+whether optimistic UI updates are masking backend routing errors
+
+Please fix:
+
+message recipient resolution
+conversation-thread mapping
+notification recipient logic
+any incorrect frontend rendering/filtering logic
+2. Notification received but message not visible
+
+Current issue:
+
+a user receives a notification
+but the related message cannot be found in the conversation UI
+
+Please investigate:
+
+whether the message is written to the database successfully
+whether it is linked to the correct conversation/thread
+whether the UI is loading the correct message set
+whether pagination, filtering, or sorting is hiding the message
+whether stale cache/state is preventing the message from rendering
+whether the message is stored under a different workspace/project/service scope than the active view
+whether real-time events arrive before local state is ready to reconcile them
+
+Please fix:
+
+storage/retrieval mismatches
+broken conversation resolution
+real-time hydration issues
+cache invalidation/state refresh issues
+thread visibility logic
+3. Calling module issues
+
+Please audit the call flow end to end, including:
+
+call initiation
+recipient targeting
+ring event delivery
+missed call handling
+call state transitions
+UI cleanup after call end
+notification delivery for incoming and missed calls
+
+Please verify:
+
+the intended recipient receives the incoming call event
+ring notifications are sent to the correct target
+call sessions are not bound to the wrong user or wrong conversation
+call logs are stored correctly and visible in the correct place
+reconnect, timeout, declined, and missed-call states are handled properly
+4. Chat translation not working
+
+Current issue:
+
+the translation option in chat is not functioning correctly
+
+Please investigate:
+
+whether translation requests are being triggered at all
+whether the source language is detected correctly
+whether the target language is resolved from user settings correctly
+whether translation responses are stored, rendered, or cached properly
+whether translation fails silently in the UI
+whether translation permissions or API errors are being swallowed
+
+Please fix:
+
+translation request flow
+source/target language handling
+translated message rendering
+retry/error handling
+translation state persistence where needed
+Required debugging approach
+
+Please do not apply surface-level patches only. Perform structured root-cause analysis.
+
+A. Trace the communication lifecycle
+
+For messaging, notifications, calls, and translation, trace the full lifecycle:
+
+UI action triggered
+frontend event dispatched
+payload created
+backend endpoint/service called
+database write/read performed
+real-time event emitted
+recipient subscription receives update
+UI state updated
+notification shown
+conversation/thread refreshed correctly
+B. Verify data model integrity
+
+Please review the schema and relationships for items such as:
+
+users
+clients
+team members
+conversations
+conversation participants
+messages
+message recipients
+notifications
+call sessions
+call participants
+translation records or translated payloads
+project/service/client scope references
+
+Check for:
+
+wrong foreign keys
+missing participant records
+invalid conversation ownership rules
+ambiguous conversation types
+duplicate or conflicting thread identifiers
+incorrect tenant/client/project/service scoping
+C. Audit real-time sync behavior
+
+Please inspect:
+
+websocket/realtime channel subscriptions
+event names and payload structure
+channel authorization
+user-scoped subscription filters
+duplicate listeners
+stale listener cleanup
+race conditions between initial fetch and real-time updates
+D. Audit frontend state handling
+
+Please inspect:
+
+local state vs server state inconsistencies
+optimistic updates
+cache invalidation
+query keys
+store synchronization
+component remount/reset behavior
+thread selection state
+unread/read state reconciliation
+E. Add diagnostics
+
+Please add temporary or permanent diagnostics where useful:
+
+structured logs for sender, recipient, conversation, and notification target
+server-side logging for message creation and dispatch
+trace IDs for message and call events
+client-side logs for subscription events and conversation refresh
+visible error handling instead of silent failure
+Implementation expectations
+
+Please implement robust fixes, not just visual workarounds.
+
+Messaging
+guarantee correct recipient targeting
+guarantee correct conversation binding
+ensure sent, delivered, and visible states are consistent
+ensure the sender does not receive recipient-only notifications unless explicitly intended
+Notifications
+notifications must map to the exact message/call/conversation they belong to
+clicking a notification should open the correct conversation or call record
+unread counts should update correctly
+Calls
+ensure proper incoming-call routing
+ensure proper ringing state
+ensure proper cleanup after ended/declined/missed calls
+ensure call history is stored and displayed correctly
+Translation
+translation should work reliably inside the chat thread
+it should support the user’s selected language
+fallback and error states should be explicit and recoverable
+QA and validation requirements
+
+After fixes, please test at minimum the following scenarios:
+
+Messaging tests
+team member A to team member B
+team member B to team member A
+client to assigned staff
+assigned staff to client
+group chat delivery
+multi-browser same user session
+multi-device notification consistency
+Notification tests
+message received while chat is open
+message received while chat is closed
+unread message notification click-through
+delayed sync recovery after reconnect
+Calling tests
+one-to-one call
+missed call
+declined call
+incoming call while user is active
+incoming call while user is idle
+call end and return to correct UI state
+Translation tests
+English to French
+French to English
+Chinese to English
+mixed-language thread behavior
+translation with existing message history
+translation after refresh/reload
+Expected output
+
+Please provide:
+
+a summary of the root causes found
+the exact components/services/files affected
+the fixes implemented
+any schema or logic changes made
+edge cases addressed
+any remaining risks or technical debt
+a short validation checklist confirming the fixes were tested successfully
+Goal
+
+The final result should be a stable, production-ready communication module where:
+
+messages are delivered to the correct recipient
+notifications match the correct event and thread
+calls route and ring correctly
+translated chat works reliably
+conversation state stays consistent across refreshes, sessions, browsers, and devices
