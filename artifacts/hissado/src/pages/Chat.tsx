@@ -178,29 +178,23 @@ function latToTile(lat: number, zoom: number) {
 }
 
 /* ─── Translation API ────────────────────────────────────── */
-const LANG_CODES: Record<string, string> = {
-  en: "en-US", fr: "fr-FR", zh: "zh-CN", es: "es-ES",
-  de: "de-DE", ar: "ar-SA", pt: "pt-BR", ja: "ja-JP",
-};
 
 /**
- * Translate `text` to `targetLang` via the MyMemory public API.
- * Throws on network error or a non-200 API status so callers can show
- * an explicit error + retry button instead of silently returning the source.
+ * Translate `text` to `targetLang` via the server-side proxy.
+ * Throws on network or API errors so callers can show a retry button.
  */
 async function translateText(text: string, targetLang: string): Promise<string> {
   if (!text || text.startsWith("data:image")) return text;
-  const code = LANG_CODES[targetLang] || targetLang;
-  const res = await fetch(
-    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${code}`,
-    { signal: AbortSignal.timeout(8000) }
-  );
-  if (!res.ok) throw new Error(`Translation API error: ${res.status}`);
-  const json = await res.json();
-  if (json?.responseStatus === 200 && json?.responseData?.translatedText) {
-    return json.responseData.translatedText;
-  }
-  throw new Error(json?.responseDetails || "Translation unavailable");
+  const res = await fetch("/api/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, targetLang }),
+    signal: AbortSignal.timeout(10000),
+  });
+  const json = await res.json() as { translatedText?: string; error?: string };
+  if (!res.ok || json.error) throw new Error(json.error || `Translation error: ${res.status}`);
+  if (!json.translatedText) throw new Error("No translation returned");
+  return json.translatedText;
 }
 
 /* ─── Voice recognition helper ───────────────────────────── */

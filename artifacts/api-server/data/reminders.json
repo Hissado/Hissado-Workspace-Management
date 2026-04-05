@@ -128,5 +128,18 @@
     "scheduledAt": "2026-04-05T01:54:21.828Z",
     "sent": false,
     "cancelled": true
+  },
+  {
+    "id": "s28eck0k-u2",
+    "recipientId": "u2",
+    "recipientEmail": "sarah@hissado.com",
+    "recipientName": "Sarah Mitchell",
+    "type": "message",
+    "summary": "Issa Halirou Daouda: hello",
+    "senderName": "Issa Halirou Daouda",
+    "lang": "fr",
+    "scheduledAt": "2026-04-05T01:58:22.844Z",
+    "sent": false,
+    "cancelled": false
   }
 ]
