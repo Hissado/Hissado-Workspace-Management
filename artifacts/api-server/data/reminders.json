@@ -152,7 +152,7 @@
     "senderName": "Issa Halirou Daouda",
     "lang": "en",
     "scheduledAt": "2026-04-05T02:53:30.657Z",
-    "sent": false,
+    "sent": true,
     "cancelled": false
   }
 ]
