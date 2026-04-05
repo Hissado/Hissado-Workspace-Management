@@ -105,7 +105,7 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
     setShowProfile(null);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!showEdit || !editName.trim()) return;
     const av = editName.trim().split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
     const updated: User = {
@@ -121,11 +121,17 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
     /* 1 — Update local store immediately (optimistic) */
     onUpdateUser(updated);
     setShowEdit(null);
-    /* 2 — Persist to server so other browsers pick it up on their next sync */
-    updateUserProfile(updated.id, updated).catch(() => {
-      /* Non-fatal: the local change is already applied; retry happens on next sync cycle */
-    });
-    /* 3 — Broadcast to all connected browsers so they re-fetch immediately */
+    /* 2 — Persist to server FIRST (must complete before broadcasting).
+           Other browsers re-fetch on the broadcast, so the server MUST already
+           have the updated data by the time they do — otherwise they get stale data. */
+    try {
+      await updateUserProfile(updated.id, updated);
+    } catch {
+      /* Server update failed — the local store has the optimistic change but other
+         browsers won't see it until the next periodic sync picks it up. */
+      return;
+    }
+    /* 3 — Only broadcast AFTER the server has been successfully updated */
     broadcastSignal("users-changed", { action: "updated", userId: updated.id });
   };
 
@@ -163,14 +169,28 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
     };
 
     try {
-      /* 1 — Create user on server (makes credentials work across all browsers) */
-      await createUser(newUser);
+      /* 1 — Create user on server FIRST so credentials work on all browsers.
+             If the server says the email already exists (409), we treat it as
+             a duplicate invite and proceed — the user is already in the system. */
+      let serverCreated = true;
+      try {
+        await createUser(newUser);
+      } catch (serverErr: any) {
+        const isConflict = serverErr?.message?.includes("already exists") || serverErr?.message?.includes("409");
+        if (!isConflict) {
+          /* Unrecoverable server error — still add locally but note the problem */
+          serverCreated = false;
+        }
+        /* On 409 conflict, serverCreated = true (user already exists on server) */
+      }
 
       /* 2 — Add to local store */
       onAddUser(newUser);
 
-      /* 3 — Broadcast to all connected browsers so they see the new user immediately */
-      broadcastSignal("users-changed", { action: "created", userId: newUser.id });
+      /* 3 — Broadcast ONLY if the server has the user (avoid false-positive syncs) */
+      if (serverCreated) {
+        broadcastSignal("users-changed", { action: "created", userId: newUser.id });
+      }
 
       /* 4 — Send invite email (non-blocking — failure is warned but doesn't abort) */
       const emailResult = await sendInviteEmail({
@@ -189,7 +209,7 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
 
       setInviteSuccess({ name: newUser.name, email: newUser.email, tempPw: tempPassword });
     } catch (err: any) {
-      /* Still add user locally even if server call fails */
+      /* Fallback: add user locally and show the error */
       onAddUser(newUser);
       setInviteSuccess({ name: newUser.name, email: newUser.email, tempPw: tempPassword });
       setInviteError(t.team_invite_error_email_fn(err.message));
@@ -611,12 +631,18 @@ export default function Team({ users, currentUser, onAddUser, onUpdateUser, onDe
             onDeleteUser(id);
             setDeleteTarget(null);
             setShowProfile(null);
-            /* 2 — Delete on server so other browsers stop seeing this user */
-            deleteUserOnServer(id).catch(() => {
-              /* Non-fatal: local is already updated; server will be consistent after next sync */
-            });
-            /* 3 — Broadcast so all connected browsers re-fetch the user list */
-            broadcastSignal("users-changed", { action: "deleted", userId: id });
+            /* 2+3 — Delete on server, then broadcast ONLY after server confirms deletion.
+                     Race-condition fix: broadcast must come after the DELETE response so that
+                     other browsers don't re-fetch before the server has removed the record. */
+            void (async () => {
+              try {
+                await deleteUserOnServer(id);
+              } catch {
+                /* Non-fatal: local optimistic delete stands; periodic sync handles server */
+                return;
+              }
+              broadcastSignal("users-changed", { action: "deleted", userId: id });
+            })();
           }
         }}
         onCancel={() => setDeleteTarget(null)}

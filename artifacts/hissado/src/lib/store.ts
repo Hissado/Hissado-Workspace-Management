@@ -279,17 +279,33 @@ export const useStore = create<AppState>()(
       addUser: (u) => set((s) => ({ users: [...s.users, u] })),
       updateUser: (u) => set((s) => ({ users: s.users.map((x) => (x.id === u.id ? u : x)) })),
       mergeServerUsers: (serverUsers) => set((s) => {
+        // Safety guard: never wipe all local users if the server returns an empty list
+        // (e.g. server error, cold boot, etc.)
+        if (!serverUsers.length) return {};
+
         // SERVER IS TRUTH for core identity fields (name, email, role, dept, status,
         // mustChangePassword, clientId, av, password). We merge server data into local
-        // users so that edits made in another browser are immediately reflected here.
+        // users so that edits / deletions made in another browser are immediately reflected.
         // Local-only fields (color, photo, phone, etc.) that the server doesn't track
         // are preserved from the local record.
         const serverMap = new Map(serverUsers.map((u) => [u.id, u]));
+        const loggedInId = s.currentUser?.id;
         let changed = false;
 
-        const merged = s.users.map((local) => {
+        // Step 1 — Update fields for users found on the server; drop users removed from server
+        const merged: typeof s.users = [];
+        for (const local of s.users) {
           const srv = serverMap.get(local.id);
-          if (!srv) return local; // user exists only locally — keep as-is
+          if (!srv) {
+            // User no longer exists on server. Remove them — UNLESS they are the currently
+            // signed-in user (deleting the session owner mid-flight would break the app).
+            if (local.id === loggedInId) {
+              merged.push(local);
+            } else {
+              changed = true; // dropping this user
+            }
+            continue;
+          }
           // Selectively apply server fields, preserving any local-only extras
           const srvFields: Partial<typeof local> = {};
           if (srv.name !== local.name)                               { srvFields.name = srv.name; changed = true; }
@@ -301,10 +317,10 @@ export const useStore = create<AppState>()(
           if (srv.mustChangePassword !== local.mustChangePassword)   { srvFields.mustChangePassword = srv.mustChangePassword; changed = true; }
           if (srv.clientId !== local.clientId)                       { srvFields.clientId = srv.clientId; changed = true; }
           if (srv.password && srv.password !== local.password)       { srvFields.password = srv.password; changed = true; }
-          return Object.keys(srvFields).length > 0 ? { ...local, ...srvFields } : local;
-        });
+          merged.push(Object.keys(srvFields).length > 0 ? { ...local, ...srvFields } : local);
+        }
 
-        // Add users that exist on the server but not locally
+        // Step 2 — Add users that exist on the server but not locally (invited from elsewhere)
         const localIds = new Set(s.users.map((u) => u.id));
         const newFromServer = serverUsers.filter((srv) => !localIds.has(srv.id));
         if (newFromServer.length > 0) changed = true;
