@@ -44,8 +44,8 @@ export const SEED_DEPARTMENTS: string[] = [
 ];
 
 export const SEED_CLIENTS: Client[] = [
-  { id: "cl1", name: "Acme Corporation",  company: "Acme Corp",           color: "#5B8DEF", contactEmail: "contact@acme.com", status: "active", created: fmt(addD(now, -90)) },
-  { id: "cl2", name: "Atlas Solutions",   company: "Atlas Solutions Inc.", color: "#6FCF97", contactEmail: "hello@atlas.com",  status: "active", created: fmt(addD(now, -60)) },
+  { id: "cl1", name: "Acme Corporation",  company: "Acme Corp",           color: "#5B8DEF", contactEmail: "contact@acme.com", status: "active", created: fmt(addD(now, -90)), staffIds: ["u2", "u3"] },
+  { id: "cl2", name: "Atlas Solutions",   company: "Atlas Solutions Inc.", color: "#6FCF97", contactEmail: "hello@atlas.com",  status: "active", created: fmt(addD(now, -60)), staffIds: ["u2", "u4"] },
 ];
 
 export const SEED_USERS: User[] = [

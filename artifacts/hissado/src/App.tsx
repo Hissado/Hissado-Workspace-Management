@@ -15,7 +15,7 @@ import {
 import {
   accessibleProjects, accessibleTasks, accessibleConversations,
   accessibleTeamMembers, accessibleFiles, accessibleFolders,
-  accessibleServices, canCreateProject,
+  accessibleServices, accessibleClients, canCreateProject,
 } from "@/lib/access";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
@@ -186,8 +186,9 @@ export default function App() {
   const myConversations= useMemo(() => currentUser ? accessibleConversations(currentUser, conversations, projects) : [], [currentUser, conversations, projects]);
   const myTeam         = useMemo(() => currentUser ? accessibleTeamMembers(currentUser, users, projects) : [], [currentUser, users, projects]);
   const myServices     = useMemo(() => currentUser ? accessibleServices(currentUser, services) : [], [currentUser, services]);
-  const myFiles        = useMemo(() => currentUser ? accessibleFiles(currentUser, files, projects) : [], [currentUser, files, projects]);
-  const myFolders      = useMemo(() => currentUser ? accessibleFolders(currentUser, folders, projects) : [], [currentUser, folders, projects]);
+  const myClients      = useMemo(() => currentUser ? accessibleClients(currentUser, clients, projects, services) : [], [currentUser, clients, projects, services]);
+  const myFiles        = useMemo(() => currentUser ? accessibleFiles(currentUser, files, projects, services) : [], [currentUser, files, projects, services]);
+  const myFolders      = useMemo(() => currentUser ? accessibleFolders(currentUser, folders, projects, services) : [], [currentUser, folders, projects, services]);
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -483,7 +484,7 @@ export default function App() {
           )}
           {page === "clients" && (
             <ClientsPage
-              clients={clients} users={users} projects={projects} services={services}
+              clients={myClients} users={users} projects={projects} services={services}
               currentUser={currentUser}
               canManage={isAdmin || currentUser.role === "manager"}
               onAdd={addClient} onUpdate={updateClient} onDelete={deleteClient}

@@ -84,6 +84,7 @@ interface AppState {
   addClient: (c: Client) => void;
   updateClient: (c: Client) => void;
   deleteClient: (id: string) => void;
+  updateClientStaff: (clientId: string, staffIds: string[]) => void;
 
   // User actions
   addUser: (u: User) => void;
@@ -177,8 +178,51 @@ export const useStore = create<AppState>()(
       setShowProjectModal: (v) => set({ showProjectModal: v }),
 
       // ── Tasks ──
-      addTask: (t) => set((s) => ({ tasks: [...s.tasks, t] })),
-      updateTask: (t) => set((s) => ({ tasks: s.tasks.map((x) => (x.id === t.id ? t : x)) })),
+      addTask: (t) => set((s) => {
+        // Auto-add assignee to the parent project/service members so they immediately
+        // gain visibility into the project context, files, and conversations.
+        const needsProjectSync = t.assignee && !t.sId && t.pId;
+        const needsServiceSync = t.assignee && !!t.sId;
+        return {
+          tasks: [...s.tasks, t],
+          ...(needsProjectSync && {
+            projects: s.projects.map((p) =>
+              p.id === t.pId && !p.members.includes(t.assignee)
+                ? { ...p, members: [...p.members, t.assignee] }
+                : p
+            ),
+          }),
+          ...(needsServiceSync && {
+            services: s.services.map((sv) =>
+              sv.id === t.sId && !sv.members.includes(t.assignee)
+                ? { ...sv, members: [...sv.members, t.assignee] }
+                : sv
+            ),
+          }),
+        };
+      }),
+      updateTask: (t) => set((s) => {
+        // When assignee changes, also ensure they are added to the parent members.
+        const needsProjectSync = t.assignee && !t.sId && t.pId;
+        const needsServiceSync = t.assignee && !!t.sId;
+        return {
+          tasks: s.tasks.map((x) => (x.id === t.id ? t : x)),
+          ...(needsProjectSync && {
+            projects: s.projects.map((p) =>
+              p.id === t.pId && !p.members.includes(t.assignee)
+                ? { ...p, members: [...p.members, t.assignee] }
+                : p
+            ),
+          }),
+          ...(needsServiceSync && {
+            services: s.services.map((sv) =>
+              sv.id === t.sId && !sv.members.includes(t.assignee)
+                ? { ...sv, members: [...sv.members, t.assignee] }
+                : sv
+            ),
+          }),
+        };
+      }),
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((x) => x.id !== id) })),
 
       // ── Projects ──
@@ -219,6 +263,9 @@ export const useStore = create<AppState>()(
         projects:  s.projects.map((p) => p.clientId === id ? { ...p, clientId: undefined } : p),
         services:  s.services.map((sv) => sv.clientId === id ? { ...sv, clientId: undefined } : sv),
         users:     s.users.map((u) => u.clientId === id ? { ...u, clientId: undefined } : u),
+      })),
+      updateClientStaff: (clientId, staffIds) => set((s) => ({
+        clients: s.clients.map((c) => c.id === clientId ? { ...c, staffIds } : c),
       })),
 
       // ── Users ──
@@ -261,6 +308,8 @@ export const useStore = create<AppState>()(
           users:         s.users.filter((x) => x.id !== id),
           tasks:         s.tasks.map((t) => t.assignee === id ? { ...t, assignee: "" } : t),
           projects:      s.projects.map((p) => ({ ...p, members: p.members.filter((m) => m !== id) })),
+          services:      s.services.map((sv) => ({ ...sv, members: sv.members.filter((m) => m !== id) })),
+          clients:       s.clients.map((c) => ({ ...c, staffIds: (c.staffIds ?? []).filter((m) => m !== id) })),
           conversations: mergedConversations,
           messages:      s.messages.filter((m) => !removedConvoIds.has(m.cId)),
         };

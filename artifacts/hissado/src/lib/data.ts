@@ -57,6 +57,8 @@ export type Client = {
   phone?: string;
   status: "active" | "inactive";
   created: string;
+  /** IDs of internal staff members directly assigned to manage this client. */
+  staffIds?: string[];
 };
 
 export type User = {

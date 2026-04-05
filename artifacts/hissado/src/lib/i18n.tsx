@@ -491,6 +491,9 @@ const T = {
     cp_view_workspace: "View Workspace",
     cp_edit: "Edit",
     cp_delete: "Delete",
+    cp_staff_label: "Assigned Staff",
+    cp_staff_ph: "No staff assigned",
+    cp_staff_count: (n: number) => `${n} staff member${n === 1 ? "" : "s"}`,
 
     // Dashboard clients widget
     dash_clients_title: "Active Clients",
@@ -1044,6 +1047,9 @@ const T = {
     cp_view_workspace: "Voir l'espace",
     cp_edit: "Modifier",
     cp_delete: "Supprimer",
+    cp_staff_label: "Personnel assigné",
+    cp_staff_ph: "Aucun personnel assigné",
+    cp_staff_count: (n: number) => `${n} membre${n > 1 ? "s" : ""} du personnel`,
 
     // Dashboard clients widget
     dash_clients_title: "Clients actifs",

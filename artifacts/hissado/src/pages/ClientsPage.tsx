@@ -59,6 +59,15 @@ export default function ClientsPage({
   const [phone, setPhone] = useState("");
   const [color, setColor] = useState(COLOR_PALETTE[0]);
   const [clientStatus, setClientStatus] = useState<Client["status"]>("active");
+  const [staffIds, setStaffIds] = useState<string[]>([]);
+
+  const internalStaff = useMemo(
+    () => users.filter((u) => u.role !== "client" && !u.clientId && u.status === "active"),
+    [users]
+  );
+
+  const toggleStaff = (uid: string) =>
+    setStaffIds((prev) => prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]);
 
   // Invite form state
   const [inviteName, setInviteName] = useState("");
@@ -89,23 +98,23 @@ export default function ClientsPage({
 
   const openCreate = () => {
     setEditing(null);
-    setName(""); setCompany(""); setContactEmail(""); setPhone(""); setColor(COLOR_PALETTE[0]); setClientStatus("active");
+    setName(""); setCompany(""); setContactEmail(""); setPhone(""); setColor(COLOR_PALETTE[0]); setClientStatus("active"); setStaffIds([]);
     setShowModal(true);
   };
 
   const openEdit = (cl: Client) => {
     setEditing(cl);
     setName(cl.name); setCompany(cl.company); setContactEmail(cl.contactEmail);
-    setPhone(cl.phone || ""); setColor(cl.color); setClientStatus(cl.status);
+    setPhone(cl.phone || ""); setColor(cl.color); setClientStatus(cl.status); setStaffIds(cl.staffIds ?? []);
     setShowModal(true);
   };
 
   const save = () => {
     if (!name.trim()) return;
     if (editing) {
-      onUpdate({ ...editing, name: name.trim(), company, contactEmail, phone: phone.trim() || undefined, color, status: clientStatus });
+      onUpdate({ ...editing, name: name.trim(), company, contactEmail, phone: phone.trim() || undefined, color, status: clientStatus, staffIds });
     } else {
-      onAdd({ id: uid(), name: name.trim(), company, contactEmail, phone: phone.trim() || undefined, color, status: clientStatus, created: fmt(new Date()) });
+      onAdd({ id: uid(), name: name.trim(), company, contactEmail, phone: phone.trim() || undefined, color, status: clientStatus, staffIds, created: fmt(new Date()) });
     }
     setShowModal(false);
   };
@@ -338,7 +347,7 @@ export default function ClientsPage({
 
                   {/* Portal users avatars */}
                   {portalUsers.length > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                       <div style={{ display: "flex" }}>
                         {portalUsers.slice(0, 4).map((u, i) => (
                           <div
@@ -359,6 +368,35 @@ export default function ClientsPage({
                       </span>
                     </div>
                   )}
+
+                  {/* Assigned staff row */}
+                  {(() => {
+                    const assignedStaff = users.filter((u) => (cl.staffIds ?? []).includes(u.id));
+                    if (assignedStaff.length === 0) return null;
+                    return (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                        <div style={{ display: "flex" }}>
+                          {assignedStaff.slice(0, 5).map((u, i) => (
+                            <div
+                              key={u.id}
+                              title={u.name}
+                              style={{
+                                width: 26, height: 26, borderRadius: "50%", marginLeft: i === 0 ? 0 : -7,
+                                border: `2px solid ${C.w}`, background: C.navy,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: 9, fontWeight: 700, color: "#fff",
+                              }}
+                            >
+                              {u.av}
+                            </div>
+                          ))}
+                        </div>
+                        <span style={{ fontSize: 11, color: C.g400 }}>
+                          {t.cp_staff_count(assignedStaff.length)}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   {/* Actions */}
                   {canManage && (
@@ -454,6 +492,55 @@ export default function ClientsPage({
               ))}
             </div>
           </div>
+          {/* Staff assignment picker */}
+          {internalStaff.length > 0 && (
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: C.g600, display: "block", marginBottom: 8 }}>{t.cp_staff_label}</label>
+              <div style={{
+                border: `1px solid ${C.g200}`, borderRadius: 10, overflow: "hidden",
+                maxHeight: 180, overflowY: "auto",
+              }}>
+                {internalStaff.map((u, i) => {
+                  const checked = staffIds.includes(u.id);
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => toggleStaff(u.id)}
+                      style={{
+                        width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 12px",
+                        background: checked ? `${C.navy}08` : C.w, border: "none",
+                        borderTop: i === 0 ? "none" : `1px solid ${C.g100}`,
+                        cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "background .1s",
+                      }}
+                    >
+                      <div style={{
+                        width: 18, height: 18, borderRadius: 5, border: `2px solid ${checked ? C.navy : C.g300}`,
+                        background: checked ? C.navy : "transparent", flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        {checked && <span style={{ color: "#fff", fontSize: 11, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                      </div>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: "50%", background: C.navy,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 10, fontWeight: 700, color: "#fff", flexShrink: 0,
+                      }}>
+                        {u.av}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>{u.name}</div>
+                        <div style={{ fontSize: 11, color: C.g400 }}>{u.dept} · {u.role}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {staffIds.length === 0 && (
+                <div style={{ fontSize: 11, color: C.g400, marginTop: 5, paddingLeft: 2 }}>{t.cp_staff_ph}</div>
+              )}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
             <button onClick={() => setShowModal(false)} style={{ padding: "9px 18px", background: C.g100, color: C.g600, border: "none", borderRadius: 9, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
               {t.cancel}

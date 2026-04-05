@@ -1,4 +1,4 @@
-import type { User, Project, Task, Service, Conversation, FileItem, Folder, Permission } from "./data";
+import type { User, Project, Task, Service, Client, Conversation, FileItem, Folder, Permission } from "./data";
 
 /**
  * Check if a user has a specific feature permission based on the stored permission config.
@@ -16,36 +16,51 @@ export function hasPermission(
  * Returns true if the user has access to the given project.
  * - Admins and managers see all projects.
  * - Client users see all projects matching their clientId.
- * - Internal members see projects they are assigned to.
+ * - Internal members see projects they are assigned to OR have a task assigned to them in.
  */
-export function canAccessProject(user: User, project: Project): boolean {
+export function canAccessProject(user: User, project: Project, tasks?: Task[]): boolean {
   if (user.role === "admin" || user.role === "manager") return true;
   if (user.clientId) return project.clientId === user.clientId;
-  return project.members.includes(user.id);
+  if (project.members.includes(user.id)) return true;
+  // Also grant access if the user has a task assigned to them in this project
+  if (tasks) return tasks.some((t) => t.assignee === user.id && t.pId === project.id && !t.sId);
+  return false;
 }
 
 /**
  * Filter projects the user can access.
- * Internal members: projects they are listed as a member of.
+ * Internal members: projects they are listed as a member of, OR have an assigned task in.
  * Clients: projects belonging to their client account.
  * Admins / managers: all projects.
  */
-export function accessibleProjects(user: User, projects: Project[]): Project[] {
+export function accessibleProjects(user: User, projects: Project[], tasks?: Task[]): Project[] {
   if (user.role === "admin" || user.role === "manager") return projects;
   if (user.clientId) return projects.filter((p) => p.clientId === user.clientId);
-  return projects.filter((p) => p.members.includes(user.id));
+  if (!tasks) return projects.filter((p) => p.members.includes(user.id));
+
+  // Collect project IDs where user has an assigned task
+  const assignedProjIds = new Set(
+    tasks.filter((t) => t.assignee === user.id && !t.sId).map((t) => t.pId)
+  );
+  return projects.filter((p) => p.members.includes(user.id) || assignedProjIds.has(p.id));
 }
 
 /**
  * Filter services the user can access.
- * Internal members: services they are listed as a member of.
+ * Internal members: services they are listed as a member of, OR have an assigned task in.
  * Clients: services belonging to their client account.
  * Admins / managers: all services.
  */
-export function accessibleServices(user: User, services: Service[]): Service[] {
+export function accessibleServices(user: User, services: Service[], tasks?: Task[]): Service[] {
   if (user.role === "admin" || user.role === "manager") return services;
   if (user.clientId) return services.filter((s) => s.clientId === user.clientId);
-  return services.filter((s) => s.members.includes(user.id));
+  if (!tasks) return services.filter((s) => s.members.includes(user.id));
+
+  // Collect service IDs where user has an assigned task
+  const assignedSvcIds = new Set(
+    tasks.filter((t) => t.assignee === user.id && !!t.sId).map((t) => t.sId as string)
+  );
+  return services.filter((s) => s.members.includes(user.id) || assignedSvcIds.has(s.id));
 }
 
 /**
@@ -62,9 +77,9 @@ export function accessibleTasks(
 ): Task[] {
   if (user.role === "admin" || user.role === "manager") return tasks;
 
-  const projIds = new Set(accessibleProjects(user, projects).map((p) => p.id));
+  const projIds = new Set(accessibleProjects(user, projects, tasks).map((p) => p.id));
   const svcIds  = new Set(
-    (services ? accessibleServices(user, services) : []).map((s) => s.id)
+    (services ? accessibleServices(user, services, tasks) : []).map((s) => s.id)
   );
 
   return tasks.filter((t) => {
@@ -75,6 +90,42 @@ export function accessibleTasks(
     if (t.sId) return svcIds.has(t.sId);
     return projIds.has(t.pId);
   });
+}
+
+/**
+ * Filter clients the user can access.
+ * - Admins / managers: all clients.
+ * - Internal staff: clients where their ID is in the client's staffIds array,
+ *   OR clients linked to any project/service they are a member of.
+ * - Client portal users: only their own client.
+ */
+export function accessibleClients(
+  user: User,
+  clients: Client[],
+  projects?: Project[],
+  services?: Service[]
+): Client[] {
+  if (user.role === "admin" || user.role === "manager") return clients;
+
+  // Client portal users see only their own client record
+  if (user.clientId) return clients.filter((c) => c.id === user.clientId);
+
+  // Internal staff — see clients they are directly assigned to OR linked via projects/services
+  const linkedClientIds = new Set<string>();
+  if (projects) {
+    projects.forEach((p) => {
+      if (p.clientId && p.members.includes(user.id)) linkedClientIds.add(p.clientId);
+    });
+  }
+  if (services) {
+    services.forEach((s) => {
+      if (s.clientId && s.members.includes(user.id)) linkedClientIds.add(s.clientId);
+    });
+  }
+
+  return clients.filter(
+    (c) => (c.staffIds ?? []).includes(user.id) || linkedClientIds.has(c.id)
+  );
 }
 
 /**
@@ -146,29 +197,39 @@ export function accessibleTeamMembers(
 }
 
 /**
- * Filter files to those in accessible projects.
+ * Filter files to those in accessible projects or services.
  */
 export function accessibleFiles(
   user: User,
   files: FileItem[],
-  projects: Project[]
+  projects: Project[],
+  services?: Service[]
 ): FileItem[] {
   if (user.role === "admin" || user.role === "manager") return files;
   const projIds = new Set(accessibleProjects(user, projects).map((p) => p.id));
-  return files.filter((f) => projIds.has(f.pId));
+  const svcIds  = new Set((services ? accessibleServices(user, services) : []).map((s) => s.id));
+  return files.filter((f) => {
+    if (f.sId) return svcIds.has(f.sId);
+    return projIds.has(f.pId);
+  });
 }
 
 /**
- * Filter folders to those in accessible projects.
+ * Filter folders to those in accessible projects or services.
  */
 export function accessibleFolders(
   user: User,
   folders: Folder[],
-  projects: Project[]
+  projects: Project[],
+  services?: Service[]
 ): Folder[] {
   if (user.role === "admin" || user.role === "manager") return folders;
   const projIds = new Set(accessibleProjects(user, projects).map((p) => p.id));
-  return folders.filter((f) => (f.sId ? true : projIds.has(f.pId)));
+  const svcIds  = new Set((services ? accessibleServices(user, services) : []).map((s) => s.id));
+  return folders.filter((f) => {
+    if (f.sId) return svcIds.has(f.sId);
+    return projIds.has(f.pId);
+  });
 }
 
 /**
