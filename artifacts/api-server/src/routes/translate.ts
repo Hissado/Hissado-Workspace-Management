@@ -1,8 +1,14 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
+import { z } from "zod";
+import { validate } from "../middleware/validate.js";
+import { InternalError } from "../lib/errors.js";
 
-const router: IRouter = Router();
+const router = Router();
 
-const LANG_CODES: Record<string, string> = {
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+/** Map of short language codes to BCP 47 locales accepted by MyMemory. */
+const LANG_CODE_MAP: Readonly<Record<string, string>> = {
   en: "en-US",
   fr: "fr-FR",
   zh: "zh-CN",
@@ -13,46 +19,56 @@ const LANG_CODES: Record<string, string> = {
   ja: "ja-JP",
 };
 
-router.post("/translate", async (req, res) => {
-  const { text, targetLang } = req.body as { text?: string; targetLang?: string };
+// ── Schema ────────────────────────────────────────────────────────────────────
 
-  if (!text || !targetLang) {
-    res.status(400).json({ error: "text and targetLang are required" });
-    return;
+const TranslateSchema = z.object({
+  text:       z.string().min(1, "text is required").max(5000, "text must be 5 000 characters or fewer"),
+  targetLang: z.string().min(2, "targetLang is required").max(10),
+});
+
+// ── Route ─────────────────────────────────────────────────────────────────────
+
+/* POST /api/translate */
+router.post("/translate", validate(TranslateSchema), async (req, res, next) => {
+  const { text, targetLang } = req.body as z.infer<typeof TranslateSchema>;
+
+  // Pass data URIs straight through — they are not translatable text.
+  if (text.startsWith("data:")) {
+    return res.json({ translatedText: text });
   }
 
-  if (text.startsWith("data:image")) {
-    res.json({ translatedText: text });
-    return;
-  }
+  const targetCode = LANG_CODE_MAP[targetLang] ?? targetLang;
 
-  const targetCode = LANG_CODES[targetLang] || targetLang;
-
+  // If the target is already English there is nothing to translate.
   if (targetCode.toLowerCase().startsWith("en")) {
-    res.json({ translatedText: text });
-    return;
+    return res.json({ translatedText: text });
   }
 
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetCode}`;
-    const apiRes = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${encodeURIComponent(targetCode)}`;
+    const apiRes = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+
     if (!apiRes.ok) {
-      res.status(502).json({ error: `Translation API HTTP error: ${apiRes.status}` });
-      return;
+      return next(new InternalError(`Translation API returned HTTP ${apiRes.status}`));
     }
+
     const json = (await apiRes.json()) as {
       responseStatus: number | string;
       responseData?: { translatedText?: string };
       responseDetails?: string;
     };
-    if ((json.responseStatus === 200 || json.responseStatus === "200") && json.responseData?.translatedText) {
-      res.json({ translatedText: json.responseData.translatedText });
-    } else {
-      res.status(502).json({ error: json.responseDetails || "Translation unavailable" });
+
+    const status = String(json.responseStatus);
+    if (status === "200" && json.responseData?.translatedText) {
+      return res.json({ translatedText: json.responseData.translatedText });
     }
+
+    return next(new InternalError(json.responseDetails ?? "Translation unavailable"));
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    res.status(502).json({ error: msg });
+    if (err instanceof Error && err.name === "TimeoutError") {
+      return next(new InternalError("Translation request timed out"));
+    }
+    return next(err);
   }
 });
 

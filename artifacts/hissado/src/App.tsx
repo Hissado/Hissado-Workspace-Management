@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/lib/store";
 import type { Page } from "@/lib/store";
@@ -9,10 +9,9 @@ import { useRealtime } from "@/hooks/useRealtime";
 import type { CallSignal, MessageSignal } from "@/hooks/useRealtime";
 import { useDesktopNotifications } from "@/hooks/useDesktopNotifications";
 import { useSessionTimeout, INACTIVITY_MINUTES } from "@/hooks/useSessionTimeout";
+import { useServerSync } from "@/hooks/useServerSync";
 import { pushToast } from "@/components/ToastNotifications";
-import {
-  fetchUsers, sendHeartbeat, updateUserPassword, registerReminder,
-} from "@/lib/api";
+import { fetchUsers, updateUserPassword, registerReminder } from "@/lib/api";
 import {
   accessibleProjects, accessibleTasks, accessibleConversations,
   accessibleTeamMembers, accessibleFiles, accessibleFolders,
@@ -86,35 +85,11 @@ export default function App() {
     addFile, deleteFile, addFolder, deleteFolder,
   } = useStore();
 
-  // ── Server sync ─────────────────────────────────────────────────────────────
-
-  // On mount: sync users from the server so cross-device invitations are visible
-  useEffect(() => {
-    fetchUsers()
-      .then((serverUsers) => { if (Array.isArray(serverUsers)) mergeServerUsers(serverUsers); })
-      .catch(() => { /* server unreachable — fall back to localStorage */ });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // While signed in: send a presence heartbeat every 5 minutes
-  useEffect(() => {
-    if (!currentUser) return;
-    sendHeartbeat(currentUser.id);
-    const interval = setInterval(() => sendHeartbeat(currentUser.id), 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?.id]);
-
-  // Periodic re-sync: re-fetch users every 60 s as a safety net for missed SSE events
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchUsers()
-        .then((serverUsers) => { if (Array.isArray(serverUsers)) mergeServerUsers(serverUsers); })
-        .catch(() => { /* server unreachable — keep current local state */ });
-    }, 60_000);
-    return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // ── Server sync (initial fetch, heartbeat, periodic re-sync) ────────────────
+  useServerSync({
+    currentUserId: currentUser?.id ?? null,
+    onUsersSync: (serverUsers) => mergeServerUsers(serverUsers),
+  });
 
   // ── Session timeout ──────────────────────────────────────────────────────────
 
@@ -206,9 +181,9 @@ export default function App() {
       desktopNotify(signal.fromName, signal.text, { tag: `msg-${signal.conversationId}` });
     },
     onUsersChanged: () => {
-      /* Another browser created, updated, or deleted a user — re-fetch and merge */
+      // Another browser created, updated, or deleted a user — re-fetch and merge.
       fetchUsers()
-        .then((serverUsers) => { if (Array.isArray(serverUsers)) mergeServerUsers(serverUsers); })
+        .then((serverUsers) => mergeServerUsers(serverUsers))
         .catch(() => { /* server unreachable — keep current local state */ });
     },
   });
